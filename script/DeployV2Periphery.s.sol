@@ -6,13 +6,13 @@ import { ISuperDeployer } from "./utils/ISuperDeployer.sol";
 import { ConfigPeriphery } from "./utils/ConfigPeriphery.sol";
 
 // Periphery contracts
-import { SuperGovernor } from "../src/periphery/SuperGovernor.sol";
-import { SuperVaultAggregator } from "../src/periphery/SuperVault/SuperVaultAggregator.sol";
-import { SuperVault } from "../src/periphery/SuperVault/SuperVault.sol";
-import { SuperVaultStrategy } from "../src/periphery/SuperVault/SuperVaultStrategy.sol";
-import { SuperVaultEscrow } from "../src/periphery/SuperVault/SuperVaultEscrow.sol";
-import { ECDSAPPSOracle } from "../src/periphery/oracles/ECDSAPPSOracle.sol";
-import { SuperOracle } from "../src/periphery/oracles/SuperOracle.sol";
+import { SuperGovernor } from "../src/SuperGovernor.sol";
+import { SuperVaultAggregator } from "../src/SuperVault/SuperVaultAggregator.sol";
+import { SuperVault } from "../src/SuperVault/SuperVault.sol";
+import { SuperVaultStrategy } from "../src/SuperVault/SuperVaultStrategy.sol";
+import { SuperVaultEscrow } from "../src/SuperVault/SuperVaultEscrow.sol";
+import { ECDSAPPSOracle } from "../src/oracles/ECDSAPPSOracle.sol";
+import { SuperOracle } from "../src/oracles/SuperOracle.sol";
 
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { console2 } from "forge-std/console2.sol";
