@@ -6,6 +6,7 @@ import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 
 // Import core BaseTest
 import { BaseTest as CoreBaseTest } from "@superform-v2-core/test/BaseTest.t.sol";
+import { ISuperLedgerConfiguration } from "@superform-v2-core/src/interfaces/accounting/ISuperLedgerConfiguration.sol";
 // Periphery-specific imports
 import { SuperGovernor } from "../src/SuperGovernor.sol";
 import { SuperBank } from "../src/SuperBank.sol";
@@ -50,6 +51,9 @@ contract BaseTest is PeripheryHelpers, CoreBaseTest {
         // Deploy periphery contracts
         PeripheryAddresses[] memory PA = new PeripheryAddresses[](chainIds.length);
         PA = _deployPeripheryContracts(PA);
+
+        // Update treasury in SuperLedgerConfiguration to point to SuperBank
+        _updateTreasuryInSuperLedgerConfiguration();
 
         // Configure periphery
         _configurePeripheryGovernor(PA);
@@ -216,5 +220,79 @@ contract BaseTest is PeripheryHelpers, CoreBaseTest {
 
     function _getPeripheryContract(uint64 chainId, string memory contractName) internal view returns (address) {
         return contractAddresses[chainId][contractName];
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                         HELPERS
+    //////////////////////////////////////////////////////////////*/
+
+    function _updateTreasuryInSuperLedgerConfiguration() internal {
+        for (uint256 i = 0; i < chainIds.length; ++i) {
+            vm.selectFork(FORKS[chainIds[i]]);
+
+            // Get the yield source oracle IDs that were created in _setupSuperLedger
+            bytes32[] memory yieldSourceOracleIds = new bytes32[](4);
+            yieldSourceOracleIds[0] =
+                keccak256(abi.encodePacked(bytes32(bytes(ERC4626_YIELD_SOURCE_ORACLE_KEY)), MANAGER));
+            yieldSourceOracleIds[1] =
+                keccak256(abi.encodePacked(bytes32(bytes(ERC7540_YIELD_SOURCE_ORACLE_KEY)), MANAGER));
+            yieldSourceOracleIds[2] =
+                keccak256(abi.encodePacked(bytes32(bytes(ERC5115_YIELD_SOURCE_ORACLE_KEY)), MANAGER));
+            yieldSourceOracleIds[3] =
+                keccak256(abi.encodePacked(bytes32(bytes(STAKING_YIELD_SOURCE_ORACLE_KEY)), MANAGER));
+
+            // Read current configs to preserve existing settings
+            ISuperLedgerConfiguration.YieldSourceOracleConfig[] memory currentConfigs = ISuperLedgerConfiguration(
+                _getContract(chainIds[i], SUPER_LEDGER_CONFIGURATION_KEY)
+            ).getYieldSourceOracleConfigs(yieldSourceOracleIds);
+
+            // Create new config proposals with updated treasury
+            ISuperLedgerConfiguration.YieldSourceOracleConfigArgs[] memory newConfigs =
+                new ISuperLedgerConfiguration.YieldSourceOracleConfigArgs[](4);
+
+            newConfigs[0] = ISuperLedgerConfiguration.YieldSourceOracleConfigArgs({
+                yieldSourceOracle: currentConfigs[0].yieldSourceOracle,
+                feePercent: currentConfigs[0].feePercent,
+                feeRecipient: TREASURY, // Updated treasury (SuperBank)
+                ledger: currentConfigs[0].ledger
+            });
+            newConfigs[1] = ISuperLedgerConfiguration.YieldSourceOracleConfigArgs({
+                yieldSourceOracle: currentConfigs[1].yieldSourceOracle,
+                feePercent: currentConfigs[1].feePercent,
+                feeRecipient: TREASURY, // Updated treasury (SuperBank)
+                ledger: currentConfigs[1].ledger
+            });
+            newConfigs[2] = ISuperLedgerConfiguration.YieldSourceOracleConfigArgs({
+                yieldSourceOracle: currentConfigs[2].yieldSourceOracle,
+                feePercent: currentConfigs[2].feePercent,
+                feeRecipient: TREASURY, // Updated treasury (SuperBank)
+                ledger: currentConfigs[2].ledger
+            });
+            newConfigs[3] = ISuperLedgerConfiguration.YieldSourceOracleConfigArgs({
+                yieldSourceOracle: currentConfigs[3].yieldSourceOracle,
+                feePercent: currentConfigs[3].feePercent,
+                feeRecipient: TREASURY, // Updated treasury (SuperBank)
+                ledger: currentConfigs[3].ledger
+            });
+
+            vm.startPrank(MANAGER);
+
+            // Propose the configuration changes
+            ISuperLedgerConfiguration(_getContract(chainIds[i], SUPER_LEDGER_CONFIGURATION_KEY))
+                .proposeYieldSourceOracleConfig(yieldSourceOracleIds, newConfigs);
+
+            vm.stopPrank();
+
+            // Advance time past the proposal expiration period (1 week)
+            vm.warp(block.timestamp + 1 weeks + 1);
+
+            vm.startPrank(MANAGER);
+
+            // Accept the proposed configuration changes
+            ISuperLedgerConfiguration(_getContract(chainIds[i], SUPER_LEDGER_CONFIGURATION_KEY))
+                .acceptYieldSourceOracleConfigProposal(yieldSourceOracleIds);
+
+            vm.stopPrank();
+        }
     }
 }

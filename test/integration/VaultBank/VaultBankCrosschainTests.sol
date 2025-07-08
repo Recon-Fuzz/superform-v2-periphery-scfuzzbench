@@ -92,15 +92,18 @@ contract VaultBankCrosschainTests is BaseTest {
     }
 
     function test_Bridge_Deposit4626_MintSP() public {
-        SELECT_FORK_AND_WARP(ETH, block.timestamp);
+        // Use a fixed timestamp that's guaranteed to be after market lastUpdate times
+        uint256 safeTimestamp = 1_740_570_000; // ~2.5 hours after the problematic lastUpdate timestamp
+        SELECT_FORK_AND_WARP(ETH, safeTimestamp);
 
-        uint256 amount = 1e8;
+        uint256 amount = 1e3; // Reduced to 0.001 USDC to avoid overflow with very low liquidity BASE vault (~4 USDC
+            // total)
         uint256 previewRedeemAmount =
             vaultInstanceMorphoEth.previewRedeem(vaultInstanceMorphoEth.previewDeposit(amount));
 
         uint256 previewLockAmount;
         // BASE IS DST
-        SELECT_FORK_AND_WARP(BASE, block.timestamp);
+        SELECT_FORK_AND_WARP(BASE, safeTimestamp);
 
         superGovernor = new SuperGovernor(address(this), address(this), address(this), address(this), address(this));
         vaultBank = new VaultBank(address(superGovernor));
@@ -159,7 +162,7 @@ contract VaultBankCrosschainTests is BaseTest {
         }
 
         // ETH is SRC
-        SELECT_FORK_AND_WARP(ETH, block.timestamp);
+        SELECT_FORK_AND_WARP(ETH, safeTimestamp);
 
         address[] memory srcHooksAddresses = new address[](4);
         srcHooksAddresses[0] = _getHookAddress(ETH, APPROVE_ERC20_HOOK_KEY);
@@ -204,7 +207,7 @@ contract VaultBankCrosschainTests is BaseTest {
             ProcessAcrossV3MessageParams({
                 srcChainId: ETH,
                 dstChainId: BASE,
-                warpTimestamp: block.timestamp,
+                warpTimestamp: safeTimestamp,
                 executionData: executeOp(srcUserOpData),
                 relayerType: RELAYER_TYPE.ENOUGH_BALANCE,
                 errorMessage: bytes4(0),
@@ -215,20 +218,23 @@ contract VaultBankCrosschainTests is BaseTest {
             })
         );
 
-        SELECT_FORK_AND_WARP(BASE, block.timestamp + 10 days);
+        SELECT_FORK_AND_WARP(BASE, safeTimestamp + 10 days);
         uint256 accSharesAfter = IERC4626(yieldSourceMorphoUsdcAddressBase).balanceOf(address(vaultBank));
         assertEq(accSharesAfter, previewLockAmount);
     }
 
     function test_Bridge_MintSP() public {
-        SELECT_FORK_AND_WARP(ETH, block.timestamp);
+        // Use a fixed timestamp that's guaranteed to be after market lastUpdate times
+        uint256 safeTimestamp = 1_740_570_000; // ~2.5 hours after the problematic lastUpdate timestamp
+        SELECT_FORK_AND_WARP(ETH, safeTimestamp);
 
-        uint256 amount = 1e8;
+        uint256 amount = 1e3; // Reduced to 0.001 USDC to avoid overflow with very low liquidity BASE vault (~4 USDC
+            // total)
         uint256 previewRedeemAmount =
             vaultInstanceMorphoEth.previewRedeem(vaultInstanceMorphoEth.previewDeposit(amount));
 
         // BASE IS DST
-        SELECT_FORK_AND_WARP(BASE, block.timestamp);
+        SELECT_FORK_AND_WARP(BASE, safeTimestamp);
 
         superGovernor = new SuperGovernor(address(this), address(this), address(this), address(this), address(this));
         vaultBank = new VaultBank(address(superGovernor));
@@ -275,7 +281,7 @@ contract VaultBankCrosschainTests is BaseTest {
         _getTokens(CHAIN_8453_USDC, accountToUse, amount);
 
         // ETH is SRC
-        SELECT_FORK_AND_WARP(ETH, block.timestamp);
+        SELECT_FORK_AND_WARP(ETH, safeTimestamp);
 
         address[] memory srcHooksAddresses = new address[](4);
         srcHooksAddresses[0] = _getHookAddress(ETH, APPROVE_ERC20_HOOK_KEY);
@@ -320,7 +326,7 @@ contract VaultBankCrosschainTests is BaseTest {
             ProcessAcrossV3MessageParams({
                 srcChainId: ETH,
                 dstChainId: BASE,
-                warpTimestamp: block.timestamp,
+                warpTimestamp: safeTimestamp,
                 executionData: executeOp(srcUserOpData),
                 relayerType: RELAYER_TYPE.ENOUGH_BALANCE,
                 errorMessage: bytes4(0),
@@ -331,7 +337,7 @@ contract VaultBankCrosschainTests is BaseTest {
             })
         );
 
-        SELECT_FORK_AND_WARP(BASE, block.timestamp + 10 days);
+        SELECT_FORK_AND_WARP(BASE, safeTimestamp + 10 days);
         uint256 accSharesAfter = IERC4626(CHAIN_8453_USDC).balanceOf(address(vaultBank));
         assertEq(accSharesAfter, previewRedeemAmount);
     }

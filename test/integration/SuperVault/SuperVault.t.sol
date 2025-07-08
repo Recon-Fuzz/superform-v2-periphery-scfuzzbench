@@ -1864,6 +1864,8 @@ contract SuperVaultTest is BaseSuperVaultTest {
         uint256 expectedLedgerFee =
             superLedgerETH.previewFees(accountEth, address(vault), claimableAssets, claimableShares, 100);
 
+        console2.log("superformFee", superformFee);
+        console2.log("recipientFee", recipientFee);
         console2.log("expectedLedgerFee", expectedLedgerFee);
         console2.log("claimableAssets", claimableAssets);
         console2.log("getAverageWithdrawPrice", strategy.getAverageWithdrawPrice(accountEth));
