@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import { Constants } from "@superform-v2-core/test/utils/Constants.sol";
-
-abstract contract PeripheryConstants is Constants {
+abstract contract PeripheryConstants {
     string public constant SUPER_ORACLE_KEY = "SuperOracle";
     string public constant SUPER_GOVERNOR_KEY = "SuperGovernor";
     string public constant SUPER_BANK_KEY = "SuperBank";

@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 
 // testing
-import { BaseTest } from "../../../BaseTest.t.sol";
+import { BaseTest } from "../../BaseTest.t.sol";
 import { TotalAssetHelper } from "./TotalAssetHelper.sol";
 
 // external
@@ -25,7 +25,7 @@ import { ISuperExecutor } from "@superform-v2-core/src/interfaces/ISuperExecutor
 import { FeeType } from "../../../src/interfaces/ISuperGovernor.sol";
 import { ISuperVaultAggregator } from "../../../src/interfaces/SuperVault/ISuperVaultAggregator.sol";
 import { IECDSAPPSOracle } from "../../../src/interfaces/oracles/IECDSAPPSOracle.sol";
-import { MerkleReader } from "../../../utils/merkle/helper/MerkleReader.sol";
+import { MerkleReader } from "../../utils/merkle/helper/MerkleReader.sol";
 import { ISuperHookInspector } from "@superform-v2-core/src/interfaces/ISuperHook.sol";
 
 contract BaseSuperVaultTest is MerkleReader, BaseTest {

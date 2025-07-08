@@ -1,23 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.30;
 
-import { VaultBank } from "../../../src/periphery/VaultBank/VaultBank.sol";
-import { VaultBankSuperPosition } from "../../../src/periphery/VaultBank/VaultBankSuperPosition.sol";
-import { Bank } from "../../../src/periphery/Bank.sol";
-import {
-    IVaultBank,
-    IVaultBankSource,
-    IVaultBankDestination
-} from "../../../src/periphery/interfaces/VaultBank/IVaultBank.sol";
+import { VaultBank } from "../../src/VaultBank/VaultBank.sol";
+import { VaultBankSuperPosition } from "../../src/VaultBank/VaultBankSuperPosition.sol";
+import { Bank } from "../../src/Bank.sol";
+import { IVaultBank, IVaultBankSource, IVaultBankDestination } from "../../src/interfaces/VaultBank/IVaultBank.sol";
 
-import { PeripheryHelpers } from "../../utils/PeripheryHelpers.sol";
-import { MockHook } from "../../mocks/MockHook.sol";
-import { MockERC20 } from "../../mocks/MockERC20.sol";
-import { MockSuperHook } from "../../mocks/MockSuperHook.sol";
-import { MockHookTarget } from "../../mocks/MockHookTarget.sol";
-import { IHookExecutionData } from "../../../src/periphery/interfaces/IHookExecutionData.sol";
-import { SuperGovernor } from "../../../src/periphery/SuperGovernor.sol";
-import { MockCrossL2ProverV2 } from "../../mocks/MockCrossL2ProverV2.sol";
+import { PeripheryHelpers } from "../utils/PeripheryHelpers.sol";
+import { MockHook } from "../mocks/MockHook.sol";
+import { MockERC20 } from "../mocks/MockERC20.sol";
+import { MockSuperHook } from "../mocks/MockSuperHook.sol";
+import { MockHookTarget } from "../mocks/MockHookTarget.sol";
+import { IHookExecutionData } from "../../src/interfaces/IHookExecutionData.sol";
+import { SuperGovernor } from "../../src/SuperGovernor.sol";
+import { MockCrossL2ProverV2 } from "../mocks/MockCrossL2ProverV2.sol";
 import { ISuperHook } from "@superform-v2-core/src/interfaces/ISuperHook.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "forge-std/console.sol";

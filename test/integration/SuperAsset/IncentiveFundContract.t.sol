@@ -11,10 +11,10 @@ import { IIncentiveFundContract } from "../../../src/interfaces/SuperAsset/IInce
 import { SuperGovernor } from "../../../src/SuperGovernor.sol";
 import { SuperOracle } from "../../../src/oracles/SuperOracle.sol";
 import { IncentiveCalculationContract } from "../../../src/SuperAsset/IncentiveCalculationContract.sol";
-import { MockERC20 } from "../../../mocks/MockERC20.sol";
+import { MockERC20 } from "../../mocks/MockERC20.sol";
 import { IERC20Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import { MockAggregator } from "../../mocks/MockAggregator.sol";
-import { PeripheryHelpers } from "../../../utils/PeripheryHelpers.sol";
+import { PeripheryHelpers } from "../../utils/PeripheryHelpers.sol";
 import { SuperAssetFactory, ISuperAssetFactory } from "../../../src/SuperAsset/SuperAssetFactory.sol";
 import { SuperBank } from "../../../src/SuperBank.sol";
 

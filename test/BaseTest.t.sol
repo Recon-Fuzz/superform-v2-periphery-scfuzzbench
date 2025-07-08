@@ -2,20 +2,21 @@
 pragma solidity 0.8.30;
 
 import { PeripheryHelpers } from "./utils/PeripheryHelpers.sol";
+import { PeripheryConstants } from "./utils/PeripheryConstants.sol";
 import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 
 // Import core BaseTest
 import { BaseTest as CoreBaseTest } from "@superform-v2-core/test/BaseTest.t.sol";
-
+import { ISuperLedgerConfiguration } from "@superform-v2-core/src/interfaces/accounting/ISuperLedgerConfiguration.sol";
 // Periphery-specific imports
-import { SuperGovernor } from "../src/periphery/SuperGovernor.sol";
-import { SuperBank } from "../src/periphery/SuperBank.sol";
-import { SuperOracle } from "../src/periphery/oracles/SuperOracle.sol";
-import { SuperVaultAggregator } from "../src/periphery/SuperVault/SuperVaultAggregator.sol";
-import { SuperVault } from "../src/periphery/SuperVault/SuperVault.sol";
-import { SuperVaultStrategy } from "../src/periphery/SuperVault/SuperVaultStrategy.sol";
-import { SuperVaultEscrow } from "../src/periphery/SuperVault/SuperVaultEscrow.sol";
-import { ECDSAPPSOracle } from "../src/periphery/oracles/ECDSAPPSOracle.sol";
+import { SuperGovernor } from "../src/SuperGovernor.sol";
+import { SuperBank } from "../src/SuperBank.sol";
+import { SuperOracle } from "../src/oracles/SuperOracle.sol";
+import { SuperVaultAggregator } from "../src/SuperVault/SuperVaultAggregator.sol";
+import { SuperVault } from "../src/SuperVault/SuperVault.sol";
+import { SuperVaultStrategy } from "../src/SuperVault/SuperVaultStrategy.sol";
+import { SuperVaultEscrow } from "../src/SuperVault/SuperVaultEscrow.sol";
+import { ECDSAPPSOracle } from "../src/oracles/ECDSAPPSOracle.sol";
 
 import "forge-std/console2.sol";
 
@@ -27,9 +28,7 @@ struct PeripheryAddresses {
     ECDSAPPSOracle ecdsappsOracle;
 }
 
-contract BaseTest is PeripheryHelpers, CoreBaseTest {
-    using ModuleKitHelpers for *;
-    using ExecutionLib for *;
+contract BaseTest is PeripheryConstants, PeripheryHelpers, CoreBaseTest {
     using Clones for address;
 
     /*//////////////////////////////////////////////////////////////
@@ -46,6 +45,7 @@ contract BaseTest is PeripheryHelpers, CoreBaseTest {
     function setUp() public virtual override {
         // Call core setup first
         super.setUp();
+        deployPeripheryAccounts();
 
         // Deploy periphery contracts
         PeripheryAddresses[] memory PA = new PeripheryAddresses[](chainIds.length);

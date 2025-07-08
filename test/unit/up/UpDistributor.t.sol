@@ -2,8 +2,8 @@
 pragma solidity ^0.8.30;
 
 import "forge-std/Test.sol";
-import "../../../../src/UP/Up.sol";
-import "../../../../src/UP/UpDistributor.sol";
+import "../../../src/UP/Up.sol";
+import "../../../src/UP/UpDistributor.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { MerkleReader } from "./merkle/helper/MerkleReader.sol";
 

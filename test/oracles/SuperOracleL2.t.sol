@@ -6,9 +6,9 @@ import { BaseSuperVaultTest } from "../integration/SuperVault/BaseSuperVaultTest
 import { AggregatorV3Interface } from "../../src/vendor/chainlink/AggregatorV3Interface.sol";
 import { Test } from "forge-std/Test.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
-import { MockAggregator } from "../../mocks/MockAggregator.sol";
-import { MockERC20 } from "../../mocks/MockERC20.sol";
-import { MockL2Sequencer } from "../../mocks/MockL2Sequencer.sol";
+import { MockAggregator } from "../mocks/MockAggregator.sol";
+import { MockERC20 } from "../mocks/MockERC20.sol";
+import { MockL2Sequencer } from "../mocks/MockL2Sequencer.sol";
 
 contract SuperOracleL2Test is Test {
     // Test accounts
@@ -45,8 +45,7 @@ contract SuperOracleL2Test is Test {
         deal(address(quoteToken), address(this), 1 * 10 ** 6);
 
         // Setup price feeds
-        dataFeed = new MockAggregator(uint8(PRICE_DECIMALS));
-        dataFeed.setLatestAnswer(int256(INITIAL_PRICE));
+        dataFeed = new MockAggregator(int256(INITIAL_PRICE), uint8(PRICE_DECIMALS));
 
         // Setup sequencer uptime feed - ensure startedAt is in the past
         uptimeFeed = new MockL2Sequencer();
@@ -206,8 +205,7 @@ contract SuperOracleL2Test is Test {
 
     function test_GetQuote_NoUptimeFeed_Reverts() public {
         // Create a new data feed without an uptime feed
-        MockAggregator newDataFeed = new MockAggregator(uint8(PRICE_DECIMALS));
-        newDataFeed.setLatestAnswer(int256(INITIAL_PRICE));
+        MockAggregator newDataFeed = new MockAggregator(int256(INITIAL_PRICE), uint8(PRICE_DECIMALS));
 
         // Configure the oracle with the new data feed
         address[] memory bases = new address[](1);
@@ -254,7 +252,7 @@ contract SuperOracleL2Test is Test {
         uptimeFeed.setStartedAt(block.timestamp - GRACE_PERIOD * 2); // Well past grace period
 
         // Set the data feed to have negative price
-        dataFeed.setLatestAnswer(-1 * int256(INITIAL_PRICE));
+        dataFeed.setAnswer(-1 * int256(INITIAL_PRICE));
 
         // Attempt to get a quote directly from the oracle function that checks for negative prices
         bytes memory encodedError = abi.encodeWithSelector(ISuperOracle.NO_VALID_REPORTED_PRICES.selector);
@@ -276,7 +274,7 @@ contract SuperOracleL2Test is Test {
 
         // Change price in the feed
         uint256 newPrice = INITIAL_PRICE * 2; // Double the price
-        dataFeed.setLatestAnswer(int256(newPrice));
+        dataFeed.setAnswer(int256(newPrice));
 
         // Get new quote
         uint256 newQuote = oracle.getQuote(baseAmount, address(baseToken), address(quoteToken));

@@ -5,7 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IncentiveCalculationContract } from "../../../src/SuperAsset/IncentiveCalculationContract.sol";
 import { IIncentiveCalculationContract } from "../../../src/interfaces/SuperAsset/IIncentiveCalculationContract.sol";
-import { PeripheryHelpers } from "../../../utils/PeripheryHelpers.sol";
+import { PeripheryHelpers } from "../../utils/PeripheryHelpers.sol";
 
 contract IncentiveCalculationContractTest is PeripheryHelpers {
     IncentiveCalculationContract public calculator;

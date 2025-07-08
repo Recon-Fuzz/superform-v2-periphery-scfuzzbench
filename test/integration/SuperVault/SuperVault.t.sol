@@ -23,12 +23,12 @@ import { ISuperVaultStrategy } from "../../../src/interfaces/SuperVault/ISuperVa
 import { ERC7540YieldSourceOracle } from "@superform-v2-core/src/accounting/oracles/ERC7540YieldSourceOracle.sol";
 import { ISuperLedger } from "@superform-v2-core/src/interfaces/accounting/ISuperLedger.sol";
 import { ISuperHookInspector } from "@superform-v2-core/src/interfaces/ISuperHook.sol";
-import { IGearboxFarmingPool } from "../../../../src/vendor/gearbox/IGearboxFarmingPool.sol";
+import { IGearboxFarmingPool } from "../../../src/vendor/gearbox/IGearboxFarmingPool.sol";
 import { ISuperExecutor } from "@superform-v2-core/src/interfaces/ISuperExecutor.sol";
 import { AccountInstance, UserOpData } from "modulekit/ModuleKit.sol";
-import { Mock4626Vault } from "../../../mocks/Mock4626Vault.sol";
-import { RuggableVault } from "../../../mocks/RuggableVault.sol";
-import { RuggableConvertVault } from "../../../mocks/RuggableConvertVault.sol";
+import { Mock4626Vault } from "../../mocks/Mock4626Vault.sol";
+import { RuggableVault } from "../../mocks/RuggableVault.sol";
+import { RuggableConvertVault } from "../../mocks/RuggableConvertVault.sol";
 
 contract SuperVaultTest is BaseSuperVaultTest {
     using Math for uint256;

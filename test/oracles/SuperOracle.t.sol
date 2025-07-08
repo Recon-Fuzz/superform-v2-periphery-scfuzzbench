@@ -2,9 +2,9 @@
 pragma solidity 0.8.30;
 
 // Superform
-import { PeripheryHelpers } from "../../utils/PeripheryHelpers.sol";
-import { MockERC20 } from "../../mocks/MockERC20.sol";
-import { MockAggregator } from "../../mocks/MockAggregator.sol";
+import { PeripheryHelpers } from "../utils/PeripheryHelpers.sol";
+import { MockERC20 } from "../mocks/MockERC20.sol";
+import { MockAggregator } from "../mocks/MockAggregator.sol";
 import { SuperOracle } from "../../src/oracles/SuperOracle.sol";
 import { ISuperOracle } from "../../src/interfaces/oracles/ISuperOracle.sol";
 

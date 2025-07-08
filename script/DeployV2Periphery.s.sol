@@ -2,7 +2,7 @@
 pragma solidity >=0.8.30;
 
 import { DeployV2Base } from "./DeployV2Base.s.sol";
-import { ISuperDeployer } from "./utils/ISuperDeployer.sol";
+import { ISuperDeployer } from "@superform-v2-core/script/utils/ISuperDeployer.sol";
 import { ConfigPeriphery } from "./utils/ConfigPeriphery.sol";
 
 // Periphery contracts
@@ -14,7 +14,6 @@ import { SuperVaultEscrow } from "../src/SuperVault/SuperVaultEscrow.sol";
 import { ECDSAPPSOracle } from "../src/oracles/ECDSAPPSOracle.sol";
 import { SuperOracle } from "../src/oracles/SuperOracle.sol";
 
-import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { console2 } from "forge-std/console2.sol";
 
 contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
@@ -64,19 +63,30 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
 
     /// @notice Sets up complete configuration for periphery contracts
     /// @param env Environment (0/2 = production, 1 = test)
-    function _setConfiguration(uint256 env) internal {
+    /// @param saltNamespace Salt namespace for deployment (if empty, uses production default)
+    function _setConfiguration(uint256 env, string memory saltNamespace) internal {
         // Set base configuration (chain names, common addresses)
-        _setBaseConfiguration(env);
+        _setBaseConfiguration(env, saltNamespace);
 
         // Set periphery contract dependencies
         _setPeripheryConfiguration();
     }
 
     function run(uint256 env, uint64 chainId) public broadcast(env) {
-        _setConfiguration(env);
+        _setConfiguration(env, "");
+        _deployPeriphery(chainId);
+    }
+
+    function run(uint256 env, uint64 chainId, string memory saltNamespace) public broadcast(env) {
+        _setConfiguration(env, saltNamespace);
+        _deployPeriphery(chainId);
+    }
+
+    function _deployPeriphery(uint64 chainId) internal {
         console2.log("Deploying V2 Periphery on chainId: ", chainId);
 
-        _deployDeployer();
+        // Read SuperDeployer from core deployment
+        _readSuperDeployer(chainId);
 
         // Deploy periphery contracts
         PeripheryContracts memory peripheryContracts = _deployPeripheryContracts(chainId);
@@ -93,6 +103,12 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
 
         // Write all exported contracts for this chain
         _writeExportedContracts(chainId);
+    }
+
+    function _readSuperDeployer(uint64 chainId) internal {
+        string memory coreJson = _readCoreContracts(chainId);
+        configuration.deployer = vm.parseJsonAddress(coreJson, ".SuperDeployer");
+        console2.log("Using SuperDeployer from core deployment at:", configuration.deployer);
     }
 
     function _readHookAddresses(uint64 chainId) internal view returns (HookAddresses memory) {

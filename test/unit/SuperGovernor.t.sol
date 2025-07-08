@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.30;
 
-import { SuperGovernor } from "src/periphery/SuperGovernor.sol";
-import { ISuperGovernor, FeeType } from "src/periphery/interfaces/ISuperGovernor.sol";
+import { SuperGovernor } from "../../src/SuperGovernor.sol";
+import { ISuperGovernor, FeeType } from "../../src/interfaces/ISuperGovernor.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
-import { ISuperVaultAggregator } from "src/periphery/interfaces/SuperVault/ISuperVaultAggregator.sol";
-import { SuperVaultAggregator } from "src/periphery/SuperVault/SuperVaultAggregator.sol";
-import { SuperVault } from "../../../src/periphery/SuperVault/SuperVault.sol";
-import { SuperVaultStrategy } from "../../../src/periphery/SuperVault/SuperVaultStrategy.sol";
-import { SuperVaultEscrow } from "../../../src/periphery/SuperVault/SuperVaultEscrow.sol";
-import { ISuperVaultStrategy } from "src/periphery/interfaces/SuperVault/ISuperVaultStrategy.sol";
-import { PeripheryHelpers } from "../../utils/PeripheryHelpers.sol";
-import { MockERC20 } from "../../mocks/MockERC20.sol";
+import { ISuperVaultAggregator } from "../../src/interfaces/SuperVault/ISuperVaultAggregator.sol";
+import { SuperVaultAggregator } from "../../src/SuperVault/SuperVaultAggregator.sol";
+import { SuperVault } from "../../src/SuperVault/SuperVault.sol";
+import { SuperVaultStrategy } from "../../src/SuperVault/SuperVaultStrategy.sol";
+import { SuperVaultEscrow } from "../../src/SuperVault/SuperVaultEscrow.sol";
+import { ISuperVaultStrategy } from "../../src/interfaces/SuperVault/ISuperVaultStrategy.sol";
+import { PeripheryHelpers } from "../utils/PeripheryHelpers.sol";
+import { MockERC20 } from "../mocks/MockERC20.sol";
 
 contract SuperGovernorTest is PeripheryHelpers {
     SuperGovernor internal superGovernor;

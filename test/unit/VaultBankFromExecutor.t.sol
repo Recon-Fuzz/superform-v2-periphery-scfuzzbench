@@ -13,10 +13,10 @@ import { SuperExecutor } from "@superform-v2-core/src/executors/SuperExecutor.so
 import { SuperValidatorBase } from "@superform-v2-core/src/validators/SuperValidatorBase.sol";
 
 import { MODULE_TYPE_EXECUTOR, MODULE_TYPE_VALIDATOR } from "modulekit/accounts/kernel/types/Constants.sol";
-import { PeripheryHelpers } from "../../utils/PeripheryHelpers.sol";
-import { InternalHelpers } from "../../utils/InternalHelpers.sol";
-import { MerkleTreeHelper } from "../../utils/MerkleTreeHelper.sol";
-import { SignatureHelper } from "../../utils/SignatureHelper.sol";
+import { PeripheryHelpers } from "../utils/PeripheryHelpers.sol";
+import { InternalHelpers } from "@superform-v2-core/test/utils/InternalHelpers.sol";
+import { MerkleTreeHelper } from "@superform-v2-core/test/utils/MerkleTreeHelper.sol";
+import { SignatureHelper } from "@superform-v2-core/test/utils/SignatureHelper.sol";
 
 import { RhinestoneModuleKit, ModuleKitHelpers, AccountInstance, UserOpData } from "modulekit/ModuleKit.sol";
 import { ERC4626YieldSourceOracle } from "@superform-v2-core/src/accounting/oracles/ERC4626YieldSourceOracle.sol";
