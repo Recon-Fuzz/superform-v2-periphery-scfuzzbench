@@ -106,7 +106,7 @@ jobs:
         run: npm install -g pnpm
 
       - name: "Install ModuleKit"
-        working-directory: ./lib/modulekit
+        working-directory: ./lib/v2-core/lib/modulekit
         run: pnpm install
         
       - name: "Install merkle-js dependencies"
@@ -246,7 +246,7 @@ jobs:
         run: npm install -g pnpm
 
       - name: "Install ModuleKit"
-        working-directory: ./lib/modulekit
+        working-directory: ./lib/v2-core/lib/modulekit
         run: pnpm install
         
       - name: "Install merkle-js dependencies"
