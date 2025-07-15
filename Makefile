@@ -75,6 +75,8 @@ ftest-quick :; forge test
 
 coverage :; $(MAKE) ensure-merkle-cache-coverage && FOUNDRY_PROFILE=coverage forge coverage --jobs 10 --ir-minimum --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage --ignore-errors inconsistent,corrupt --exclude 'src/vendor/*' --exclude 'test/*'
 
+coverage-ci :; $(MAKE) ensure-merkle-cache-coverage && FOUNDRY_PROFILE=coverage forge coverage --jobs 10 --ir-minimum --report lcov
+
 test-vvv :; $(MAKE) ensure-merkle-cache && forge test --match-test test_SpectraExchangeSwapHook_DepositAndRedeemPT  -vvvv --jobs 10
 
 test-integration :; $(MAKE) ensure-merkle-cache && forge test --match-test test_DeBridgeCancelOrderHook -vvvv --jobs 10
