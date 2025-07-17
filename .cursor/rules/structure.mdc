@@ -108,313 +108,96 @@
 │   ├── PRD.md
 │   └── SuperAssetPRD.md
 ├── foundry.toml
-├── go.mod
-├── go.sum
 ├── lib
-│   ├── ExcessivelySafeCall
-│   ├── forge-std
-│   ├── modulekit
-│   ├── openzeppelin-contracts
-│   ├── pendle-core-v2-public
-│   ├── pigeon
-│   ├── solady
-│   ├── solidity-stringutils
-│   └── surl
+│   └── v2-core
 ├── Makefile
 ├── README.md
 ├── script
-│   ├── DeployV2.s.sol.txt
 │   ├── DeployV2Base.s.sol
-│   ├── DeployV2Core.s.sol
-│   ├── DeployV2OtherHooks.s.sol
 │   ├── DeployV2Periphery.s.sol
 │   ├── output
-│   │   ├── demo
-│   │   │   ├── 1
-│   │   │   │   └── Ethereum-latest.json
-│   │   │   ├── 10
-│   │   │   │   └── Optimism-latest.json
-│   │   │   └── 8453
-│   │   │       └── Base-latest.json
 │   │   └── local
 │   │       ├── 1
 │   │       │   └── Ethereum-latest.json
 │   │       ├── 10
 │   │       │   └── Optimism-latest.json
-│   │       ├── 11155111
-│   │       │   └── Sepolia-latest.json
-│   │       ├── 11155420
-│   │       │   └── OP_Sepolia-latest.json
-│   │       ├── 8453
-│   │       │   └── Base-latest.json
-│   │       └── 84532
-│   │           └── Base_Sepolia-latest.json
+│   │       └── 8453
+│   │           └── Base-latest.json
 │   ├── run
-│   │   ├── deploy_v2_testnet.sh
+│   │   ├── deploy_v2_prod.sh
 │   │   ├── deploy_v2_vnet_s3.sh
-│   │   ├── export_abis_s3.sh
-│   │   ├── generate-contract-bindings.sh
-│   │   ├── retrieve-abis.sh
-│   │   ├── tenderly
-│   │   │   └── index.js
 │   │   ├── update_structure.sh
-│   │   ├── verify_v2_testnet.sh
-│   │   └── verify_v2_vnet.sh
+│   │   └── verify_v2_prod.sh
 │   └── utils
 │       ├── ConfigBase.sol
-│       ├── ConfigCore.sol
-│       ├── ConfigOtherHooks.sol
 │       ├── ConfigPeriphery.sol
-│       ├── Constants.sol
-│       ├── ISuperDeployer.sol
-│       └── SuperDeployer.sol
+│       └── Constants.sol
 ├── src
-│   ├── core
-│   │   ├── accounting
-│   │   │   ├── BaseLedger.sol
-│   │   │   ├── FlatFeeLedger.sol
-│   │   │   ├── oracles
-│   │   │   │   ├── AbstractYieldSourceOracle.sol
-│   │   │   │   ├── ERC4626YieldSourceOracle.sol
-│   │   │   │   ├── ERC5115YieldSourceOracle.sol
-│   │   │   │   ├── ERC7540YieldSourceOracle.sol
-│   │   │   │   ├── PendlePTYieldSourceOracle.sol
-│   │   │   │   ├── SpectraPTYieldSourceOracle.sol
-│   │   │   │   ├── StakingYieldSourceOracle.sol
-│   │   │   │   └── SuperYieldSourceOracle.sol
-│   │   │   ├── SuperLedger.sol
-│   │   │   └── SuperLedgerConfiguration.sol
-│   │   ├── adapters
-│   │   │   ├── AcrossV3Adapter.sol
-│   │   │   └── DebridgeAdapter.sol
-│   │   ├── executors
-│   │   │   ├── SuperDestinationExecutor.sol
-│   │   │   ├── SuperExecutor.sol
-│   │   │   └── SuperExecutorBase.sol
-│   │   ├── hooks
-│   │   │   ├── BaseHook.sol
-│   │   │   ├── bridges
-│   │   │   │   ├── across
-│   │   │   │   │   └── AcrossSendFundsAndExecuteOnDstHook.sol
-│   │   │   │   └── debridge
-│   │   │   │       ├── DeBridgeCancelOrderHook.sol
-│   │   │   │       └── DeBridgeSendOrderAndExecuteOnDstHook.sol
-│   │   │   ├── claim
-│   │   │   │   ├── BaseClaimRewardHook.sol
-│   │   │   │   ├── fluid
-│   │   │   │   │   └── FluidClaimRewardHook.sol
-│   │   │   │   ├── gearbox
-│   │   │   │   │   └── GearboxClaimRewardHook.sol
-│   │   │   │   └── yearn
-│   │   │   │       └── YearnClaimOneRewardHook.sol
-│   │   │   ├── loan
-│   │   │   │   ├── BaseLoanHook.sol
-│   │   │   │   └── morpho
-│   │   │   │       ├── BaseMorphoLoanHook.sol
-│   │   │   │       ├── MorphoBorrowHook.sol
-│   │   │   │       ├── MorphoRepayAndWithdrawHook.sol
-│   │   │   │       ├── MorphoRepayHook.sol
-│   │   │   │       ├── MorphoSupplyAndBorrowHook.sol
-│   │   │   │       ├── MorphoSupplyHook.sol
-│   │   │   │       └── MorphoWithdrawHook.sol
-│   │   │   ├── stake
-│   │   │   │   ├── fluid
-│   │   │   │   │   ├── ApproveAndFluidStakeHook.sol
-│   │   │   │   │   ├── FluidStakeHook.sol
-│   │   │   │   │   └── FluidUnstakeHook.sol
-│   │   │   │   └── gearbox
-│   │   │   │       ├── ApproveAndGearboxStakeHook.sol
-│   │   │   │       ├── GearboxStakeHook.sol
-│   │   │   │       └── GearboxUnstakeHook.sol
-│   │   │   ├── swappers
-│   │   │   │   ├── 1inch
-│   │   │   │   │   └── Swap1InchHook.sol
-│   │   │   │   ├── odos
-│   │   │   │   │   ├── ApproveAndSwapOdosV2Hook.sol
-│   │   │   │   │   └── SwapOdosV2Hook.sol
-│   │   │   │   ├── pendle
-│   │   │   │   │   ├── PendleRouterRedeemHook.sol
-│   │   │   │   │   └── PendleRouterSwapHook.sol
-│   │   │   │   └── spectra
-│   │   │   │       ├── SpectraExchangeDepositHook.sol
-│   │   │   │       └── SpectraExchangeRedeemHook.sol
-│   │   │   ├── tokens
-│   │   │   │   ├── BatchTransferHook.sol
-│   │   │   │   ├── erc20
-│   │   │   │   │   ├── ApproveERC20Hook.sol
-│   │   │   │   │   └── TransferERC20Hook.sol
-│   │   │   │   ├── OfframpTokensHook.sol
-│   │   │   │   └── permit2
-│   │   │   │       └── BatchTransferFromHook.sol
-│   │   │   ├── VaultBankLockableHook.sol
-│   │   │   └── vaults
-│   │   │       ├── 4626
-│   │   │       │   ├── ApproveAndDeposit4626VaultHook.sol
-│   │   │       │   ├── Deposit4626VaultHook.sol
-│   │   │       │   └── Redeem4626VaultHook.sol
-│   │   │       ├── 5115
-│   │   │       │   ├── ApproveAndDeposit5115VaultHook.sol
-│   │   │       │   ├── Deposit5115VaultHook.sol
-│   │   │       │   └── Redeem5115VaultHook.sol
-│   │   │       ├── 7540
-│   │   │       │   ├── ApproveAndRequestDeposit7540VaultHook.sol
-│   │   │       │   ├── ApproveAndRequestRedeem7540VaultHook.sol
-│   │   │       │   ├── CancelDepositRequest7540Hook.sol
-│   │   │       │   ├── CancelRedeemRequest7540Hook.sol
-│   │   │       │   ├── ClaimCancelDepositRequest7540Hook.sol
-│   │   │       │   ├── ClaimCancelRedeemRequest7540Hook.sol
-│   │   │       │   ├── Deposit7540VaultHook.sol
-│   │   │       │   ├── Redeem7540VaultHook.sol
-│   │   │       │   ├── RequestDeposit7540VaultHook.sol
-│   │   │       │   ├── RequestRedeem7540VaultHook.sol
-│   │   │       │   └── Withdraw7540VaultHook.sol
-│   │   │       ├── ethena
-│   │   │       │   ├── EthenaCooldownSharesHook.sol
-│   │   │       │   └── EthenaUnstakeHook.sol
-│   │   │       └── super-vault
-│   │   │           ├── CancelRedeemHook.sol
-│   │   │           └── Withdraw7540VaultHook.sol
-│   │   ├── interfaces
-│   │   │   ├── accounting
-│   │   │   │   ├── ISuperLedger.sol
-│   │   │   │   ├── ISuperLedgerConfiguration.sol
-│   │   │   │   ├── ISuperYieldSourceOracle.sol
-│   │   │   │   └── IYieldSourceOracle.sol
-│   │   │   ├── ISuperDestinationExecutor.sol
-│   │   │   ├── ISuperDestinationValidator.sol
-│   │   │   ├── ISuperExecutor.sol
-│   │   │   ├── ISuperHook.sol
-│   │   │   ├── ISuperNativePaymaster.sol
-│   │   │   ├── ISuperRegistry.sol
-│   │   │   ├── ISuperSignatureStorage.sol
-│   │   │   └── ISuperValidator.sol
-│   │   ├── libraries
-│   │   │   ├── HookDataDecoder.sol
-│   │   │   └── HookSubTypes.sol
-│   │   ├── paymaster
-│   │   │   └── SuperNativePaymaster.sol
-│   │   └── validators
-│   │       ├── SuperDestinationValidator.sol
-│   │       ├── SuperMerkleValidator.sol
-│   │       └── SuperValidatorBase.sol
-│   ├── periphery
-│   │   ├── Bank.sol
-│   │   ├── BundlerRegistry.sol
-│   │   ├── interfaces
-│   │   │   ├── IBundlerRegistry.sol
-│   │   │   ├── IHookExecutionData.sol
-│   │   │   ├── ISuperBank.sol
-│   │   │   ├── ISuperGovernor.sol
-│   │   │   ├── oracles
-│   │   │   │   ├── IECDSAPPSOracle.sol
-│   │   │   │   ├── ISuperOracle.sol
-│   │   │   │   └── ISuperOracleL2.sol
-│   │   │   ├── SuperAsset
-│   │   │   │   ├── IIncentiveCalculationContract.sol
-│   │   │   │   ├── IIncentiveFundContract.sol
-│   │   │   │   ├── ISuperAsset.sol
-│   │   │   │   └── ISuperAssetFactory.sol
-│   │   │   ├── SuperVault
-│   │   │   │   ├── ISuperVault.sol
-│   │   │   │   ├── ISuperVaultAggregator.sol
-│   │   │   │   ├── ISuperVaultEscrow.sol
-│   │   │   │   └── ISuperVaultStrategy.sol
-│   │   │   └── VaultBank
-│   │   │       ├── ISuperPositions.sol
-│   │   │       └── IVaultBank.sol
-│   │   ├── libraries
-│   │   │   ├── AssetMetadataLib.sol
-│   │   │   └── SuperAssetPriceLib.sol
+│   ├── Bank.sol
+│   ├── BundlerRegistry.sol
+│   ├── interfaces
+│   │   ├── IBundlerRegistry.sol
+│   │   ├── IHookExecutionData.sol
+│   │   ├── ISuperBank.sol
+│   │   ├── ISuperGovernor.sol
 │   │   ├── oracles
-│   │   │   ├── ECDSAPPSOracle.sol
-│   │   │   ├── SuperOracle.sol
-│   │   │   ├── SuperOracleBase.sol
-│   │   │   └── SuperOracleL2.sol
+│   │   │   ├── IECDSAPPSOracle.sol
+│   │   │   ├── ISuperOracle.sol
+│   │   │   └── ISuperOracleL2.sol
 │   │   ├── SuperAsset
-│   │   │   ├── IncentiveCalculationContract.sol
-│   │   │   ├── IncentiveFundContract.sol
-│   │   │   ├── SuperAsset.sol
-│   │   │   └── SuperAssetFactory.sol
-│   │   ├── SuperBank.sol
-│   │   ├── SuperGovernor.sol
+│   │   │   ├── IIncentiveCalculationContract.sol
+│   │   │   ├── IIncentiveFundContract.sol
+│   │   │   ├── ISuperAsset.sol
+│   │   │   └── ISuperAssetFactory.sol
 │   │   ├── SuperVault
-│   │   │   ├── SuperVault.sol
-│   │   │   ├── SuperVaultAggregator.sol
-│   │   │   ├── SuperVaultEscrow.sol
-│   │   │   └── SuperVaultStrategy.sol
-│   │   ├── UP
-│   │   │   ├── Up.sol
-│   │   │   └── UpDistributor.sol
+│   │   │   ├── ISuperVault.sol
+│   │   │   ├── ISuperVaultAggregator.sol
+│   │   │   ├── ISuperVaultEscrow.sol
+│   │   │   └── ISuperVaultStrategy.sol
 │   │   └── VaultBank
-│   │       ├── VaultBank.sol
-│   │       ├── VaultBankDestination.sol
-│   │       ├── VaultBankSource.sol
-│   │       └── VaultBankSuperPosition.sol
+│   │       ├── ISuperPositions.sol
+│   │       └── IVaultBank.sol
+│   ├── libraries
+│   │   ├── AssetMetadataLib.sol
+│   │   └── SuperAssetPriceLib.sol
+│   ├── oracles
+│   │   ├── ECDSAPPSOracle.sol
+│   │   ├── SuperOracle.sol
+│   │   ├── SuperOracleBase.sol
+│   │   └── SuperOracleL2.sol
+│   ├── SuperAsset
+│   │   ├── IncentiveCalculationContract.sol
+│   │   ├── IncentiveFundContract.sol
+│   │   ├── SuperAsset.sol
+│   │   └── SuperAssetFactory.sol
+│   ├── SuperBank.sol
+│   ├── SuperGovernor.sol
+│   ├── SuperVault
+│   │   ├── SuperVault.sol
+│   │   ├── SuperVaultAggregator.sol
+│   │   ├── SuperVaultEscrow.sol
+│   │   └── SuperVaultStrategy.sol
+│   ├── UP
+│   │   ├── Up.sol
+│   │   └── UpDistributor.sol
+│   ├── VaultBank
+│   │   ├── VaultBank.sol
+│   │   ├── VaultBankDestination.sol
+│   │   ├── VaultBankSource.sol
+│   │   └── VaultBankSuperPosition.sol
 │   └── vendor
-│       ├── 1inch
-│       │   └── I1InchAggregationRouterV6.sol
-│       ├── account-abstraction
-│       │   ├── BasePaymaster.sol
-│       │   ├── IMinimalEntryPoint.sol
-│       │   └── UserOperationLib.sol
 │       ├── awesome-oracles
 │       │   └── IOracle.sol
 │       ├── BoringSolidity
 │       │   └── BoringERC20.sol
-│       ├── bridges
-│       │   ├── across
-│       │   │   ├── IAcrossSpokePoolV3.sol
-│       │   │   └── IAcrossV3Receiver.sol
-│       │   └── debridge
-│       │       ├── IDeBridgeGate.sol
-│       │       ├── IDlnSource.sol
-│       │       └── IExternalCallExecutor.sol
 │       ├── BytesLib.sol
 │       ├── chainlink
 │       │   └── AggregatorV3Interface.sol
-│       ├── debridge
-│       │   └── IDlnDestination.sol
-│       ├── ethena
-│       │   └── IStakedUSDeCooldown.sol
-│       ├── fluid
-│       │   └── IFluidLendingStakingRewards.sol
 │       ├── gearbox
 │       │   └── IGearboxFarmingPool.sol
-│       ├── morpho
-│       │   ├── IIrm.sol
-│       │   ├── IMorpho.sol
-│       │   ├── IOracle.sol
-│       │   ├── MarketParamsLib.sol
-│       │   ├── MathLib.sol
-│       │   └── SharesMathLib.sol
-│       ├── nexus
-│       │   ├── IERC7484.sol
-│       │   ├── INexus.sol
-│       │   ├── INexusBootstrap.sol
-│       │   └── INexusFactory.sol
-│       ├── odos
-│       │   └── IOdosRouterV2.sol
-│       ├── okx
-│       │   ├── IOkxSwapRouter.sol
-│       │   └── PMMLib.sol
-│       ├── pendle
-│       │   ├── IPendleMarket.sol
-│       │   ├── IPendleRouterV4.sol
-│       │   ├── IPPYLpOracle.sol
-│       │   └── IStandardizedYield.sol
 │       ├── polymer
 │       │   └── ICrossL2ProverV2.sol
-│       ├── spectra
-│       │   ├── IPrincipalToken.sol
-│       │   ├── ISpectraPTToken.sol
-│       │   ├── ISpectraRouter.sol
-│       │   └── SpectraCommands.sol
-│       ├── staking
-│       │   └── IStakingVault.sol
 │       ├── standards
-│       │   ├── erc4337
-│       │   │   ├── IEntryPoint.sol
-│       │   │   └── IUserOperation.sol
 │       │   ├── ERC7540
 │       │   │   └── IERC7540Vault.sol
 │       │   ├── ERC7575
@@ -439,30 +222,19 @@
 └── test
     ├── BaseTest.t.sol
     ├── integration
-    │   ├── accounting
-    │   │   ├── Fees.t.sol
-    │   │   └── price
-    │   │       ├── PendlePriceIntegration.t.sol
-    │   │       └── YearnV3PriceIntegration.t.sol
-    │   ├── CrosschainTests.sol
-    │   ├── E2EExecution.t.sol
-    │   ├── EOAOnrampOfframpTest.t.sol
-    │   ├── ERC4626DepositRedeemFlow.t.sol
-    │   ├── MinimalBaseIntegrationTest.t.sol
-    │   ├── MinimalBaseNexusIntegrationTest.t.sol
-    │   ├── MorphoHooksIntegrationTest.t.sol
-    │   ├── MultiVaultDepositFlow.t.sol
-    │   ├── odos
-    │   │   └── OdosRouterEthSwap.t.sol
-    │   ├── OneInchHookFail.t.sol
-    │   ├── paymaster
-    │   │   ├── PaymasterHelper.t.sol
-    │   │   └── PaymasterPoC.t.sol
-    │   ├── pendle
-    │   │   └── PendleRouterHookTests.t.sol
-    │   ├── spectra
-    │   │   └── SpectraExchangeHooksIntegration.t.sol
-    │   └── Vault5115.t.sol
+    │   ├── SuperAsset
+    │   │   ├── IncentiveCalculationContract.t.sol
+    │   │   ├── IncentiveFundContract.t.sol
+    │   │   └── SuperAsset.t.sol
+    │   ├── SuperVault
+    │   │   ├── BaseSuperVaultTest.t.sol
+    │   │   ├── SuperVault.t.sol
+    │   │   ├── SuperVault5115Underlying.t.txt
+    │   │   ├── SuperVault7540Underlying.t.txt
+    │   │   ├── SuperVaultLoanDeposit.txt
+    │   │   └── TotalAssetHelper.sol
+    │   └── VaultBank
+    │       └── VaultBankCrosschainTests.sol
     ├── mocks
     │   ├── centrifuge
     │   │   ├── IGateway.sol
@@ -475,189 +247,46 @@
     │   │   ├── IRestrictionManagerLike.sol
     │   │   ├── IRoot.sol
     │   │   └── ITranch.sol
-    │   ├── ERC5115Ledger.sol
-    │   ├── ISuperCollectiveVault.sol
-    │   ├── ISuperPositions.sol
-    │   ├── MaliciousHookBypassFees.sol
-    │   ├── MaliciousToken.sol
-    │   ├── Mock1InchRouter.sol
     │   ├── Mock4626Vault.sol
-    │   ├── Mock5115Vault.sol
-    │   ├── Mock7540Hook.sol
-    │   ├── Mock7540Vault.sol
-    │   ├── MockAccountingVault.sol
-    │   ├── MockAcrossHook.sol
     │   ├── MockAggregator.sol
-    │   ├── MockBaseHook.sol
     │   ├── MockCrossL2ProverV2.sol
-    │   ├── MockEntryPoint.sol
     │   ├── MockERC20.sol
-    │   ├── MockExecutorModule.sol
-    │   ├── MockFlashloanSVSimulation.sol
     │   ├── MockHook.sol
     │   ├── MockHookTarget.sol
     │   ├── MockL2Sequencer.sol
-    │   ├── MockLedger.sol
-    │   ├── MockLockVault.sol
-    │   ├── MockNexusFactory.sol
-    │   ├── MockOdosRouterV2.sol
-    │   ├── MockPendleMarket.sol
-    │   ├── MockPendleRouter.sol
-    │   ├── MockRegistry.sol
-    │   ├── MockSignature.sol
-    │   ├── MockSpectraPrincipalToken.sol
     │   ├── MockSpectraRouter.sol
     │   ├── MockStakingRewards.sol
     │   ├── MockStandardizedYield.sol
-    │   ├── MockSuperExecutor.sol
     │   ├── MockSuperHook.sol
     │   ├── MockSuperOracle.sol
-    │   ├── MockSuperPositionFactory.sol
-    │   ├── MockTargetExecutor.sol
-    │   ├── MockValidatorModule.sol
     │   ├── MockYieldSourceOracle.sol
     │   ├── RuggableConvertVault.sol
-    │   ├── RuggableVault.sol
-    │   ├── TokenWithTransferControl.sol
-    │   └── unused-hooks
-    │       ├── ApproveWithPermit2Hook.sol
-    │       ├── FluidStakeWithPermitHook.sol
-    │       ├── MockApproveAndSwapOdosHook.sol
-    │       ├── MockSwapOdosHook.sol
-    │       ├── PermitBatchWithPermit2Hook.sol
-    │       ├── PermitWithPermit2Hook.sol
-    │       ├── SwapOkxHook.sol
-    │       ├── TransferBatchWithPermit2Hook.sol
-    │       ├── TransferWithPermit2Hook.sol
-    │       └── YearnClaimAllRewardsHook.sol
-    ├── periphery
-    │   ├── integration
-    │   │   ├── SuperAsset
-    │   │   │   ├── IncentiveCalculationContract.t.sol
-    │   │   │   ├── IncentiveFundContract.t.sol
-    │   │   │   └── SuperAsset.t.sol
-    │   │   └── SuperVault
-    │   │       ├── BaseSuperVaultTest.t.sol
-    │   │       ├── SuperVault.t.sol
-    │   │       ├── SuperVault5115Underlying.t.txt
-    │   │       ├── SuperVault7540Underlying.t.txt
-    │   │       ├── SuperVaultLoanDeposit.txt
-    │   │       └── TotalAssetHelper.sol
-    │   ├── mocks
-    │   │   └── MockAggregator.sol
-    │   ├── oracles
-    │   │   ├── ECDSAPPSOracle.t.sol
-    │   │   ├── SuperOracle.t.sol
-    │   │   ├── SuperOracleL2.t.sol
-    │   │   └── SuperYieldSourceOracle.t.sol
-    │   └── unit
-    │       ├── SuperBank.t.sol
-    │       ├── SuperGovernor.t.sol
-    │       ├── up
-    │       │   ├── merkle
-    │       │   │   ├── helper
-    │       │   │   │   └── MerkleReader.sol
-    │       │   │   ├── merkle-js
-    │       │   │   │   └── generateMerkleTree.js
-    │       │   │   └── target
-    │       │   │       ├── input0.json
-    │       │   │       ├── jsGeneratedRoot0.json
-    │       │   │       └── jsTreeDump0.json
-    │       │   ├── Up.t.sol
-    │       │   └── UpDistributor.t.sol
-    │       └── VaultBank.t.sol
+    │   └── RuggableVault.sol
+    ├── oracles
+    │   ├── ECDSAPPSOracle.t.sol
+    │   ├── SuperOracle.t.sol
+    │   ├── SuperOracleL2.t.sol
+    │   └── SuperYieldSourceOracle.t.sol
     ├── unit
-    │   ├── accounting
-    │   │   ├── AbstractYieldSourceOracleTest.t.sol
-    │   │   ├── LedgerTests.t.sol
-    │   │   ├── oracles
-    │   │   │   ├── PendlePTYieldSourceOracle.t.sol
-    │   │   │   └── SpectraPTYieldSourceOracle.t.sol
-    │   │   └── YieldSourceOracles.t.sol
-    │   ├── adapters
-    │   │   └── AdaptersUnitTests.sol
     │   ├── bundler
     │   │   └── BundlerRegistry.t.sol
-    │   ├── executors
-    │   │   └── SuperExecutor.t.sol
-    │   ├── hooks
-    │   │   ├── BaseHook.t.sol
-    │   │   ├── bridges
-    │   │   │   └── BridgeHooks.t.sol
-    │   │   ├── claim
-    │   │   │   ├── fluid
-    │   │   │   │   ├── FluidClaimRewardHook.t.sol
-    │   │   │   │   └── FluidFundsDrainage.t.sol
-    │   │   │   ├── gearbox
-    │   │   │   │   └── GearboxClaimRewardHook.t.sol
-    │   │   │   └── yearn
-    │   │   │       └── YearnClaimRewardHook.t.sol
-    │   │   ├── libraries
-    │   │   │   └── HookSubTypes.t.sol
-    │   │   ├── loan
-    │   │   │   └── MorphoLoanHooks.t.sol
-    │   │   ├── pendle
-    │   │   │   ├── CantinaIntegrationPendleRouterSwapHook.t.sol
-    │   │   │   ├── PendleRouterRedeemHook.t.sol
-    │   │   │   └── PendleRouterSwapHook.t.sol
-    │   │   ├── spectra
-    │   │   │   └── SpectraExchangeHooks.t.sol
-    │   │   ├── stake
-    │   │   │   ├── fluid
-    │   │   │   │   ├── ApproveAndFluidStakeHook.t.sol
-    │   │   │   │   ├── FluidStakeHook.t.sol
-    │   │   │   │   └── FluidUnstakeHook.t.sol
-    │   │   │   └── gearbox
-    │   │   │       ├── ApproveAndGearboxStakeHook.t.sol
-    │   │   │       ├── GearboxStakeHook.t.sol
-    │   │   │       └── GearboxUnstakeHook.t.sol
-    │   │   ├── swappers
-    │   │   │   ├── 1inch
-    │   │   │   │   ├── Swap1InchHook.t.sol
-    │   │   │   │   └── Swap1InchMinReturn.t.sol
-    │   │   │   └── odos
-    │   │   │       └── OdosUnitTests.t.sol
-    │   │   ├── tokens
-    │   │   │   ├── BatchTransferHook.t.sol
-    │   │   │   ├── erc20
-    │   │   │   │   ├── ApproveERC20Hook.t.sol
-    │   │   │   │   └── TransferERC20Hook.t.sol
-    │   │   │   ├── OfframpTokensHook.t.sol
-    │   │   │   └── permit2
-    │   │   │       ├── BatchTransferFromHook.t.sol
-    │   │   │       └── LeakyPermit2.t.sol
-    │   │   └── vaults
-    │   │       ├── 4626
-    │   │       │   └── ERC4626VaultHooksTest.t.sol
-    │   │       ├── 5115
-    │   │       │   ├── ApproveAndDeposit5115VaultHook.t.sol
-    │   │       │   ├── Deposit5115VaultHook.t.sol
-    │   │       │   └── Redeem5115VaultHook.t.sol
-    │   │       ├── 7540
-    │   │       │   └── ERC7540HookTests.t..sol
-    │   │       └── ethena
-    │   │           └── EthenaHooksTests.t.sol
-    │   ├── Mock
-    │   │   ├── CurveTest.t.sol
-    │   │   ├── Mock.t.sol
-    │   │   ├── OdosParser.t.sol
-    │   │   ├── OneInchParser.t.sol.txt
-    │   │   ├── SuperPositionsFactory.t.sol
-    │   │   └── SuperPositionsFactoryFuzz.t.sol
-    │   ├── oracles
-    │   │   └── ERC4626YieldSourceOracle.t.sol
-    │   ├── paymaster
-    │   │   └── SuperNativePaymaster.t.sol
-    │   ├── SuperExecutor
-    │   │   └── SuperExecutor_sameChainFlow.t.sol
-    │   └── validators
-    │       ├── PocIncorrectValidUntilTest.t.sol
-    │       ├── SuperDestinationValidator.t.sol
-    │       └── SuperMerkleValidator.t.sol
+    │   ├── SuperBank.t.sol
+    │   ├── SuperGovernor.t.sol
+    │   ├── up
+    │   │   ├── merkle
+    │   │   │   ├── helper
+    │   │   │   │   └── MerkleReader.sol
+    │   │   │   ├── merkle-js
+    │   │   │   │   └── generateMerkleTree.js
+    │   │   │   └── target
+    │   │   │       ├── input0.json
+    │   │   │       ├── jsGeneratedRoot0.json
+    │   │   │       └── jsTreeDump0.json
+    │   │   ├── Up.t.sol
+    │   │   └── UpDistributor.t.sol
+    │   ├── VaultBank.t.sol
+    │   └── VaultBankFromExecutor.t.sol
     └── utils
-        ├── Constants.sol
-        ├── Helpers.sol
-        ├── InternalHelpers.sol
         ├── merkle
         │   ├── helper
         │   │   └── MerkleReader.sol
@@ -678,12 +307,8 @@
         │       ├── staking_list.json
         │       ├── token_list.json
         │       └── yield_sources_list.json
-        ├── MerkleTreeHelper.sol
-        ├── parsers
-        │   ├── BaseAPIParser.sol
-        │   ├── OdosAPIParser.sol
-        │   └── OneInchAPIParser.sol
-        └── SignatureHelper.sol
+        ├── PeripheryConstants.sol
+        └── PeripheryHelpers.sol
 
-211 directories, 472 files
+105 directories, 203 files
 ```

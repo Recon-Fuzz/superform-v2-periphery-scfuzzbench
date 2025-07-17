@@ -13,6 +13,7 @@ import { SuperVaultStrategy } from "../src/SuperVault/SuperVaultStrategy.sol";
 import { SuperVaultEscrow } from "../src/SuperVault/SuperVaultEscrow.sol";
 import { ECDSAPPSOracle } from "../src/oracles/ECDSAPPSOracle.sol";
 import { SuperOracle } from "../src/oracles/SuperOracle.sol";
+import { VaultBank } from "../src/VaultBank/VaultBank.sol";
 
 import { console2 } from "forge-std/console2.sol";
 
@@ -25,6 +26,7 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
         address vaultImpl;
         address strategyImpl;
         address escrowImpl;
+        address vaultBank;
     }
 
     struct HookAddresses {
@@ -96,7 +98,11 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
 
         // Register hooks and configure governor
         _registerHooks(hookAddresses, SuperGovernor(peripheryContracts.superGovernor));
-        _configureGovernor(SuperGovernor(peripheryContracts.superGovernor), peripheryContracts.superVaultAggregator);
+        _configureGovernor(
+            SuperGovernor(peripheryContracts.superGovernor),
+            peripheryContracts.superVaultAggregator,
+            peripheryContracts.vaultBank
+        );
 
         // Grant roles and revoke from deployer
         _configureGovernorRoles(SuperGovernor(peripheryContracts.superGovernor));
@@ -244,11 +250,21 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
             )
         );
 
+        // Deploy VaultBank
+        peripheryContracts.vaultBank = __deployContract(
+            deployer,
+            VAULT_BANK_KEY,
+            chainId,
+            __getSalt(VAULT_BANK_KEY),
+            abi.encodePacked(type(VaultBank).creationCode, abi.encode(peripheryContracts.superGovernor))
+        );
+
         // Configure SuperGovernor with oracle and validator
         SuperGovernor(peripheryContracts.superGovernor).setActivePPSOracle(peripheryContracts.ecdsappsOracle);
         SuperGovernor(peripheryContracts.superGovernor).addValidator(configuration.validator);
+        SuperGovernor(peripheryContracts.superGovernor).addVaultBank(chainId, peripheryContracts.vaultBank);
 
-        console2.log("All periphery contracts deployed successfully.");
+        console2.log("All periphery contracts deployed and configured successfully.");
 
         return peripheryContracts;
     }
@@ -292,9 +308,10 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
         console2.log("All hooks registered successfully.");
     }
 
-    function _configureGovernor(SuperGovernor superGovernor, address aggregator) internal {
+    function _configureGovernor(SuperGovernor superGovernor, address aggregator, address vaultBank) internal {
         superGovernor.setAddress(superGovernor.SUPER_VAULT_AGGREGATOR(), aggregator);
-        console2.log("SuperGovernor configured with SuperVaultAggregator.");
+        superGovernor.setAddress(superGovernor.VAULT_BANK(), vaultBank);
+        console2.log("SuperGovernor configured with SuperVaultAggregator and VaultBank.");
     }
 
     function _configureGovernorRoles(SuperGovernor superGovernor) internal {
