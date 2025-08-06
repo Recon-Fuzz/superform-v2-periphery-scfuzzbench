@@ -59,6 +59,9 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     mapping(address relayer => bool isRelayer) private _isRelayer;
     address[] private _relayersList;
 
+    // Protected keepers registry (cannot be added as authorized callers by strategists)
+    EnumerableSet.AddressSet private _protectedKeepers;
+
     // Executor registry
     mapping(address executor => bool isExecutor) private _isExecutor;
     address[] private _executorsList;
@@ -1046,6 +1049,38 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     /// @inheritdoc ISuperGovernor
     function isWhitelistedIncentiveToken(address token) external view returns (bool) {
         return _isWhitelistedIncentiveToken[token];
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function registerProtectedKeeper(address keeper) external onlyRole(_GOVERNOR_ROLE) {
+        if (keeper == address(0)) revert INVALID_ADDRESS();
+        if (_protectedKeepers.contains(keeper)) revert KEEPER_ALREADY_REGISTERED();
+
+        _protectedKeepers.add(keeper);
+        emit ProtectedKeeperRegistered(keeper);
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function unregisterProtectedKeeper(address keeper) external onlyRole(_GOVERNOR_ROLE) {
+        if (!_protectedKeepers.contains(keeper)) revert KEEPER_NOT_REGISTERED();
+
+        _protectedKeepers.remove(keeper);
+        emit ProtectedKeeperUnregistered(keeper);
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function isProtectedKeeper(address keeper) external view returns (bool) {
+        return _protectedKeepers.contains(keeper);
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function getProtectedKeepers() external view returns (address[] memory) {
+        return _protectedKeepers.values();
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function getProtectedKeepersCount() external view returns (uint256) {
+        return _protectedKeepers.length();
     }
 
     /*//////////////////////////////////////////////////////////////

@@ -299,6 +299,11 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
         if (caller == address(0)) revert ZERO_ADDRESS();
 
+        // Prevent strategists from adding protected keepers to circumvent fees
+        if (SUPER_GOVERNOR.isProtectedKeeper(caller)) {
+            revert CANNOT_ADD_PROTECTED_KEEPER();
+        }
+
         // Check if caller is already authorized
         address[] memory callers = _strategyData[strategy].authorizedCallers;
         for (uint256 i; i < callers.length; i++) {
@@ -944,6 +949,8 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         }
 
         // Check if the updateAuthority is in the authorized callers list
+        // These are strategist-designated keepers that should be exempt from fees
+        // NOTE: Protected keepers cannot be added to this list (blocked in addAuthorizedCaller)
         uint256 authCallerLength = _strategyData[strategy].authorizedCallers.length;
         for (uint256 i; i < authCallerLength; i++) {
             if (_strategyData[strategy].authorizedCallers[i] == updateAuthority) {

@@ -323,6 +323,8 @@ interface ISuperVaultAggregator {
     error TIMELOCK_NOT_EXPIRED();
     /// @notice Thrown when an array length is invalid
     error INVALID_ARRAY_LENGTH();
+    /// @notice Thrown when trying to add a protected keeper as an authorized caller
+    error CANNOT_ADD_PROTECTED_KEEPER();
 
     /*//////////////////////////////////////////////////////////////
                             VAULT CREATION
