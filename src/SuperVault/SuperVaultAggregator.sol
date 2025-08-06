@@ -122,13 +122,17 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
             revert ZERO_ADDRESS();
         }
 
+        // Initialize local variables struct to avoid stack too deep
+        VaultCreationLocalVars memory vars;
+
         // Increment nonce before creating proxies
-        uint256 currentNonce = _vaultCreationNonce++;
-        bytes32 salt = keccak256(abi.encodePacked(params.asset, params.name, params.symbol, currentNonce));
+        vars.currentNonce = _vaultCreationNonce++;
+        vars.salt = keccak256(abi.encodePacked(params.asset, params.name, params.symbol, vars.currentNonce));
+
         // Create minimal proxies
-        superVault = VAULT_IMPLEMENTATION.cloneDeterministic(salt);
-        escrow = ESCROW_IMPLEMENTATION.cloneDeterministic(salt);
-        strategy = STRATEGY_IMPLEMENTATION.cloneDeterministic(salt);
+        superVault = VAULT_IMPLEMENTATION.cloneDeterministic(vars.salt);
+        escrow = ESCROW_IMPLEMENTATION.cloneDeterministic(vars.salt);
+        strategy = STRATEGY_IMPLEMENTATION.cloneDeterministic(vars.salt);
 
         // Initialize superVault
         SuperVault(superVault).initialize(params.asset, params.name, params.symbol, strategy, escrow);
@@ -144,25 +148,26 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         _superVaultStrategies.add(strategy);
         _superVaultEscrows.add(escrow);
 
-        (bool success, uint8 assetDecimals) = params.asset.tryGetAssetDecimals();
-        uint8 underlyingDecimals = success ? assetDecimals : 18;
+        // Get asset decimals
+        (vars.success, vars.assetDecimals) = params.asset.tryGetAssetDecimals();
+        vars.underlyingDecimals = vars.success ? vars.assetDecimals : 18;
+        vars.initialPPS = 10 ** vars.underlyingDecimals; // 1.0 as initial PPS
 
         // Initialize StrategyData individually to avoid mapping assignment issues
-        _strategyData[strategy].pps = 10 ** underlyingDecimals; // 1.0 as initial PPS
+        _strategyData[strategy].pps = vars.initialPPS;
         _strategyData[strategy].ppsStdev = 0; // Initialize standard deviation to 0
         _strategyData[strategy].lastUpdateTimestamp = block.timestamp;
         _strategyData[strategy].minUpdateInterval = params.minUpdateInterval;
         _strategyData[strategy].maxStaleness = params.maxStaleness;
         _strategyData[strategy].isPaused = false;
         _strategyData[strategy].mainStrategist = params.mainStrategist;
-        _strategyData[strategy].authorizedCallers = new address[](0);
 
         // Set default threshold values
         _strategyData[strategy].dispersionThreshold = type(uint256).max; // Default: max (disabled)
         _strategyData[strategy].deviationThreshold = type(uint256).max; // Default: max (disabled)
 
-        emit VaultDeployed(superVault, strategy, escrow, params.asset, params.name, params.symbol, currentNonce);
-        emit PPSUpdated(strategy, _strategyData[strategy].pps, 0, 0, 0, _strategyData[strategy].lastUpdateTimestamp);
+        emit VaultDeployed(superVault, strategy, escrow, params.asset, params.name, params.symbol, vars.currentNonce);
+        emit PPSUpdated(strategy, vars.initialPPS, 0, 0, 0, _strategyData[strategy].lastUpdateTimestamp);
 
         return (superVault, strategy, escrow);
     }
@@ -300,15 +305,10 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
             revert CANNOT_ADD_PROTECTED_KEEPER();
         }
 
-        // Check if caller is already authorized
-        address[] memory callers = _strategyData[strategy].authorizedCallers;
-        for (uint256 i; i < callers.length; i++) {
-            if (callers[i] == caller) {
-                revert CALLER_ALREADY_AUTHORIZED();
-            }
+        // Check if caller is already authorized and add if not
+        if (!_strategyData[strategy].authorizedCallers.add(caller)) {
+            revert CALLER_ALREADY_AUTHORIZED();
         }
-
-        _strategyData[strategy].authorizedCallers.push(caller);
         emit AuthorizedCallerAdded(strategy, caller);
     }
 
@@ -317,21 +317,10 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         // Either primary or secondary strategist can remove authorized callers
         if (!isAnyStrategist(msg.sender, strategy)) revert UNAUTHORIZED_UPDATE_AUTHORITY();
 
-        // Find and remove the caller
-        address[] storage callers = _strategyData[strategy].authorizedCallers;
-        bool found = false;
-
-        for (uint256 i; i < callers.length; i++) {
-            if (callers[i] == caller) {
-                // Replace with the last element, then pop
-                callers[i] = callers[callers.length - 1];
-                callers.pop();
-                found = true;
-                break;
-            }
+        // Remove the caller
+        if (!_strategyData[strategy].authorizedCallers.remove(caller)) {
+            revert CALLER_NOT_AUTHORIZED();
         }
-
-        if (!found) revert CALLER_NOT_AUTHORIZED();
         emit AuthorizedCallerRemoved(strategy, caller);
     }
 
@@ -664,7 +653,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
     /// @inheritdoc ISuperVaultAggregator
     function getAuthorizedCallers(address strategy) external view returns (address[] memory callers) {
-        return _strategyData[strategy].authorizedCallers;
+        return _strategyData[strategy].authorizedCallers.values();
     }
 
     /// @inheritdoc ISuperVaultAggregator
@@ -941,11 +930,8 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         // Check if the updateAuthority is in the authorized callers list
         // These are strategist-designated keepers that should be exempt from fees
         // NOTE: Protected keepers cannot be added to this list (blocked in addAuthorizedCaller)
-        uint256 authCallerLength = _strategyData[strategy].authorizedCallers.length;
-        for (uint256 i; i < authCallerLength; i++) {
-            if (_strategyData[strategy].authorizedCallers[i] == updateAuthority) {
-                return true;
-            }
+        if (_strategyData[strategy].authorizedCallers.contains(updateAuthority)) {
+            return true;
         }
 
         return false;
