@@ -118,7 +118,7 @@ contract BaseTest is PeripheryHelpers, CoreBaseTest {
 
             // Deploy implementation contracts first
             address vaultImpl = address(new SuperVault());
-            address strategyImpl = address(new SuperVaultStrategy());
+            address strategyImpl = address(new SuperVaultStrategy(address(PA[i].superGovernor)));
             address escrowImpl = address(new SuperVaultEscrow());
 
             PA[i].superVaultAggregator =
