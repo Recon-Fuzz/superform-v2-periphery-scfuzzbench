@@ -281,7 +281,9 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         address upToken = SUPER_GOVERNOR.getAddress(SUPER_GOVERNOR.UP());
 
         // Update upkeep balance
-        _strategistUpkeepBalance[msg.sender] -= amount;
+        unchecked {
+            _strategistUpkeepBalance[msg.sender] -= amount;
+        }
 
         // Transfer UP tokens to strategist
         IERC20(upToken).safeTransfer(msg.sender, amount);
