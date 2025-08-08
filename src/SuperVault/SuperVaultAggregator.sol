@@ -155,7 +155,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
         // Initialize StrategyData individually to avoid mapping assignment issues
         _strategyData[strategy].pps = vars.initialPPS;
-        _strategyData[strategy].ppsStdev = 0; // Initialize standard deviation to 0
+        // Initialize standard deviation to 0
         _strategyData[strategy].lastUpdateTimestamp = block.timestamp;
         _strategyData[strategy].minUpdateInterval = params.minUpdateInterval;
         _strategyData[strategy].maxStaleness = params.maxStaleness;
