@@ -192,6 +192,7 @@ contract SuperVaultStrategy is ISuperVaultStrategy, ReentrancyGuard {
             if (!_validateHook(hook, args.hookCalldata[i], args.globalProofs[i], args.strategyProofs[i])) {
                 revert HOOK_VALIDATION_FAILED();
             }
+            if (args.expectedAssetsOrSharesOut[i] == 0) revert ZERO_EXPECTED_VALUE();
 
             uint256 amountSharesSpent = _processSingleFulfillHookExecution(
                 hook, args.hookCalldata[i], args.expectedAssetsOrSharesOut[i], currentPPS
@@ -509,7 +510,6 @@ contract SuperVaultStrategy is ISuperVaultStrategy, ReentrancyGuard {
         vars.outAmount = _getTokenBalance(vars.svAsset, address(this)) - vars.balanceAssetBefore;
 
         if (vars.outAmount == 0) revert ZERO_OUTPUT_AMOUNT();
-        if (expectedAssetOutput == 0) revert ZERO_EXPECTED_VALUE();
         if (vars.outAmount * BPS_PRECISION < expectedAssetOutput * (BPS_PRECISION - _getSlippageTolerance())) {
             revert MINIMUM_OUTPUT_AMOUNT_ASSETS_NOT_MET();
         }
