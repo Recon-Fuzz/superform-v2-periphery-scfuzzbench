@@ -468,15 +468,17 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
         // Set new root with timelock
         _proposedGlobalHooksRoot = newRoot;
-        _globalHooksRootEffectiveTime = block.timestamp + _hooksRootUpdateTimelock;
+        uint256 effectiveTime = block.timestamp + _hooksRootUpdateTimelock;
+        _globalHooksRootEffectiveTime = effectiveTime;
 
-        emit GlobalHooksRootUpdateProposed(newRoot, _globalHooksRootEffectiveTime);
+        emit GlobalHooksRootUpdateProposed(newRoot, effectiveTime);
     }
 
     /// @inheritdoc ISuperVaultAggregator
     function executeGlobalHooksRootUpdate() external {
+        bytes32 proposedRoot = _proposedGlobalHooksRoot;
         // Ensure there is a pending proposal
-        if (_proposedGlobalHooksRoot == bytes32(0)) {
+        if (proposedRoot == bytes32(0)) {
             revert NO_PENDING_GLOBAL_ROOT_CHANGE();
         }
 
@@ -491,7 +493,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         _globalHooksRootEffectiveTime = 0;
         _proposedGlobalHooksRoot = bytes32(0);
 
-        emit GlobalHooksRootUpdated(oldRoot, _globalHooksRoot);
+        emit GlobalHooksRootUpdated(oldRoot, proposedRoot);
     }
 
     /// @inheritdoc ISuperVaultAggregator
@@ -521,17 +523,17 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
         // Set proposed root with timelock
         _strategyData[strategy].proposedHooksRoot = newRoot;
-        _strategyData[strategy].hooksRootEffectiveTime = block.timestamp + _hooksRootUpdateTimelock;
+        uint256 effectiveTime = block.timestamp + _hooksRootUpdateTimelock;
+        _strategyData[strategy].hooksRootEffectiveTime = effectiveTime;
 
-        emit StrategyHooksRootUpdateProposed(
-            strategy, msg.sender, newRoot, _strategyData[strategy].hooksRootEffectiveTime
-        );
+        emit StrategyHooksRootUpdateProposed(strategy, msg.sender, newRoot, effectiveTime);
     }
 
     /// @inheritdoc ISuperVaultAggregator
     function executeStrategyHooksRootUpdate(address strategy) external validStrategy(strategy) {
+        bytes32 proposedRoot = _strategyData[strategy].proposedHooksRoot;
         // Ensure there is a pending proposal
-        if (_strategyData[strategy].proposedHooksRoot == bytes32(0)) {
+        if (proposedRoot == bytes32(0)) {
             revert NO_PENDING_STRATEGIST_CHANGE(); // Reusing error for simplicity
         }
 
@@ -542,13 +544,13 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
         // Update the strategy's hooks root
         bytes32 oldRoot = _strategyData[strategy].strategistHooksRoot;
-        _strategyData[strategy].strategistHooksRoot = _strategyData[strategy].proposedHooksRoot;
+        _strategyData[strategy].strategistHooksRoot = proposedRoot;
 
         // Reset proposal state
         _strategyData[strategy].proposedHooksRoot = bytes32(0);
         _strategyData[strategy].hooksRootEffectiveTime = 0;
 
-        emit StrategyHooksRootUpdated(strategy, oldRoot, _strategyData[strategy].strategistHooksRoot);
+        emit StrategyHooksRootUpdated(strategy, oldRoot, proposedRoot);
     }
 
     /// @inheritdoc ISuperVaultAggregator
