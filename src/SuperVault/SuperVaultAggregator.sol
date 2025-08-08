@@ -390,9 +390,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         address oldStrategist = _strategyData[strategy].mainStrategist;
 
         // If new strategist is already a secondary strategist, remove them
-        if (_strategyData[strategy].secondaryStrategists.contains(newStrategist)) {
-            _strategyData[strategy].secondaryStrategists.remove(newStrategist);
-        }
+        _strategyData[strategy].secondaryStrategists.remove(newStrategist);
 
         // Set the new primary strategist
         _strategyData[strategy].mainStrategist = newStrategist;
@@ -431,9 +429,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         address oldStrategist = _strategyData[strategy].mainStrategist;
 
         // If new strategist is already a secondary strategist, remove them
-        if (_strategyData[strategy].secondaryStrategists.contains(newStrategist)) {
-            _strategyData[strategy].secondaryStrategists.remove(newStrategist);
-        }
+        _strategyData[strategy].secondaryStrategists.remove(newStrategist);
 
         // Make the old primary strategist a secondary strategist
         _strategyData[strategy].secondaryStrategists.add(oldStrategist);
