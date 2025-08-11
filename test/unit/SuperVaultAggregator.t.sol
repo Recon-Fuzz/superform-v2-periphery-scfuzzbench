@@ -606,4 +606,86 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         assertEq(superVaultAggregator.getLastUpdateTimestamp(strategy), timestamps[0]);
         assertEq(superVaultAggregator.getLastUpdateTimestamp(strategy2), timestamps[1]);
     }
+
+    /// @notice Tests that batch PPS updates with stale strategy have upkeepCost set to 0
+    function test_BatchForwardPPS_StaleStrategy_UpkeepCostZero() public {
+        // Set up as PPS Oracle to be able to call batchForwardPPS
+        vm.prank(sGovernor);
+        superGovernor.setActivePPSOracle(address(this));
+
+        // Enable upkeep payments so that staleness check can trigger
+        vm.prank(sGovernor);
+        superGovernor.proposeUpkeepPaymentsChange(true);
+
+        // Wait for the proposal to become effective and execute it
+        vm.warp(block.timestamp + 7 days);
+        superGovernor.executeUpkeepPaymentsChange();
+
+        // Create second strategy for batch testing with shorter maxStaleness
+        vm.prank(strategist);
+        (, address strategy2,) = superVaultAggregator.createVault(
+            ISuperVaultAggregator.VaultCreationParams({
+                asset: address(asset),
+                mainStrategist: strategist,
+                name: "Test Vault 2",
+                symbol: "TV2",
+                minUpdateInterval: 5,
+                maxStaleness: 100, // Shorter staleness period for testing
+                feeConfig: ISuperVaultStrategy.FeeConfig({ performanceFeeBps: 1000, recipient: strategist })
+            })
+        );
+
+        // Get initial timestamps
+        uint256 timestamp1 = superVaultAggregator.getLastUpdateTimestamp(strategy);
+        uint256 timestamp2 = superVaultAggregator.getLastUpdateTimestamp(strategy2);
+
+        // Fast forward time to make strategy2 stale (beyond maxStaleness of 100 seconds)
+        vm.warp(block.timestamp + 150);
+
+        // Prepare batch data where strategy2 will be stale
+        address[] memory strategies = new address[](2);
+        strategies[0] = strategy;
+        strategies[1] = strategy2;
+
+        uint256[] memory ppss = new uint256[](2);
+        ppss[0] = 1e18;
+        ppss[1] = 1e18;
+
+        uint256[] memory ppsStdevs = new uint256[](2);
+        ppsStdevs[0] = 0;
+        ppsStdevs[1] = 0;
+
+        uint256[] memory validatorSets = new uint256[](2);
+        validatorSets[0] = 1;
+        validatorSets[1] = 1;
+
+        uint256[] memory totalValidators = new uint256[](2);
+        totalValidators[0] = 1;
+        totalValidators[1] = 1;
+
+        uint256[] memory timestamps = new uint256[](2);
+        timestamps[0] = timestamp1 + 150; // Valid newer timestamp for strategy1
+        timestamps[1] = timestamp2 + 40; // This will be stale for strategy2 (block.timestamp=151, submitted=41,
+            // diff=110 > maxStaleness=100)
+
+        // Expect StaleUpdate event to be emitted for strategy2
+        vm.expectEmit(true, true, false, true);
+        emit ISuperVaultAggregator.StaleUpdate(strategy2, address(0), timestamps[1]);
+
+        // Batch update should succeed but strategy2 should have upkeepCost = 0 due to staleness
+        superVaultAggregator.batchForwardPPS(
+            ISuperVaultAggregator.BatchForwardPPSArgs({
+                strategies: strategies,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
+            })
+        );
+
+        // Verify timestamps were updated for both strategies
+        assertEq(superVaultAggregator.getLastUpdateTimestamp(strategy), timestamps[0]);
+        assertEq(superVaultAggregator.getLastUpdateTimestamp(strategy2), timestamps[1]);
+    }
 }

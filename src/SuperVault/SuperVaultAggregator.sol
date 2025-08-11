@@ -233,6 +233,15 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
             // Skip invalid strategies without reverting
             if (!_superVaultStrategies.contains(args.strategies[i])) continue;
 
+            uint256 upkeepCost = upkeepPerStrategy;
+            if (upkeepCost > 0) {
+                // check exemption due to staleness of a given strategy
+                if (block.timestamp - args.timestamps[i] > _strategyData[args.strategies[i]].maxStaleness) {
+                    upkeepCost = 0;
+                    emit StaleUpdate(args.strategies[i], address(0), args.timestamps[i]);
+                }
+            }
+
             // Forward update, not exempt from upkeep in batch updates
             _forwardPPS(
                 ForwardPPSArgs({
@@ -243,7 +252,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
                     validatorSet: args.validatorSets[i],
                     totalValidators: args.totalValidators[i],
                     timestamp: args.timestamps[i],
-                    upkeepCost: upkeepPerStrategy
+                    upkeepCost: upkeepCost
                 })
             );
         }
