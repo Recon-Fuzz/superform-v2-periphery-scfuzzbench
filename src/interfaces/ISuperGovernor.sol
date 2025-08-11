@@ -321,8 +321,8 @@ interface ISuperGovernor is IAccessControl {
 
     /// @notice Sets the superasset manager for a superasset
     /// @param superAsset The superasset address
-    /// @param _superAssetManager The new superasset manager address
-    function setSuperAssetManager(address superAsset, address _superAssetManager) external;
+    /// @param superAssetManager The new superasset manager address
+    function setSuperAssetManager(address superAsset, address superAssetManager) external;
 
     /// @notice Adds an ICC to the whitelist
     /// @param icc The ICC address to add

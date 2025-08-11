@@ -259,12 +259,12 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     }
 
     /// @inheritdoc ISuperGovernor
-    function setSuperAssetManager(address superAsset, address _superAssetManager) external onlyRole(_GOVERNOR_ROLE) {
-        if (_superAssetManager == address(0)) revert INVALID_ADDRESS();
+    function setSuperAssetManager(address superAsset, address superAssetManager) external onlyRole(_GOVERNOR_ROLE) {
+        if (superAsset == address(0) || superAssetManager == address(0)) revert INVALID_ADDRESS();
         address value = _addressRegistry[_SUPER_ASSET_FACTORY];
         if (value == address(0)) revert CONTRACT_NOT_FOUND();
         ISuperAssetFactory factory = ISuperAssetFactory(value);
-        factory.setSuperAssetManager(superAsset, _superAssetManager);
+        factory.setSuperAssetManager(superAsset, superAssetManager);
     }
 
     /// @inheritdoc ISuperGovernor
