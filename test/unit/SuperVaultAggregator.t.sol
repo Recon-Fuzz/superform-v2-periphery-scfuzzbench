@@ -53,7 +53,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         superGovernor = new SuperGovernor(sGovernor, governor, governor, treasury, address(this));
 
         // Deploy implementation contracts
-        address vaultImpl = address(new SuperVault());
+        address vaultImpl = address(new SuperVault(address(superGovernor)));
         address strategyImpl = address(new SuperVaultStrategy(address(superGovernor)));
         address escrowImpl = address(new SuperVaultEscrow());
 

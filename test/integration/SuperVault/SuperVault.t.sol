@@ -17,6 +17,7 @@ import { SuperVault } from "../../../src/SuperVault/SuperVault.sol";
 import { SuperVaultEscrow } from "../../../src/SuperVault/SuperVaultEscrow.sol";
 import { SuperVaultStrategy } from "../../../src/SuperVault/SuperVaultStrategy.sol";
 import { ISuperVaultEscrow } from "../../../src/interfaces/SuperVault/ISuperVaultEscrow.sol";
+import { IECDSAPPSOracle } from "../../../src/interfaces/oracles/IECDSAPPSOracle.sol";
 import { ISuperVaultAggregator } from "../../../src/interfaces/SuperVault/ISuperVaultAggregator.sol";
 import { IERC7540Redeem, IERC7741 } from "../../../src/vendor/standards/ERC7540/IERC7540Vault.sol";
 import { ISuperVaultStrategy } from "../../../src/interfaces/SuperVault/ISuperVaultStrategy.sol";
@@ -2092,7 +2093,6 @@ contract SuperVaultTest is BaseSuperVaultTest {
 
         // Check strategy state
         (address _vaultAddr, address _asset, uint8 _decimals) = strategyContract.getVaultInfo();
-        assertEq(strategyContract.isInitialized(), true, "Strategy not initialized");
         assertEq(_vaultAddr, vaultAddr, "Wrong vault in strategy");
         assertEq(_asset, address(asset), "Wrong asset in strategy");
         assertEq(_decimals, 6, "Wrong decimals in strategy");
@@ -2118,10 +2118,6 @@ contract SuperVaultTest is BaseSuperVaultTest {
             SuperVault vaultContract = SuperVault(vaultAddr);
             assertEq(vaultContract.symbol(), symbols[i], "Wrong vault symbol");
             assertEq(vaultContract.decimals(), 6, "Wrong decimals");
-
-            assertEq(ISuperVaultStrategy(strategyAddr).isInitialized(), true, "Strategy not initialized");
-
-            assertTrue(SuperVaultEscrow(escrowAddr).initialized(), "Escrow not initialized");
         }
     }
 
@@ -5816,5 +5812,145 @@ contract SuperVaultTest is BaseSuperVaultTest {
         strategy.manageYieldSource(ruggableVault, _getContract(ETH, ERC4626_YIELD_SOURCE_ORACLE_KEY), 0, true); // Add
             // ruggableVault
         vm.stopPrank();
+    }
+
+    /// @notice Test that maxDeposit returns 0 when vault is paused
+    function test_MaxDeposit_WhenPaused() public {
+        // Arrange: Deploy a fresh vault
+        address vaultAddr;
+        address strategyAddr;
+        address escrowAddr;
+        (vaultAddr, strategyAddr, escrowAddr) = _deployVault("SV_USDC_PAUSE_TEST");
+
+        SuperVault testVault = SuperVault(vaultAddr);
+        SuperVaultStrategy testStrategy = SuperVaultStrategy(strategyAddr);
+
+        // Verify maxDeposit returns max value when not paused
+        uint256 maxDepositBeforePause = testVault.maxDeposit(accountEth);
+        assertEq(maxDepositBeforePause, type(uint256).max, "maxDeposit should return type(uint256).max when not paused");
+
+        // Arrange: Set a strict deviation threshold to trigger pause (5% = 0.05 * 1e18)
+        vm.prank(STRATEGIST);
+        aggregator.updatePPSVerificationThresholds(
+            address(testStrategy),
+            type(uint256).max, // dispersionThreshold (disabled)
+            0.05e18, // deviationThreshold (5%)
+            type(uint256).max // mnThreshold (disabled)
+        );
+
+        // Get the current PPS to calculate a deviation that will trigger pause
+        uint256 currentPPS = aggregator.getPPS(address(testStrategy));
+        console2.log("Current PPS:", currentPPS);
+
+        // Calculate a new PPS that deviates by more than 5% (let's use 10% increase)
+        uint256 deviatingPPS = currentPPS + (currentPPS * 10 / 100); // 10% increase
+        console2.log("Deviating PPS (10% increase):", deviatingPPS);
+
+        // Act: Skip time to avoid UPDATE_TOO_FREQUENT error and create a PPS update that violates the deviation
+        // threshold
+        vm.warp(block.timestamp + 10); // Skip 10 seconds to avoid rate limiting
+        _createPPSUpdateThatTriggersDeviation(address(testStrategy), deviatingPPS);
+
+        // Assert: Verify the strategy is now paused
+        bool isStrategyPaused = aggregator.isStrategyPaused(address(testStrategy));
+        assertTrue(isStrategyPaused, "Strategy should be paused after PPS deviation");
+
+        // Assert: Verify maxDeposit returns 0 when paused
+        uint256 maxDepositAfterPause = testVault.maxDeposit(accountEth);
+        assertEq(maxDepositAfterPause, 0, "maxDeposit should return 0 when paused");
+    }
+
+    /// @notice Test that maxMint returns 0 when vault is paused
+    function test_MaxMint_WhenPaused() public {
+        // Arrange: Deploy a fresh vault
+        address vaultAddr;
+        address strategyAddr;
+        address escrowAddr;
+        (vaultAddr, strategyAddr, escrowAddr) = _deployVault("SV_USDC_MINT_PAUSE_TEST");
+
+        SuperVault testVault = SuperVault(vaultAddr);
+        SuperVaultStrategy testStrategy = SuperVaultStrategy(strategyAddr);
+
+        // Verify maxMint returns max value when not paused
+        uint256 maxMintBeforePause = testVault.maxMint(accountEth);
+        assertEq(maxMintBeforePause, type(uint256).max, "maxMint should return type(uint256).max when not paused");
+
+        // Arrange: Set a strict deviation threshold to trigger pause (5% = 0.05 * 1e18)
+        vm.prank(STRATEGIST);
+        aggregator.updatePPSVerificationThresholds(
+            address(testStrategy),
+            type(uint256).max, // dispersionThreshold (disabled)
+            0.05e18, // deviationThreshold (5%)
+            type(uint256).max // mnThreshold (disabled)
+        );
+
+        // Get the current PPS to calculate a deviation that will trigger pause
+        uint256 currentPPS = aggregator.getPPS(address(testStrategy));
+        console2.log("Current PPS:", currentPPS);
+
+        // Calculate a new PPS that deviates by more than 5% (let's use 10% decrease)
+        uint256 deviatingPPS = currentPPS - (currentPPS * 10 / 100); // 10% decrease
+        console2.log("Deviating PPS (10% decrease):", deviatingPPS);
+
+        // Act: Skip time to avoid UPDATE_TOO_FREQUENT error and create a PPS update that violates the deviation
+        // threshold
+        vm.warp(block.timestamp + 10); // Skip 10 seconds to avoid rate limiting
+        _createPPSUpdateThatTriggersDeviation(address(testStrategy), deviatingPPS);
+
+        // Assert: Verify the strategy is now paused
+        bool isStrategyPaused = aggregator.isStrategyPaused(address(testStrategy));
+        assertTrue(isStrategyPaused, "Strategy should be paused after PPS deviation");
+
+        // Assert: Verify maxMint returns 0 when paused
+        uint256 maxMintAfterPause = testVault.maxMint(accountEth);
+        assertEq(maxMintAfterPause, 0, "maxMint should return 0 when paused");
+    }
+
+    /// @notice Helper function to create a PPS update that triggers deviation pause
+    /// @param strategyAddr The strategy address to update
+    /// @param newPPS The new PPS value that should trigger a deviation
+    function _createPPSUpdateThatTriggersDeviation(address strategyAddr, uint256 newPPS) internal {
+        UpdatePPSVars memory vars;
+
+        // Get the current timestamp for the signature
+        vars.timestamp = block.timestamp + 1; // Ensure timestamp is greater than last update
+
+        // Set the additional parameters: ppsStdev=0, validatorSet=1, totalValidators=1
+        vars.ppsStdev = 0;
+        vars.validatorSet = 1;
+        vars.totalValidators = 1;
+
+        // Create the message hash with the deviating PPS
+        vars.messageHash = keccak256(
+            abi.encodePacked(
+                strategyAddr, newPPS, vars.ppsStdev, vars.validatorSet, vars.totalValidators, vars.timestamp
+            )
+        );
+
+        // Create the Ethereum signed message hash
+        vars.ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", vars.messageHash));
+
+        // Create signature (r, s, v) components using the constant KEEPER address
+        (vars.v, vars.r, vars.s) = vm.sign(VALIDATOR_KEY, vars.ethSignedMessageHash);
+
+        // Combine the signature components into a single bytes signature
+        vars.signature = abi.encodePacked(vars.r, vars.s, vars.v);
+
+        // Create an array of proofs with the signature
+        vars.proofs = new bytes[](1);
+        vars.proofs[0] = vars.signature;
+
+        // Call updatePPS on the ECDSAPPSOracle with the deviating PPS
+        ecdsappsOracle.updatePPS(
+            IECDSAPPSOracle.UpdatePPSArgs({
+                strategy: strategyAddr,
+                proofs: vars.proofs,
+                pps: newPPS,
+                ppsStdev: vars.ppsStdev,
+                validatorSet: vars.validatorSet,
+                totalValidators: vars.totalValidators,
+                timestamp: vars.timestamp
+            })
+        );
     }
 }
