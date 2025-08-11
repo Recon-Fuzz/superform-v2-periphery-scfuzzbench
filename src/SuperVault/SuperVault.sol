@@ -450,7 +450,7 @@ contract SuperVault is
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return interfaceId == type(IERC7540Redeem).interfaceId || interfaceId == type(IERC165).interfaceId
             || interfaceId == type(IERC7741).interfaceId || interfaceId == type(IERC4626).interfaceId
-            || interfaceId == type(IERC7575).interfaceId;
+            || interfaceId == type(IERC7575).interfaceId || interfaceId == type(IERC7540Operator).interfaceId;
     }
 
     /*//////////////////////////////////////////////////////////////
