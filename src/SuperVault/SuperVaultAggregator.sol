@@ -209,6 +209,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         if (
             strategiesLength != args.ppss.length || strategiesLength != args.ppsStdevs.length
                 || strategiesLength != args.validatorSets.length || strategiesLength != args.timestamps.length
+                || strategiesLength != args.totalValidators.length
         ) {
             revert ARRAY_LENGTH_MISMATCH();
         }

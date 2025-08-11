@@ -145,6 +145,7 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
 
         uint256 hooksLength = args.hooks.length;
         if (hooksLength == 0) revert ZERO_LENGTH();
+        if (args.hookCalldata.length != hooksLength) revert INVALID_ARRAY_LENGTH();
         if (args.expectedAssetsOrSharesOut.length != hooksLength) revert INVALID_ARRAY_LENGTH();
         if (args.globalProofs.length != hooksLength) revert INVALID_ARRAY_LENGTH();
         if (args.strategyProofs.length != hooksLength) revert INVALID_ARRAY_LENGTH();
@@ -176,8 +177,8 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
         if (hooksLength == 0) revert ZERO_LENGTH();
         uint256 controllersLength = args.controllers.length;
         if (controllersLength == 0) revert ZERO_LENGTH();
+        if (args.hookCalldata.length != hooksLength) revert INVALID_ARRAY_LENGTH();
         if (args.expectedAssetsOrSharesOut.length != hooksLength) revert INVALID_ARRAY_LENGTH();
-        if (args.controllers.length != controllersLength) revert INVALID_ARRAY_LENGTH();
         if (args.globalProofs.length != hooksLength) revert INVALID_ARRAY_LENGTH();
         if (args.strategyProofs.length != hooksLength) revert INVALID_ARRAY_LENGTH();
 
