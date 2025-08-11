@@ -3,12 +3,13 @@ pragma solidity 0.8.30;
 
 // external
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 // Superform
 import { IHookExecutionData } from "./interfaces/IHookExecutionData.sol";
 import { ISuperHook, Execution } from "@superform-v2-core/src/interfaces/ISuperHook.sol";
 
-abstract contract Bank {
+abstract contract Bank is ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -31,7 +32,7 @@ abstract contract Bank {
     //////////////////////////////////////////////////////////////*/
     function _getMerkleRootForHook(address hookAddress) internal view virtual returns (bytes32);
 
-    function _executeHooks(IHookExecutionData.HookExecutionData calldata executionData) internal virtual {
+    function _executeHooks(IHookExecutionData.HookExecutionData calldata executionData) internal virtual nonReentrant {
         uint256 hooksLength = executionData.hooks.length;
         if (hooksLength == 0) revert ZERO_LENGTH_ARRAY();
 

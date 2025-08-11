@@ -76,6 +76,8 @@ interface ISuperGovernor is IAccessControl {
     error STRATEGIST_TAKEOVERS_FROZEN();
     /// @notice Thrown when no proposed Merkle root exists but one is expected
     error NO_PROPOSED_MERKLE_ROOT();
+    /// @notice Thrown when no proposed Merkle root exists but one is expected
+    error ZERO_PROPOSED_MERKLE_ROOT();
     /// @notice Thrown when no proposed upkeep cost exists but one is expected
     error NO_PROPOSED_UPKEEP_COST();
     /// @notice Thrown when a relayer is not registered
@@ -98,6 +100,10 @@ interface ISuperGovernor is IAccessControl {
     error NOT_PROPOSED_INCENTIVE_TOKEN();
     /// @notice Thrown when a token is not whitelisted but expected to be
     error NOT_WHITELISTED_INCENTIVE_TOKEN();
+    /// @notice Thrown when trying to register a keeper that is already registered
+    error KEEPER_ALREADY_REGISTERED();
+    /// @notice Thrown when trying to unregister a keeper that is not registered
+    error KEEPER_NOT_REGISTERED();
 
     /*//////////////////////////////////////////////////////////////
                                   EVENTS
@@ -260,6 +266,14 @@ interface ISuperGovernor is IAccessControl {
     /// @notice Emitted when whitelisted incentive tokens are removed
     /// @param tokens The addresses of the removed tokens
     event WhitelistedIncentiveTokensRemoved(address[] tokens);
+
+    /// @notice Emitted when a protected keeper is registered
+    /// @param keeper Address of the keeper being registered
+    event ProtectedKeeperRegistered(address indexed keeper);
+
+    /// @notice Emitted when a protected keeper is unregistered
+    /// @param keeper Address of the keeper being unregistered
+    event ProtectedKeeperUnregistered(address indexed keeper);
 
     /*//////////////////////////////////////////////////////////////
                        CONTRACT REGISTRY FUNCTIONS
@@ -733,4 +747,27 @@ interface ISuperGovernor is IAccessControl {
     /// @notice Gets the SuperBank ID
     /// @return The ID for the SuperBank in the registry
     function SUPER_BANK() external view returns (bytes32);
+
+    /// @notice Registers a keeper that cannot be added as authorized caller by strategists
+    /// @dev Only governance can register protected keepers
+    /// @param keeper Address of the keeper to register
+    function registerProtectedKeeper(address keeper) external;
+
+    /// @notice Unregisters a protected keeper
+    /// @dev Only governance can unregister protected keepers
+    /// @param keeper Address of the keeper to unregister
+    function unregisterProtectedKeeper(address keeper) external;
+
+    /// @notice Checks if an address is a registered protected keeper
+    /// @param keeper Address to check
+    /// @return True if the address is a registered protected keeper
+    function isProtectedKeeper(address keeper) external view returns (bool);
+
+    /// @notice Gets all registered protected keepers
+    /// @return Array of all registered protected keeper addresses
+    function getProtectedKeepers() external view returns (address[] memory);
+
+    /// @notice Gets the number of registered protected keepers
+    /// @return The number of registered protected keepers
+    function getProtectedKeepersCount() external view returns (uint256);
 }

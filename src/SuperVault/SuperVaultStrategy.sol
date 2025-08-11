@@ -64,7 +64,7 @@ contract SuperVaultStrategy is ISuperVaultStrategy, ReentrancyGuard {
     uint256 private feeConfigEffectiveTime;
 
     // Core contracts
-    ISuperGovernor private superGovernor;
+    ISuperGovernor public immutable superGovernor;
 
     // Emergency withdrawable configuration
     bool public emergencyWithdrawable;
@@ -79,13 +79,20 @@ contract SuperVaultStrategy is ISuperVaultStrategy, ReentrancyGuard {
     // --- Redeem Request State ---
     mapping(address controller => SuperVaultState state) private superVaultState;
 
+    constructor(address superGovernor_) {
+        if (superGovernor_ == address(0)) revert ZERO_ADDRESS();
+
+        superGovernor = ISuperGovernor(superGovernor_);
+
+        emit SuperGovernorSet(superGovernor_);
+    }
+
     /*//////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    function initialize(address vault_, address superGovernor_, FeeConfig memory feeConfig_) external {
+    function initialize(address vault_, FeeConfig memory feeConfig_) external {
         if (_initialized) revert ALREADY_INITIALIZED();
         if (vault_ == address(0)) revert INVALID_VAULT();
-        if (superGovernor_ == address(0)) revert ZERO_ADDRESS();
         if (feeConfig.performanceFeeBps > 0 && feeConfig.recipient == address(0)) revert ZERO_ADDRESS();
 
         _initialized = true;
@@ -93,11 +100,10 @@ contract SuperVaultStrategy is ISuperVaultStrategy, ReentrancyGuard {
         _asset = IERC20(IERC4626(vault_).asset());
         _vaultDecimals = IERC20Metadata(vault_).decimals();
         PRECISION = 10 ** _vaultDecimals;
-        superGovernor = ISuperGovernor(superGovernor_);
         feeConfig = feeConfig_;
         _maxPPSSlippage = 500; // 5% as a start, configurable later
 
-        emit Initialized(_vault, superGovernor_);
+        emit Initialized(_vault);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -186,6 +192,7 @@ contract SuperVaultStrategy is ISuperVaultStrategy, ReentrancyGuard {
             if (!_validateHook(hook, args.hookCalldata[i], args.globalProofs[i], args.strategyProofs[i])) {
                 revert HOOK_VALIDATION_FAILED();
             }
+            if (args.expectedAssetsOrSharesOut[i] == 0) revert ZERO_EXPECTED_VALUE();
 
             uint256 amountSharesSpent = _processSingleFulfillHookExecution(
                 hook, args.hookCalldata[i], args.expectedAssetsOrSharesOut[i], currentPPS
@@ -503,7 +510,6 @@ contract SuperVaultStrategy is ISuperVaultStrategy, ReentrancyGuard {
         vars.outAmount = _getTokenBalance(vars.svAsset, address(this)) - vars.balanceAssetBefore;
 
         if (vars.outAmount == 0) revert ZERO_OUTPUT_AMOUNT();
-        if (expectedAssetOutput == 0) revert ZERO_EXPECTED_VALUE();
         if (vars.outAmount * BPS_PRECISION < expectedAssetOutput * (BPS_PRECISION - _getSlippageTolerance())) {
             revert MINIMUM_OUTPUT_AMOUNT_ASSETS_NOT_MET();
         }

@@ -61,7 +61,8 @@ interface ISuperVaultStrategy {
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event Initialized(address indexed vault, address indexed superGovernor);
+    event SuperGovernorSet(address indexed superGovernor);
+    event Initialized(address indexed vault);
     event YieldSourceAdded(address indexed source, address indexed oracle);
     event YieldSourceDeactivated(address indexed source);
     event YieldSourceOracleUpdated(address indexed source, address indexed oldOracle, address indexed newOracle);
@@ -190,9 +191,8 @@ interface ISuperVaultStrategy {
 
     /// @notice Initializes the strategy with required parameters
     /// @param vault_ Address of the associated SuperVault
-    /// @param superGovernor_ Address of the SuperGovernor contract
     /// @param feeConfig_ Fee configuration
-    function initialize(address vault_, address superGovernor_, FeeConfig memory feeConfig_) external;
+    function initialize(address vault_, FeeConfig memory feeConfig_) external;
 
     /// @notice Handles asynchronous redeem operations initiated by the Vault.
     /// @param controller Controller address for the redeem operation.

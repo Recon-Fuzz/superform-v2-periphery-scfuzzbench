@@ -318,7 +318,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
 
         // Operator tries to use expired signature
         vm.prank(operator);
-        vm.expectRevert(ISuperVault.TIMELOCK_NOT_EXPIRED.selector);
+        vm.expectRevert(ISuperVault.DEADLINE_PASSED.selector);
         vault.authorizeOperator(userAddress, operator, approved, nonce, deadline, signature);
     }
 
@@ -784,45 +784,6 @@ contract SuperVaultTest is BaseSuperVaultTest {
                         STRATEGY INTERACTIONS TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_MintShares() public {
-        uint256 mintAmount = 1000e6;
-        uint256 initialEscrowBalance = vault.balanceOf(address(escrow));
-
-        // Only the strategy can call this function
-        vm.prank(address(strategy));
-        vault.mintShares(mintAmount);
-
-        // Verify shares were minted to escrow
-        uint256 finalEscrowBalance = vault.balanceOf(address(escrow));
-        assertEq(finalEscrowBalance, initialEscrowBalance + mintAmount, "Escrow balance should increase");
-    }
-
-    function test_RevertWhen_UnauthorizedMintShares() public {
-        uint256 mintAmount = 1000e6;
-
-        // Random address cannot call mintShares
-        vm.prank(accountEth);
-        vm.expectRevert(ISuperVault.UNAUTHORIZED.selector);
-        vault.mintShares(mintAmount);
-    }
-
-    function test_BurnShares() public {
-        // First mint some shares to escrow
-        uint256 mintAmount = 1000e6;
-        vm.prank(address(strategy));
-        vault.mintShares(mintAmount);
-
-        uint256 initialEscrowBalance = vault.balanceOf(address(escrow));
-
-        // Only the strategy can call this function
-        vm.prank(address(strategy));
-        vault.burnShares(mintAmount);
-
-        // Verify shares were burned from escrow
-        uint256 finalEscrowBalance = vault.balanceOf(address(escrow));
-        assertEq(finalEscrowBalance, initialEscrowBalance - mintAmount, "Escrow balance should decrease");
-    }
-
     function test_RevertWhen_UnauthorizedBurnShares() public {
         uint256 burnAmount = 1000e6;
 
@@ -1049,7 +1010,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
 
         _completeDepositFlow(depositAmount);
 
-        uint256 redeemAmount = IERC20(vault).balanceOf(accInstances[0].account) / 2;
+        uint256 redeemAmount = vault.balanceOf(accInstances[0].account) / 2;
         _requestRedeemForAccount(accInstances[0], redeemAmount);
 
         assertEq(strategy.pendingRedeemRequest(accInstances[0].account), redeemAmount);
@@ -1087,7 +1048,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
         uint256 depositAmount = 1000e6;
 
         _completeDepositFlow(depositAmount);
-        uint256 redeemAmount = IERC20(vault).balanceOf(accInstances[0].account) / 2;
+        uint256 redeemAmount = vault.balanceOf(accInstances[0].account) / 2;
 
         _requestRedeemForAccount(accInstances[0], redeemAmount);
 
@@ -1265,14 +1226,14 @@ contract SuperVaultTest is BaseSuperVaultTest {
 
         console2.log("deposits done");
         /// redeem half of the shares
-        vars.redeemAmount = IERC20(vault).balanceOf(accInstances[0].account) / 2;
+        vars.redeemAmount = vault.balanceOf(accInstances[0].account) / 2;
         console2.log("redeem amount:", vars.redeemAmount);
 
         console2.log("pps", vault.totalAssets().mulDiv(vault.PRECISION(), vault.totalSupply(), Math.Rounding.Floor));
 
         console2.log("deposits done");
         /// redeem half of the shares
-        vars.redeemAmount = IERC20(vault).balanceOf(accInstances[0].account) / 2;
+        vars.redeemAmount = vault.balanceOf(accInstances[0].account) / 2;
         console2.log("redeem amount:", vars.redeemAmount);
 
         _requestRedeemForAllUsers(vars.redeemAmount);
@@ -1327,7 +1288,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
             initialShareBalances[i] = vault.balanceOf(accInstances[i].account);
             console2.log("User", i, "initial share balance:", initialShareBalances[i]);
         }
-        uint256 redeemAmount = IERC20(vault).balanceOf(accInstances[0].account) / 2;
+        uint256 redeemAmount = vault.balanceOf(accInstances[0].account) / 2;
 
         // request redem
         for (uint256 i; i < ACCOUNT_COUNT; i++) {
@@ -1405,7 +1366,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
             initialShareBalances[i] = vault.balanceOf(accInstances[i].account);
         }
 
-        uint256 redeemAmount = IERC20(vault).balanceOf(accInstances[0].account) / 2;
+        uint256 redeemAmount = vault.balanceOf(accInstances[0].account) / 2;
 
         for (uint256 i; i < ACCOUNT_COUNT; i++) {
             _requestRedeemForAccount(accInstances[i], redeemAmount);
@@ -2248,7 +2209,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
         );
 
         // Get shares minted to user
-        uint256 userShares = IERC4626(gearSuperVault).balanceOf(accountEth);
+        uint256 userShares = gearSuperVault.balanceOf(accountEth);
 
         // Record balances before redeem
         // uint256 preRedeemUserAssets = asset.balanceOf(accountEth);

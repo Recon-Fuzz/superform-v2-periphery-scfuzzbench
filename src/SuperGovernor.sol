@@ -59,6 +59,9 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     mapping(address relayer => bool isRelayer) private _isRelayer;
     address[] private _relayersList;
 
+    // Protected keepers registry (cannot be added as authorized callers by strategists)
+    EnumerableSet.AddressSet private _protectedKeepers;
+
     // Executor registry
     mapping(address executor => bool isExecutor) private _isExecutor;
     address[] private _executorsList;
@@ -130,7 +133,7 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     constructor(address superGovernor, address governor, address bankManager, address treasury_, address prover_) {
         if (
             superGovernor == address(0) || treasury_ == address(0) || governor == address(0)
-                || bankManager == address(0)
+                || bankManager == address(0) || prover_ == address(0)
         ) revert INVALID_ADDRESS();
 
         // Set up roles
@@ -200,8 +203,6 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     {
         // Check if takeovers are globally frozen
         if (_strategistTakeoversFrozen) revert STRATEGIST_TAKEOVERS_FROZEN();
-
-        if (strategy_ == address(0) || newStrategist_ == address(0)) revert INVALID_ADDRESS();
 
         address aggregator = _addressRegistry[SUPER_VAULT_AGGREGATOR];
         if (aggregator == address(0)) revert CONTRACT_NOT_FOUND();
@@ -629,6 +630,7 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
 
         _upkeepPaymentsEnabled = _proposedUpkeepPaymentsEnabled;
         _upkeepPaymentsChangeEffectiveTime = 0;
+        _proposedUpkeepPaymentsEnabled = false;
 
         emit UpkeepPaymentsChanged(_upkeepPaymentsEnabled);
     }
@@ -658,6 +660,7 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     /// @inheritdoc ISuperGovernor
     function proposeVaultBankHookMerkleRoot(address hook, bytes32 proposedRoot) external onlyRole(_GOVERNOR_ROLE) {
         if (!_registeredHooks.contains(hook)) revert HOOK_NOT_APPROVED();
+        if (proposedRoot == bytes32(0)) revert ZERO_PROPOSED_MERKLE_ROOT();
 
         uint256 effectiveTime = block.timestamp + TIMELOCK;
         ISuperGovernor.HookMerkleRootData storage data = vaultBankHooksMerkleRoots[hook];
@@ -696,6 +699,7 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     /// @inheritdoc ISuperGovernor
     function proposeSuperBankHookMerkleRoot(address hook, bytes32 proposedRoot) external onlyRole(_GOVERNOR_ROLE) {
         if (!_registeredHooks.contains(hook)) revert HOOK_NOT_APPROVED();
+        if (proposedRoot == bytes32(0)) revert ZERO_PROPOSED_MERKLE_ROOT();
 
         uint256 effectiveTime = block.timestamp + TIMELOCK;
         ISuperGovernor.HookMerkleRootData storage data = superBankHooksMerkleRoots[hook];
@@ -1046,6 +1050,38 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     /// @inheritdoc ISuperGovernor
     function isWhitelistedIncentiveToken(address token) external view returns (bool) {
         return _isWhitelistedIncentiveToken[token];
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function registerProtectedKeeper(address keeper) external onlyRole(_GOVERNOR_ROLE) {
+        if (keeper == address(0)) revert INVALID_ADDRESS();
+        if (_protectedKeepers.contains(keeper)) revert KEEPER_ALREADY_REGISTERED();
+
+        _protectedKeepers.add(keeper);
+        emit ProtectedKeeperRegistered(keeper);
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function unregisterProtectedKeeper(address keeper) external onlyRole(_GOVERNOR_ROLE) {
+        if (!_protectedKeepers.contains(keeper)) revert KEEPER_NOT_REGISTERED();
+
+        _protectedKeepers.remove(keeper);
+        emit ProtectedKeeperUnregistered(keeper);
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function isProtectedKeeper(address keeper) external view returns (bool) {
+        return _protectedKeepers.contains(keeper);
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function getProtectedKeepers() external view returns (address[] memory) {
+        return _protectedKeepers.values();
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function getProtectedKeepersCount() external view returns (uint256) {
+        return _protectedKeepers.length();
     }
 
     /*//////////////////////////////////////////////////////////////

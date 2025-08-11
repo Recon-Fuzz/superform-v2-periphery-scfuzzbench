@@ -18,7 +18,7 @@ interface ISuperVault {
     error INVALID_AMOUNT();
     error REQUEST_NOT_FOUND();
     error UNAUTHORIZED();
-    error TIMELOCK_NOT_EXPIRED();
+    error DEADLINE_PASSED();
     error INVALID_SIGNATURE();
     error NOT_IMPLEMENTED();
     error INVALID_NONCE();
@@ -52,10 +52,6 @@ interface ISuperVault {
 
     function cancelRedeem(address controller) external;
 
-    /// @notice Mint new shares, only callable by strategy
-    /// @param amount The amount of shares to mint
-    function mintShares(uint256 amount) external;
-
     /// @notice Burn shares, only callable by strategy
     /// @param amount The amount of shares to burn
     function burnShares(uint256 amount) external;
@@ -74,5 +70,6 @@ interface ISuperVault {
         uint256 averageWithdrawPrice,
         uint256 accumulatorShares,
         uint256 accumulatorCostBasis
-    ) external;
+    )
+        external;
 }
