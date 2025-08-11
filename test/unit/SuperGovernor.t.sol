@@ -1138,5 +1138,246 @@ contract SuperGovernorTest is PeripheryHelpers {
     // Incentive Token Management Tests
     // =============================================================
 
-    // ... (Rest of the existing tests remain unchanged)
+    /// @notice Tests proposing to add incentive tokens
+    function test_IncentiveTokenManagement_ProposeAddIncentiveTokens() public {
+        address token1 = address(0x111);
+        address token2 = address(0x222);
+        address[] memory tokens = new address[](2);
+        tokens[0] = token1;
+        tokens[1] = token2;
+
+        uint256 expectedTime = block.timestamp + TIMELOCK;
+
+        vm.prank(governor);
+        vm.expectEmit(true, true, false, false);
+        emit ISuperGovernor.WhitelistedIncentiveTokensProposed(tokens, expectedTime);
+        superGovernor.proposeAddIncentiveTokens(tokens);
+
+        // Check that tokens are in proposed state (not yet whitelisted)
+        assertFalse(superGovernor.isWhitelistedIncentiveToken(token1), "Token1 should not be whitelisted yet");
+        assertFalse(superGovernor.isWhitelistedIncentiveToken(token2), "Token2 should not be whitelisted yet");
+    }
+
+    /// @notice Tests reverting when proposing to add incentive tokens with zero address
+    function test_IncentiveTokenManagement_Revert_ProposeAddZeroAddress() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(0);
+
+        vm.prank(governor);
+        vm.expectRevert(ISuperGovernor.INVALID_ADDRESS.selector);
+        superGovernor.proposeAddIncentiveTokens(tokens);
+    }
+
+    /// @notice Tests executing addition of incentive tokens after timelock
+    function test_IncentiveTokenManagement_ExecuteAddIncentiveTokens() public {
+        address token1 = address(0x111);
+        address token2 = address(0x222);
+        address[] memory tokens = new address[](2);
+        tokens[0] = token1;
+        tokens[1] = token2;
+
+        // Propose the tokens
+        vm.prank(governor);
+        superGovernor.proposeAddIncentiveTokens(tokens);
+
+        // Warp to after timelock
+        vm.warp(block.timestamp + TIMELOCK + 1);
+
+        // Execute the addition
+        vm.expectEmit(true, false, false, false);
+        emit ISuperGovernor.WhitelistedIncentiveTokensAdded(tokens);
+        superGovernor.executeAddIncentiveTokens();
+
+        // Verify tokens are now whitelisted
+        assertTrue(superGovernor.isWhitelistedIncentiveToken(token1), "Token1 should be whitelisted");
+        assertTrue(superGovernor.isWhitelistedIncentiveToken(token2), "Token2 should be whitelisted");
+    }
+
+    /// @notice Tests reverting when executing add without proposal
+    function test_IncentiveTokenManagement_Revert_ExecuteAddNoProposal() public {
+        vm.expectRevert(ISuperGovernor.TIMELOCK_NOT_EXPIRED.selector);
+        superGovernor.executeAddIncentiveTokens();
+    }
+
+    /// @notice Tests reverting when executing add before timelock expiry
+    function test_IncentiveTokenManagement_Revert_ExecuteAddBeforeTimelock() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(0x111);
+
+        // Propose the tokens
+        vm.prank(governor);
+        superGovernor.proposeAddIncentiveTokens(tokens);
+
+        // Try to execute before timelock expires
+        vm.expectRevert(ISuperGovernor.TIMELOCK_NOT_EXPIRED.selector);
+        superGovernor.executeAddIncentiveTokens();
+    }
+
+    /// @notice Tests proposing to remove incentive tokens
+    function test_IncentiveTokenManagement_ProposeRemoveIncentiveTokens() public {
+        address token1 = address(0x111);
+        address token2 = address(0x222);
+        address[] memory tokens = new address[](2);
+        tokens[0] = token1;
+        tokens[1] = token2;
+
+        // First add the tokens
+        vm.prank(governor);
+        superGovernor.proposeAddIncentiveTokens(tokens);
+        vm.warp(block.timestamp + TIMELOCK + 1);
+        superGovernor.executeAddIncentiveTokens();
+
+        // Now propose to remove them
+        vm.warp(block.timestamp + 1); // Move time forward slightly
+        uint256 expectedTime = block.timestamp + TIMELOCK;
+
+        vm.prank(governor);
+        vm.expectEmit(true, true, false, false);
+        emit ISuperGovernor.WhitelistedIncentiveTokensProposed(tokens, expectedTime);
+        superGovernor.proposeRemoveIncentiveTokens(tokens);
+
+        // Tokens should still be whitelisted until execution
+        assertTrue(superGovernor.isWhitelistedIncentiveToken(token1), "Token1 should still be whitelisted");
+        assertTrue(superGovernor.isWhitelistedIncentiveToken(token2), "Token2 should still be whitelisted");
+    }
+
+    /// @notice Tests reverting when proposing to remove non-whitelisted tokens
+    function test_IncentiveTokenManagement_Revert_ProposeRemoveNotWhitelisted() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(0x111);
+
+        vm.prank(governor);
+        vm.expectRevert(ISuperGovernor.NOT_WHITELISTED_INCENTIVE_TOKEN.selector);
+        superGovernor.proposeRemoveIncentiveTokens(tokens);
+    }
+
+    /// @notice Tests reverting when proposing to remove incentive tokens with zero address
+    function test_IncentiveTokenManagement_Revert_ProposeRemoveZeroAddress() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(0);
+
+        vm.prank(governor);
+        vm.expectRevert(ISuperGovernor.INVALID_ADDRESS.selector);
+        superGovernor.proposeRemoveIncentiveTokens(tokens);
+    }
+
+    /// @notice Tests executing removal of incentive tokens after timelock
+    function test_IncentiveTokenManagement_ExecuteRemoveIncentiveTokens() public {
+        address token1 = address(0x111);
+        address token2 = address(0x222);
+        address[] memory tokens = new address[](2);
+        tokens[0] = token1;
+        tokens[1] = token2;
+
+        // First add the tokens
+        vm.prank(governor);
+        superGovernor.proposeAddIncentiveTokens(tokens);
+        vm.warp(block.timestamp + TIMELOCK + 1);
+        superGovernor.executeAddIncentiveTokens();
+
+        // Now propose and execute removal
+        vm.warp(block.timestamp + 1);
+        vm.prank(governor);
+        superGovernor.proposeRemoveIncentiveTokens(tokens);
+        vm.warp(block.timestamp + TIMELOCK + 1);
+
+        // Execute the removal
+        vm.expectEmit(true, false, false, false);
+        emit ISuperGovernor.WhitelistedIncentiveTokensRemoved(tokens);
+        superGovernor.executeRemoveIncentiveTokens();
+
+        // Verify tokens are no longer whitelisted
+        assertFalse(superGovernor.isWhitelistedIncentiveToken(token1), "Token1 should not be whitelisted");
+        assertFalse(superGovernor.isWhitelistedIncentiveToken(token2), "Token2 should not be whitelisted");
+    }
+
+    /// @notice Tests reverting when executing remove without proposal
+    function test_IncentiveTokenManagement_Revert_ExecuteRemoveNoProposal() public {
+        vm.expectRevert(ISuperGovernor.TIMELOCK_NOT_EXPIRED.selector);
+        superGovernor.executeRemoveIncentiveTokens();
+    }
+
+    /// @notice Tests reverting when executing remove before timelock expiry
+    function test_IncentiveTokenManagement_Revert_ExecuteRemoveBeforeTimelock() public {
+        address token1 = address(0x111);
+        address[] memory tokens = new address[](1);
+        tokens[0] = token1;
+
+        // First add the token
+        vm.prank(governor);
+        superGovernor.proposeAddIncentiveTokens(tokens);
+        vm.warp(block.timestamp + TIMELOCK + 1);
+        superGovernor.executeAddIncentiveTokens();
+
+        // Propose removal
+        vm.warp(block.timestamp + 1);
+        vm.prank(governor);
+        superGovernor.proposeRemoveIncentiveTokens(tokens);
+
+        // Try to execute before timelock expires
+        vm.expectRevert(ISuperGovernor.TIMELOCK_NOT_EXPIRED.selector);
+        superGovernor.executeRemoveIncentiveTokens();
+    }
+
+    /// @notice Tests access control for proposing incentive token changes
+    function test_IncentiveTokenManagement_AccessControl() public {
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(0x111);
+
+        // Test proposeAddIncentiveTokens with non-governor role
+        vm.prank(user);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, user, GOVERNOR_ROLE)
+        );
+        superGovernor.proposeAddIncentiveTokens(tokens);
+
+        // Test proposeRemoveIncentiveTokens with non-governor role
+        vm.prank(user);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, user, GOVERNOR_ROLE)
+        );
+        superGovernor.proposeRemoveIncentiveTokens(tokens);
+
+        // Test with superGovernor role (should fail - needs GOVERNOR_ROLE specifically)
+        vm.prank(sGovernor);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, sGovernor, GOVERNOR_ROLE)
+        );
+        superGovernor.proposeAddIncentiveTokens(tokens);
+
+        vm.prank(sGovernor);
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, sGovernor, GOVERNOR_ROLE)
+        );
+        superGovernor.proposeRemoveIncentiveTokens(tokens);
+    }
+
+    /// @notice Tests that execution functions are public (can be called by anyone)
+    function test_IncentiveTokenManagement_PublicExecution() public {
+        address token1 = address(0x111);
+        address[] memory tokens = new address[](1);
+        tokens[0] = token1;
+
+        // Propose as governor
+        vm.prank(governor);
+        superGovernor.proposeAddIncentiveTokens(tokens);
+
+        // Execute as regular user (should work)
+        vm.warp(block.timestamp + TIMELOCK + 1);
+        vm.prank(user);
+        superGovernor.executeAddIncentiveTokens();
+
+        assertTrue(superGovernor.isWhitelistedIncentiveToken(token1), "Token should be whitelisted");
+
+        // Same for removal
+        vm.warp(block.timestamp + 1);
+        vm.prank(governor);
+        superGovernor.proposeRemoveIncentiveTokens(tokens);
+
+        vm.warp(block.timestamp + TIMELOCK + 1);
+        vm.prank(user);
+        superGovernor.executeRemoveIncentiveTokens();
+
+        assertFalse(superGovernor.isWhitelistedIncentiveToken(token1), "Token should not be whitelisted");
+    }
 }

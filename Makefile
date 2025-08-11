@@ -67,7 +67,7 @@ merkle-status:
 
 ftest :; $(MAKE) ensure-merkle-cache && forge test
 
-ftest-vvv :; $(MAKE) ensure-merkle-cache && forge test -v --jobs 2
+ftest-vvv :; $(MAKE) ensure-merkle-cache && forge test -vvv --jobs 2
 
 ftest-ci :; $(MAKE) regenerate-merkle-cache-ci && forge test -v --jobs 2
 

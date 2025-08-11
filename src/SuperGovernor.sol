@@ -775,20 +775,23 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     /// @inheritdoc ISuperGovernor
     function executeAddIncentiveTokens() external {
         if (
-            _proposedAddWhitelistedIncentiveTokensEffectiveTime != 0
-                && block.timestamp < _proposedAddWhitelistedIncentiveTokensEffectiveTime
+            _proposedAddWhitelistedIncentiveTokensEffectiveTime == 0
+                || block.timestamp < _proposedAddWhitelistedIncentiveTokensEffectiveTime
         ) revert TIMELOCK_NOT_EXPIRED();
 
+        // Get all proposed tokens before modifying the set
+        address[] memory tokensToAdd = _proposedWhitelistedIncentiveTokens.values();
+        uint256 len = tokensToAdd.length;
         address token;
-        for (uint256 i; i < _proposedWhitelistedIncentiveTokens.length(); i++) {
-            token = _proposedWhitelistedIncentiveTokens.at(i);
-
+        for (uint256 i; i < len; i++) {
+            token = tokensToAdd[i];
             _isWhitelistedIncentiveToken[token] = true;
-            emit WhitelistedIncentiveTokensAdded(_proposedWhitelistedIncentiveTokens.values());
-
             // Remove from proposed whitelisted tokens
             _proposedWhitelistedIncentiveTokens.remove(token);
         }
+
+        // Emit event once with all tokens
+        emit WhitelistedIncentiveTokensAdded(tokensToAdd);
 
         // Reset proposal timestamp
         _proposedAddWhitelistedIncentiveTokensEffectiveTime = 0;
@@ -813,21 +816,25 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     /// @inheritdoc ISuperGovernor
     function executeRemoveIncentiveTokens() external {
         if (
-            _proposedRemoveWhitelistedIncentiveTokensEffectiveTime != 0
-                && block.timestamp < _proposedRemoveWhitelistedIncentiveTokensEffectiveTime
+            _proposedRemoveWhitelistedIncentiveTokensEffectiveTime == 0
+                || block.timestamp < _proposedRemoveWhitelistedIncentiveTokensEffectiveTime
         ) revert TIMELOCK_NOT_EXPIRED();
 
+        // Get all proposed tokens before modifying the set
+        address[] memory tokensToRemove = _proposedRemoveWhitelistedIncentiveTokens.values();
+        uint256 len = tokensToRemove.length;
         address token;
-        for (uint256 i; i < _proposedRemoveWhitelistedIncentiveTokens.length(); i++) {
-            token = _proposedRemoveWhitelistedIncentiveTokens.at(i);
+        for (uint256 i; i < len; i++) {
+            token = tokensToRemove[i];
             if (_isWhitelistedIncentiveToken[token]) {
                 _isWhitelistedIncentiveToken[token] = false;
-
-                emit WhitelistedIncentiveTokensRemoved(_proposedWhitelistedIncentiveTokens.values());
             }
             // Remove from proposed whitelisted tokens to be removed
             _proposedRemoveWhitelistedIncentiveTokens.remove(token);
         }
+
+        // Emit event once with all tokens
+        emit WhitelistedIncentiveTokensRemoved(tokensToRemove);
 
         // Reset proposal timestamp
         _proposedRemoveWhitelistedIncentiveTokensEffectiveTime = 0;
