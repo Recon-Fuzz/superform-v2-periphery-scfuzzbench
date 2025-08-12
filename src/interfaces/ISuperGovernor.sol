@@ -398,8 +398,7 @@ interface ISuperGovernor is IAccessControl {
 
     /// @notice Unregisters a hook from the approved list
     /// @param hook The address of the hook to unregister
-    /// @param isFulfillRequestsHook Whether the hook is a fulfill requests hook
-    function unregisterHook(address hook, bool isFulfillRequestsHook) external;
+    function unregisterHook(address hook) external;
 
     /*//////////////////////////////////////////////////////////////
                         EXECUTOR MANAGEMENT

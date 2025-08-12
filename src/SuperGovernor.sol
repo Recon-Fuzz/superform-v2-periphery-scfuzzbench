@@ -384,27 +384,21 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     function registerHook(address hook_, bool isFulfillRequestsHook_) external onlyRole(_GOVERNOR_ROLE) {
         if (hook_ == address(0)) revert INVALID_ADDRESS();
 
-        if (isFulfillRequestsHook_) {
-            if (_registeredFulfillRequestsHooks.contains(hook_)) {
-                revert FULFILL_REQUESTS_HOOK_ALREADY_REGISTERED();
-            }
-
-            _registeredFulfillRequestsHooks.add(hook_);
+        if (isFulfillRequestsHook_ && _registeredFulfillRequestsHooks.add(hook_)) {
             emit FulfillRequestsHookRegistered(hook_);
         }
-        if (_registeredHooks.contains(hook_)) {
-            revert HOOK_ALREADY_APPROVED();
+        if (_registeredHooks.add(hook_)) {
+            emit HookApproved(hook_);
         }
-        _registeredHooks.add(hook_);
-        emit HookApproved(hook_);
     }
 
     /// @inheritdoc ISuperGovernor
-    function unregisterHook(address hook_, bool isFulfillRequestsHook_) external onlyRole(_GOVERNOR_ROLE) {
-        if (isFulfillRequestsHook_) {
-            _unregisterFulfillRequestsHook(hook_);
-        } else {
-            _unregisterRegularHook(hook_);
+    function unregisterHook(address hook_) external onlyRole(_GOVERNOR_ROLE) {
+        if (_registeredFulfillRequestsHooks.remove(hook_)) {
+            emit FulfillRequestsHookUnregistered(hook_);
+        }
+        if (_registeredHooks.remove(hook_)) {
+            emit HookRemoved(hook_);
         }
     }
 
@@ -1094,22 +1088,4 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     /*//////////////////////////////////////////////////////////////
                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    /// @dev Internal function to unregister a fulfill requests hook
-    function _unregisterFulfillRequestsHook(address hook_) internal {
-        if (!_registeredFulfillRequestsHooks.contains(hook_)) {
-            revert FULFILL_REQUESTS_HOOK_NOT_REGISTERED();
-        }
-        _registeredFulfillRequestsHooks.remove(hook_);
-        emit FulfillRequestsHookUnregistered(hook_);
-        _unregisterRegularHook(hook_);
-    }
-
-    /// @dev Internal function to unregister a regular hook
-    function _unregisterRegularHook(address hook_) internal {
-        if (!_registeredHooks.contains(hook_)) {
-            revert HOOK_NOT_APPROVED();
-        }
-        _registeredHooks.remove(hook_);
-        emit HookRemoved(hook_);
-    }
 }
