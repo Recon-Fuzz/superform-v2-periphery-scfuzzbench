@@ -346,7 +346,6 @@ contract SuperVault is
 
     /// @inheritdoc IERC4626
     function maxRedeem(address owner) public view override returns (uint256) {
-        if (_isPaused()) return 0;
         uint256 withdrawPrice = strategy.getAverageWithdrawPrice(owner);
         if (withdrawPrice == 0) return 0;
         return maxWithdraw(owner).mulDiv(PRECISION, withdrawPrice, Math.Rounding.Floor);
