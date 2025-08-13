@@ -137,6 +137,44 @@ contract SuperVaultTest is BaseSuperVaultTest {
         assertGt(aaveVault.balanceOf(address(strategy)), 0, "No aave shares allocated");
     }
 
+    function test_DepositAndAllocateToYieldViaSmartAccountStrategist() public {
+        uint256 depositAmount = 1000e6; // 1000 USDC
+
+        // Deploy a new SuperVault with a smart account strategist
+        AccountInstance memory strategistAccount = accInstances[1]; // Use a different account as strategist
+        _getTokens(address(asset), strategistAccount.account, 1 ether); // Fund the strategist account
+
+        // Deploy vault with smart account strategist
+        (address newVaultAddr, address newStrategyAddr,) =
+            _deployVaultWithSmartAccountStrategist(strategistAccount.account);
+
+        SuperVault newVault = SuperVault(newVaultAddr);
+        SuperVaultStrategy newStrategy = SuperVaultStrategy(newStrategyAddr);
+
+        // Setup yield sources for the new strategy via smart account
+        _manageYieldSourcesViaSmartAccount(strategistAccount, newStrategy);
+
+        // Direct deposit to the new vault
+        _deposit(depositAmount, newVaultAddr, address(asset));
+
+        // Verify deposit state
+        uint256 userShares = newVault.balanceOf(accountEth);
+        assertGt(userShares, 0, "No shares minted to user");
+        assertEq(asset.balanceOf(address(newStrategy)), depositAmount, "Wrong strategy balance");
+
+        // Allocate the assets to yield sources via smart account strategist
+        _depositFreeAssetsFromSingleAmountViaSmartAccount(
+            depositAmount, address(fluidVault), address(aaveVault), strategistAccount, newStrategy
+        );
+
+        // Verify allocation state
+        assertGt(fluidVault.balanceOf(address(newStrategy)), 0, "No fluid shares allocated");
+        assertGt(aaveVault.balanceOf(address(newStrategy)), 0, "No aave shares allocated");
+
+        // Verify that the strategy has no free assets left
+        assertEq(asset.balanceOf(address(newStrategy)), 0, "Strategy should have no free assets after allocation");
+    }
+
     function test_FulfillRedeem_FullAmountWithThreshold() public {
         uint256 depositAmount = 1000e6; // 1000 USDC
 
