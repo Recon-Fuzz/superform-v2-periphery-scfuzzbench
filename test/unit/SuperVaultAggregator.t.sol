@@ -252,6 +252,227 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
     }
 
     // =============================================================
+    // Emergency Strategist Replacement Tests
+    // =============================================================
+
+    /// @notice Tests emergency strategist replacement clears pending proposals
+    function test_ChangePrimaryStrategist_ClearsPendingProposals() public {
+        // Setup: Create pending strategist proposal
+        address newStrategist = _deployAccount(0xC, "NewStrategist");
+
+        // Secondary strategist proposes a change
+        vm.prank(secondaryStrategist);
+        superVaultAggregator.proposeChangePrimaryStrategist(strategy, newStrategist);
+
+        // SuperGovernor performs emergency replacement
+        address emergencyStrategist = _deployAccount(0xD, "EmergencyStrategist");
+        vm.prank(address(superGovernor));
+        superVaultAggregator.changePrimaryStrategist(strategy, emergencyStrategist);
+
+        // Verify new strategist is set
+        address currentStrategist = superVaultAggregator.getMainStrategist(strategy);
+        assertEq(currentStrategist, emergencyStrategist, "Emergency strategist should be set");
+    }
+
+    /// @notice Tests emergency replacement clears all secondary strategists
+    function test_ChangePrimaryStrategist_ClearsSecondaryStrategists() public {
+        // Setup: Add multiple secondary strategists
+        address secondaryStrategist2 = _deployAccount(0xE, "SecondaryStrategist2");
+        address secondaryStrategist3 = _deployAccount(0xF, "SecondaryStrategist3");
+
+        vm.startPrank(strategist);
+        superVaultAggregator.addSecondaryStrategist(strategy, secondaryStrategist2);
+        superVaultAggregator.addSecondaryStrategist(strategy, secondaryStrategist3);
+        vm.stopPrank();
+
+        // Verify secondary strategists exist
+        address[] memory secondaryStrategists = superVaultAggregator.getSecondaryStrategists(strategy);
+        assertEq(secondaryStrategists.length, 3, "Should have 3 secondary strategists");
+
+        // SuperGovernor performs emergency replacement
+        address emergencyStrategist = _deployAccount(0x10, "EmergencyStrategist");
+
+        // Expect SecondaryStrategistRemoved events for all secondary strategists
+        vm.expectEmit(true, true, false, false);
+        emit ISuperVaultAggregator.SecondaryStrategistRemoved(strategy, secondaryStrategist);
+        vm.expectEmit(true, true, false, false);
+        emit ISuperVaultAggregator.SecondaryStrategistRemoved(strategy, secondaryStrategist2);
+        vm.expectEmit(true, true, false, false);
+        emit ISuperVaultAggregator.SecondaryStrategistRemoved(strategy, secondaryStrategist3);
+
+        vm.prank(address(superGovernor));
+        superVaultAggregator.changePrimaryStrategist(strategy, emergencyStrategist);
+
+        // Verify all secondary strategists were cleared
+        secondaryStrategists = superVaultAggregator.getSecondaryStrategists(strategy);
+        assertEq(secondaryStrategists.length, 0, "All secondary strategists should be cleared");
+    }
+
+    /// @notice Tests emergency replacement clears pending hook root proposals
+    function test_ChangePrimaryStrategist_ClearsPendingHookProposals() public {
+        // Setup: Create pending hook root proposal
+        bytes32 newHookRoot = keccak256("new_hook_root");
+
+        vm.prank(strategist);
+        superVaultAggregator.proposeStrategyHooksRoot(strategy, newHookRoot);
+
+        // Verify hook proposal exists
+        (bytes32 proposedRoot, uint256 effectiveTime) = superVaultAggregator.getProposedStrategyHooksRoot(strategy);
+        assertEq(proposedRoot, newHookRoot, "Hook proposal should exist");
+        assertTrue(effectiveTime > 0, "Hook effective time should be set");
+
+        // SuperGovernor performs emergency replacement
+        address emergencyStrategist = _deployAccount(0x11, "EmergencyStrategist");
+        vm.prank(address(superGovernor));
+        superVaultAggregator.changePrimaryStrategist(strategy, emergencyStrategist);
+
+        // Verify hook proposal was cleared
+        (proposedRoot, effectiveTime) = superVaultAggregator.getProposedStrategyHooksRoot(strategy);
+        assertEq(proposedRoot, bytes32(0), "Hook proposal should be cleared");
+        assertEq(effectiveTime, 0, "Hook effective time should be cleared");
+    }
+
+    /// @notice Tests the complete attack scenario - malicious strategist cannot regain control
+    function test_ChangePrimaryStrategist_PreventsAttackScenario() public {
+        // Setup malicious scenario:
+        // 1. Malicious strategist has secondary strategists under their control
+        address maliciousSecondary1 = _deployAccount(0x12, "MaliciousSecondary1");
+        address maliciousSecondary2 = _deployAccount(0x13, "MaliciousSecondary2");
+
+        vm.startPrank(strategist); // strategist is acting maliciously
+        superVaultAggregator.addSecondaryStrategist(strategy, maliciousSecondary1);
+        superVaultAggregator.addSecondaryStrategist(strategy, maliciousSecondary2);
+        vm.stopPrank();
+
+        // 2. Malicious strategist creates a proposal to regain control after emergency replacement
+        address controlledAccount = _deployAccount(0x14, "ControlledAccount");
+        vm.prank(maliciousSecondary1);
+        superVaultAggregator.proposeChangePrimaryStrategist(strategy, controlledAccount);
+
+        // 3. SuperGovernor detects malicious behavior and performs emergency replacement
+        address emergencyStrategist = _deployAccount(0x15, "EmergencyStrategist");
+        vm.prank(address(superGovernor));
+        superVaultAggregator.changePrimaryStrategist(strategy, emergencyStrategist);
+
+        // 4. Verify the attack is thwarted:
+
+        // a) All secondary strategists are removed
+        address[] memory secondaryStrategists = superVaultAggregator.getSecondaryStrategists(strategy);
+        assertEq(secondaryStrategists.length, 0, "All malicious secondary strategists should be removed");
+
+        // b) Emergency strategist is in control
+        address currentStrategist = superVaultAggregator.getMainStrategist(strategy);
+        assertEq(currentStrategist, emergencyStrategist, "Emergency strategist should be in control");
+
+        // 5. Malicious accounts can no longer propose changes
+        vm.prank(maliciousSecondary1);
+        vm.expectRevert(ISuperVaultAggregator.UNAUTHORIZED_UPDATE_AUTHORITY.selector);
+        superVaultAggregator.proposeChangePrimaryStrategist(strategy, controlledAccount);
+
+        vm.prank(maliciousSecondary2);
+        vm.expectRevert(ISuperVaultAggregator.UNAUTHORIZED_UPDATE_AUTHORITY.selector);
+        superVaultAggregator.proposeChangePrimaryStrategist(strategy, controlledAccount);
+    }
+
+    /// @notice Tests that only SuperGovernor can call changePrimaryStrategist
+    function test_ChangePrimaryStrategist_OnlySuperGovernor() public {
+        address newStrategist = _deployAccount(0x16, "NewStrategist");
+
+        // Test unauthorized callers
+        vm.prank(strategist);
+        vm.expectRevert(ISuperVaultAggregator.UNAUTHORIZED_UPDATE_AUTHORITY.selector);
+        superVaultAggregator.changePrimaryStrategist(strategy, newStrategist);
+
+        vm.prank(secondaryStrategist);
+        vm.expectRevert(ISuperVaultAggregator.UNAUTHORIZED_UPDATE_AUTHORITY.selector);
+        superVaultAggregator.changePrimaryStrategist(strategy, newStrategist);
+
+        vm.prank(user);
+        vm.expectRevert(ISuperVaultAggregator.UNAUTHORIZED_UPDATE_AUTHORITY.selector);
+        superVaultAggregator.changePrimaryStrategist(strategy, newStrategist);
+
+        // Test that SuperGovernor can call it
+        vm.prank(address(superGovernor));
+        superVaultAggregator.changePrimaryStrategist(strategy, newStrategist);
+
+        // Verify change was successful
+        address currentStrategist = superVaultAggregator.getMainStrategist(strategy);
+        assertEq(currentStrategist, newStrategist, "New strategist should be set");
+    }
+
+    /// @notice Tests emergency replacement with zero address reverts
+    function test_ChangePrimaryStrategist_RevertZeroAddress() public {
+        vm.prank(address(superGovernor));
+        vm.expectRevert(ISuperVaultAggregator.ZERO_ADDRESS.selector);
+        superVaultAggregator.changePrimaryStrategist(strategy, address(0));
+    }
+
+    /// @notice Tests emergency replacement with unknown strategy reverts
+    function test_ChangePrimaryStrategist_RevertUnknownStrategy() public {
+        address unknownStrategy = _deployAccount(0x17, "UnknownStrategy");
+        address newStrategist = _deployAccount(0x18, "NewStrategist");
+
+        vm.prank(address(superGovernor));
+        vm.expectRevert(ISuperVaultAggregator.UNKNOWN_STRATEGY.selector);
+        superVaultAggregator.changePrimaryStrategist(unknownStrategy, newStrategist);
+    }
+
+    /// @notice Tests emergency replacement works when no pending proposals exist
+    function test_ChangePrimaryStrategist_NoPendingProposals() public {
+        // Emergency replacement should still work
+        address emergencyStrategist = _deployAccount(0x19, "EmergencyStrategist");
+        vm.prank(address(superGovernor));
+        superVaultAggregator.changePrimaryStrategist(strategy, emergencyStrategist);
+
+        // Verify change was successful
+        address currentStrategist = superVaultAggregator.getMainStrategist(strategy);
+        assertEq(currentStrategist, emergencyStrategist, "Emergency strategist should be set");
+    }
+
+    /// @notice Tests emergency replacement works when no secondary strategists exist
+    function test_ChangePrimaryStrategist_NoSecondaryStrategists() public {
+        // Remove the existing secondary strategist
+        vm.prank(strategist);
+        superVaultAggregator.removeSecondaryStrategist(strategy, secondaryStrategist);
+
+        // Verify no secondary strategists exist
+        address[] memory secondaryStrategists = superVaultAggregator.getSecondaryStrategists(strategy);
+        assertEq(secondaryStrategists.length, 0, "No secondary strategists should exist");
+
+        // Emergency replacement should still work
+        address emergencyStrategist = _deployAccount(0x1A, "EmergencyStrategist");
+        vm.prank(address(superGovernor));
+        superVaultAggregator.changePrimaryStrategist(strategy, emergencyStrategist);
+
+        // Verify change was successful
+        address currentStrategist = superVaultAggregator.getMainStrategist(strategy);
+        assertEq(currentStrategist, emergencyStrategist, "Emergency strategist should be set");
+    }
+
+    /// @notice Tests that emergency replacement emits proper events
+    function test_ChangePrimaryStrategist_EmitsEvents() public {
+        // Setup: Add secondary strategists for event testing
+        address secondaryStrategist2 = _deployAccount(0x1B, "SecondaryStrategist2");
+        vm.prank(strategist);
+        superVaultAggregator.addSecondaryStrategist(strategy, secondaryStrategist2);
+
+        address emergencyStrategist = _deployAccount(0x1C, "EmergencyStrategist");
+
+        // Expect SecondaryStrategistRemoved events first (during the clearing loop)
+        vm.expectEmit(true, true, false, false);
+        emit ISuperVaultAggregator.SecondaryStrategistRemoved(strategy, secondaryStrategist);
+        vm.expectEmit(true, true, false, false);
+        emit ISuperVaultAggregator.SecondaryStrategistRemoved(strategy, secondaryStrategist2);
+
+        // Then expect PrimaryStrategistChanged event (emitted at the end)
+        vm.expectEmit(true, true, true, false);
+        emit ISuperVaultAggregator.PrimaryStrategistChanged(strategy, strategist, emergencyStrategist);
+
+        vm.prank(address(superGovernor));
+        superVaultAggregator.changePrimaryStrategist(strategy, emergencyStrategist);
+    }
+
+    // =============================================================
     // Security Integration Tests
     // =============================================================
 

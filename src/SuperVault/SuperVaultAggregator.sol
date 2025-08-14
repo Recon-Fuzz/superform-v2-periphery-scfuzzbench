@@ -406,8 +406,23 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
         address oldStrategist = _strategyData[strategy].mainStrategist;
 
-        // If new strategist is already a secondary strategist, remove them
-        _strategyData[strategy].secondaryStrategists.remove(newStrategist);
+        // SECURITY: Clear any pending strategist proposals to prevent malicious re-takeover
+        _strategyData[strategy].proposedStrategist = address(0);
+        _strategyData[strategy].strategistChangeEffectiveTime = 0;
+
+        // SECURITY: Clear any pending hooks root proposals to prevent malicious hook updates
+        _strategyData[strategy].proposedHooksRoot = bytes32(0);
+        _strategyData[strategy].hooksRootEffectiveTime = 0;
+
+        // SECURITY: Clear all secondary strategists as they may be controlled by malicious strategist
+        // Get all secondary strategists first to emit proper events
+        address[] memory clearedSecondaryStrategists = _strategyData[strategy].secondaryStrategists.values();
+
+        // Clear the entire secondary strategists set
+        for (uint256 i = 0; i < clearedSecondaryStrategists.length; i++) {
+            _strategyData[strategy].secondaryStrategists.remove(clearedSecondaryStrategists[i]);
+            emit SecondaryStrategistRemoved(strategy, clearedSecondaryStrategists[i]);
+        }
 
         // Set the new primary strategist
         _strategyData[strategy].mainStrategist = newStrategist;
