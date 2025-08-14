@@ -93,6 +93,7 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
     function initialize(address vault_, FeeConfig memory feeConfig_) external initializer {
         if (vault_ == address(0)) revert INVALID_VAULT();
         if (feeConfig_.performanceFeeBps > 0 && feeConfig_.recipient == address(0)) revert ZERO_ADDRESS();
+        if (feeConfig_.performanceFeeBps > BPS_PRECISION) revert INVALID_PERFORMANCE_FEE_BPS();
 
         __ReentrancyGuard_init();
 
