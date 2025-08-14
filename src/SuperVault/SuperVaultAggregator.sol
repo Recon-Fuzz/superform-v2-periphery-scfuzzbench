@@ -749,10 +749,10 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         view
         returns (bool isValid)
     {
-        // If both roots are vetoed, all hook validations fail
+        // If global hooks are vetoed, all hook validations fail
         bool globalHooksVetoed = _globalHooksRootVetoed;
         bool strategyHooksVetoed = _strategyData[strategy].hooksRootVetoed;
-        if (globalHooksVetoed && strategyHooksVetoed) {
+        if (globalHooksVetoed) {
             return false;
         }
 
@@ -782,8 +782,8 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         bool globalHooksVetoed = _globalHooksRootVetoed;
         bool strategyHooksVetoed = _strategyData[strategy].hooksRootVetoed;
 
-        // If both roots are vetoed, all hooks are invalid
-        if (globalHooksVetoed && strategyHooksVetoed) {
+        // If global hooks are vetoed, all hooks are invalid
+        if (globalHooksVetoed) {
             validHooks = new bool[](length);
             // All values default to false in Solidity, so no need to set them
             return validHooks;
