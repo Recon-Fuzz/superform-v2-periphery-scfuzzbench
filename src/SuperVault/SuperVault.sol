@@ -324,7 +324,7 @@ contract SuperVault is
     function convertToAssets(uint256 shares) public view override returns (uint256) {
         uint256 currentPPS = _getStoredPPS();
         if (currentPPS == 0) return 0;
-        return Math.mulDiv(shares, currentPPS, PRECISION, Math.Rounding.Ceil);
+        return Math.mulDiv(shares, currentPPS, PRECISION, Math.Rounding.Floor);
     }
 
     /// @inheritdoc IERC4626
@@ -358,7 +358,9 @@ contract SuperVault is
 
     /// @inheritdoc IERC4626
     function previewMint(uint256 shares) public view override returns (uint256) {
-        return convertToAssets(shares);
+        uint256 currentPPS = _getStoredPPS();
+        if (currentPPS == 0) return 0;
+        return Math.mulDiv(shares, currentPPS, PRECISION, Math.Rounding.Ceil);
     }
 
     /// @inheritdoc IERC4626
