@@ -288,7 +288,7 @@ contract SuperVault is
 
     /// @inheritdoc IERC7741
     function invalidateNonce(bytes32 nonce) external {
-        if (nonce == bytes32(0) || _authorizations[msg.sender][nonce]) revert INVALID_NONCE();
+        if (_authorizations[msg.sender][nonce]) revert INVALID_NONCE();
         _authorizations[msg.sender][nonce] = true;
 
         emit NonceInvalidated(msg.sender, nonce);
