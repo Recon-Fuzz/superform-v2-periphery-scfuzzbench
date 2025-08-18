@@ -232,14 +232,16 @@ contract VaultBankFromExecutor is
         returns (bytes memory signatureData)
     {
         bytes32[] memory leaves = new bytes32[](1);
-        leaves[0] = _createSourceValidatorLeaf(userOpData.userOpHash, validUntil, false, address(validator));
+        leaves[0] = _createSourceValidatorLeaf(userOpData.userOpHash, validUntil, 0, new uint64[](0), address(validator));
 
         (bytes32[][] memory merkleProof, bytes32 merkleRoot) = _createValidatorMerkleTree(leaves);
 
         bytes memory signature =
             _createSignature(SuperValidatorBase(address(validator)).namespace(), merkleRoot, signer, signerPrvKey);
 
+
+        uint64[] memory chainsWithDestExecutionNone = new uint64[](0);
         ISuperValidator.DstProof[] memory proofDst = new ISuperValidator.DstProof[](0);
-        signatureData = abi.encode(false, validUntil, merkleRoot, merkleProof[0], proofDst, signature);
+        signatureData = abi.encode(chainsWithDestExecutionNone, validUntil, 0, merkleRoot, merkleProof[0], proofDst, signature);
     }
 }
