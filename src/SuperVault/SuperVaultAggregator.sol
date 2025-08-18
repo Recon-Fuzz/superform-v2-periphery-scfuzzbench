@@ -127,7 +127,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
         // Increment nonce before creating proxies
         vars.currentNonce = _vaultCreationNonce++;
-        vars.salt = keccak256(abi.encodePacked(params.asset, params.name, params.symbol, vars.currentNonce));
+        vars.salt = keccak256(abi.encode(msg.sender, params.asset, params.name, params.symbol, vars.currentNonce));
 
         // Create minimal proxies
         superVault = VAULT_IMPLEMENTATION.cloneDeterministic(vars.salt);
