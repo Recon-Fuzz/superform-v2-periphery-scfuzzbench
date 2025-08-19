@@ -275,27 +275,27 @@ function buildMerkleTreeForHook(hookName, chainId) {
   const leaves = [];
   const leafData = [];
 
-
   for (const args of argCombinations) {
     // Encode args according to the hook's specific encoding
     const encodedArgs = encodeArgs(args, hookName);
+    const hookAddress = hookDef.address;
 
     // Store leaf data for later reference
     leafData.push({
       hookName,
+      hookAddress,
       args,
       encodedArgs
     });
 
-    // For StandardMerkleTree, we need to use a specific format
-    // Each leaf is an array with a single value (the packed encoding)
-    leaves.push([encodedArgs]);
+    // Each leaf is [hookAddress, encodedArgs] - StandardMerkleTree will handle hashing
+    leaves.push([hookAddress, encodedArgs]);
   }
 
-  // Create the merkle tree with StandardMerkleTree
+  // Create the merkle tree with StandardMerkleTree - it will do standardLeafHash internally
   const tree = StandardMerkleTree.of(
     leaves,
-    ["bytes"] // Using bytes type for the solidityPack output
+    ["address", "bytes"] // Hook address and encoded args
   );
 
   return { tree, leafData };
@@ -332,8 +332,8 @@ function generateMerkleTrees(hookNames, chainId) {
 
     // Add to global leaves
     for (let i = 0; i < leafData.length; i++) {
-      // Each leaf must be in array format for StandardMerkleTree
-      allLeaves.push([leafData[i].encodedArgs]);
+      // Each leaf is [hookAddress, encodedArgs]
+      allLeaves.push([leafData[i].hookAddress, leafData[i].encodedArgs]);
       allLeafData.push(leafData[i]);
     }
   }
@@ -342,7 +342,7 @@ function generateMerkleTrees(hookNames, chainId) {
   if (allLeaves.length > 0) {
     const globalTree = StandardMerkleTree.of(
       allLeaves,
-      ["bytes"] // Using bytes type for the solidityPack output
+      ["address", "bytes"] // Hook address and encoded args
     );
 
     const globalTreeDump = globalTree.dump();
@@ -367,7 +367,7 @@ function generateMerkleTrees(hookNames, chainId) {
 
       // Only include essential information: value, treeIndex, hookName, address, and proof
       globalTreeDump.values[i] = {
-        value: globalTreeDump.values[i].value,
+        value: globalTreeDump.values[i].value, // This is [hookAddress, encodedArgs] 
         treeIndex: globalTreeDump.values[i].treeIndex,
         hookName: currentHookName,
         hookAddress: hookAddress, // Add hook contract address for validation

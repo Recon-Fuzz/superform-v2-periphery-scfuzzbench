@@ -645,12 +645,14 @@ interface ISuperVaultAggregator {
 
     /// @notice Validates a hook against both global and strategy-specific Merkle roots
     /// @param strategy Address of the strategy
+    /// @param hookAddress The address of the hook contract
     /// @param hookArgs Encoded arguments for the hook operation
     /// @param globalProof Merkle proof for the global root
     /// @param strategyProof Merkle proof for the strategy-specific root
     /// @return isValid True if the hook is valid against either root
     function validateHook(
         address strategy,
+        address hookAddress,
         bytes calldata hookArgs,
         bytes32[] calldata globalProof,
         bytes32[] calldata strategyProof
@@ -661,12 +663,14 @@ interface ISuperVaultAggregator {
 
     /// @notice Batch validates multiple hooks against Merkle roots
     /// @param strategy Address of the strategy
+    /// @param hookAddresses Array of hook contract addresses
     /// @param hooksArgs Array of encoded arguments for each hook operation
     /// @param globalProofs Array of Merkle proofs for the global root
     /// @param strategyProofs Array of Merkle proofs for the strategy-specific root
     /// @return validHooks Array of booleans indicating which hooks are valid
     function validateHooks(
         address strategy,
+        address[] calldata hookAddresses,
         bytes[] calldata hooksArgs,
         bytes32[][] calldata globalProofs,
         bytes32[][] calldata strategyProofs

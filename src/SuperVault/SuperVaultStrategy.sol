@@ -1032,7 +1032,7 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
         returns (bool)
     {
         return _getSuperVaultAggregator().validateHook(
-            address(this), ISuperHookInspector(hook).inspect(hookCalldata), globalProof, strategyProof
+            address(this), hook, ISuperHookInspector(hook).inspect(hookCalldata), globalProof, strategyProof
         );
     }
 }
