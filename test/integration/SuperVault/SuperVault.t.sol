@@ -6086,4 +6086,201 @@ contract SuperVaultTest is BaseSuperVaultTest {
             })
         );
     }
+
+    /*//////////////////////////////////////////////////////////////
+                       EMERGENCY WITHDRAWAL TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Test that NO_PROPOSAL error is thrown when trying to execute emergency withdraw activation without a
+    /// proposal
+    function test_RevertWhen_ExecuteEmergencyWithdrawActivation_NoProposal() public {
+        // Ensure there's no active proposal
+        assertEq(strategy.emergencyWithdrawableEffectiveTime(), 0, "Should not have active proposal");
+
+        // Try to execute emergency withdraw activation without a proposal
+        vm.expectRevert(ISuperVaultStrategy.NO_PROPOSAL.selector);
+        strategy.manageEmergencyWithdraw(2, address(0), 0); // action 2 = ExecuteActivation
+    }
+
+    /// @notice Test that anyone can try to execute emergency withdraw activation when there's no proposal and get
+    /// NO_PROPOSAL error
+    function test_RevertWhen_AnyoneTriesToExecuteEmergencyWithdrawActivation_NoProposal() public {
+        // Ensure there's no active proposal
+        assertEq(strategy.emergencyWithdrawableEffectiveTime(), 0, "Should not have active proposal");
+
+        // Switch to a random address (not strategist)
+        address randomUser = address(0x1234567890);
+        vm.startPrank(randomUser);
+
+        // Try to execute emergency withdraw activation without a proposal - should revert with NO_PROPOSAL, not access
+        // control
+        vm.expectRevert(ISuperVaultStrategy.NO_PROPOSAL.selector);
+        strategy.manageEmergencyWithdraw(2, address(0), 0); // action 2 = ExecuteActivation
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test that NO_PROPOSAL error is thrown when trying to cancel a proposal that doesn't exist
+    function test_RevertWhen_CancelEmergencyWithdrawProposal_NoProposal() public {
+        // Ensure there's no active proposal
+        assertEq(strategy.emergencyWithdrawableEffectiveTime(), 0, "Should not have active proposal");
+
+        // Switch to strategist
+        vm.startPrank(STRATEGIST);
+
+        // Try to cancel a proposal that doesn't exist
+        vm.expectRevert(ISuperVaultStrategy.NO_PROPOSAL.selector);
+        strategy.manageEmergencyWithdraw(4, address(0), 0); // action 4 = CancelProposal
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test successful emergency withdraw proposal and execution workflow
+    function test_EmergencyWithdrawProposalAndExecution() public {
+        vm.startPrank(STRATEGIST);
+
+        // Step 1: Propose emergency withdraw
+        vm.expectEmit(true, true, true, true);
+        emit ISuperVaultStrategy.EmergencyWithdrawableProposed(true, block.timestamp + 1 weeks);
+        strategy.manageEmergencyWithdraw(1, address(0), 0); // action 1 = Propose
+
+        // Verify proposal state
+        assertEq(strategy.proposedEmergencyWithdrawable(), true, "Proposal should be true");
+        assertEq(strategy.emergencyWithdrawableEffectiveTime(), block.timestamp + 1 weeks, "Wrong effective time");
+        assertEq(strategy.emergencyWithdrawable(), false, "Emergency withdrawable should still be false");
+
+        // Step 2: Try to execute before timelock expires
+        vm.expectRevert(ISuperVaultStrategy.INVALID_TIMESTAMP.selector);
+        strategy.manageEmergencyWithdraw(2, address(0), 0); // action 2 = ExecuteActivation
+
+        // Step 3: Wait for timelock to expire and execute
+        vm.warp(block.timestamp + 1 weeks);
+
+        vm.expectEmit(true, true, true, true);
+        emit ISuperVaultStrategy.EmergencyWithdrawableUpdated(true);
+        strategy.manageEmergencyWithdraw(2, address(0), 0); // action 2 = ExecuteActivation
+
+        // Verify execution state
+        assertEq(strategy.emergencyWithdrawable(), true, "Emergency withdrawable should be true");
+        assertEq(strategy.proposedEmergencyWithdrawable(), false, "Proposed should be reset to false");
+        assertEq(strategy.emergencyWithdrawableEffectiveTime(), 0, "Effective time should be reset to 0");
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test successful emergency withdraw proposal cancellation workflow
+    function test_EmergencyWithdrawProposalCancellation() public {
+        vm.startPrank(STRATEGIST);
+
+        // Step 1: Propose emergency withdraw
+        strategy.manageEmergencyWithdraw(1, address(0), 0); // action 1 = Propose
+
+        // Verify proposal state
+        assertEq(strategy.proposedEmergencyWithdrawable(), true, "Proposal should be true");
+        assertGt(strategy.emergencyWithdrawableEffectiveTime(), 0, "Should have effective time");
+        assertEq(strategy.emergencyWithdrawable(), false, "Emergency withdrawable should still be false");
+
+        // Step 2: Cancel the proposal
+        vm.expectEmit(true, true, true, true);
+        emit ISuperVaultStrategy.EmergencyWithdrawableProposalCanceled();
+        strategy.manageEmergencyWithdraw(4, address(0), 0); // action 4 = CancelProposal
+
+        // Verify cancellation state
+        assertEq(strategy.proposedEmergencyWithdrawable(), false, "Proposed should be reset to false");
+        assertEq(strategy.emergencyWithdrawableEffectiveTime(), 0, "Effective time should be reset to 0");
+        assertEq(strategy.emergencyWithdrawable(), false, "Emergency withdrawable should remain false");
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test that trying to execute after cancellation fails with NO_PROPOSAL
+    function test_RevertWhen_ExecuteAfterCancellation() public {
+        vm.startPrank(STRATEGIST);
+
+        // Step 1: Propose emergency withdraw
+        strategy.manageEmergencyWithdraw(1, address(0), 0); // action 1 = Propose
+
+        // Step 2: Cancel the proposal
+        strategy.manageEmergencyWithdraw(4, address(0), 0); // action 4 = CancelProposal
+
+        // Step 3: Try to execute - should fail with NO_PROPOSAL
+        vm.expectRevert(ISuperVaultStrategy.NO_PROPOSAL.selector);
+        strategy.manageEmergencyWithdraw(2, address(0), 0); // action 2 = ExecuteActivation
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test that only strategist can cancel proposals
+    function test_RevertWhen_NonStrategistTriesToCancelProposal() public {
+        vm.startPrank(STRATEGIST);
+
+        // Step 1: Propose emergency withdraw
+        strategy.manageEmergencyWithdraw(1, address(0), 0); // action 1 = Propose
+
+        vm.stopPrank();
+
+        // Step 2: Try to cancel as non-strategist
+        address randomUser = address(0x1234567890);
+        vm.startPrank(randomUser);
+
+        vm.expectRevert(ISuperVaultStrategy.STRATEGIST_NOT_AUTHORIZED.selector);
+        strategy.manageEmergencyWithdraw(4, address(0), 0); // action 4 = CancelProposal
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test that multiple proposals can be made and cancelled
+    function test_MultipleProposalAndCancellationCycles() public {
+        vm.startPrank(STRATEGIST);
+
+        // Cycle 1: Propose and cancel
+        strategy.manageEmergencyWithdraw(1, address(0), 0); // action 1 = Propose
+        assertGt(strategy.emergencyWithdrawableEffectiveTime(), 0, "Should have effective time");
+
+        strategy.manageEmergencyWithdraw(4, address(0), 0); // action 4 = CancelProposal
+        assertEq(strategy.emergencyWithdrawableEffectiveTime(), 0, "Effective time should be reset");
+
+        // Cycle 2: Propose and cancel again
+        strategy.manageEmergencyWithdraw(1, address(0), 0); // action 1 = Propose
+        assertGt(strategy.emergencyWithdrawableEffectiveTime(), 0, "Should have effective time again");
+
+        strategy.manageEmergencyWithdraw(4, address(0), 0); // action 4 = CancelProposal
+        assertEq(strategy.emergencyWithdrawableEffectiveTime(), 0, "Effective time should be reset again");
+
+        // Cycle 3: Propose, wait, and execute
+        strategy.manageEmergencyWithdraw(1, address(0), 0); // action 1 = Propose
+        vm.warp(block.timestamp + 1 weeks);
+        strategy.manageEmergencyWithdraw(2, address(0), 0); // action 2 = ExecuteActivation
+
+        assertEq(strategy.emergencyWithdrawable(), true, "Emergency withdrawable should be true");
+
+        vm.stopPrank();
+    }
+
+    /// @notice Test the vulnerability fix: anyone trying to reset emergency withdrawable flag when no proposal exists
+    function test_VulnerabilityFixed_CannotResetEmergencyWithdrawableWhenNoProposal() public {
+        // Ensure emergency withdrawable is initially false and no proposal exists
+        assertEq(strategy.emergencyWithdrawable(), false, "Emergency withdrawable should be false initially");
+        assertEq(strategy.emergencyWithdrawableEffectiveTime(), 0, "Should not have active proposal");
+
+        // Try as various actors to execute emergency withdraw activation without proposal
+        address[] memory actors = new address[](3);
+        actors[0] = STRATEGIST;
+        actors[1] = accountEth;
+        actors[2] = address(0x1234567890); // random address
+
+        for (uint256 i = 0; i < actors.length; i++) {
+            vm.startPrank(actors[i]);
+
+            // Should revert with NO_PROPOSAL, not allowing them to reset the flag
+            vm.expectRevert(ISuperVaultStrategy.NO_PROPOSAL.selector);
+            strategy.manageEmergencyWithdraw(2, address(0), 0); // action 2 = ExecuteActivation
+
+            vm.stopPrank();
+
+            // Verify state hasn't changed
+            assertEq(strategy.emergencyWithdrawable(), false, "Emergency withdrawable should remain false");
+            assertEq(strategy.emergencyWithdrawableEffectiveTime(), 0, "Should still not have active proposal");
+        }
+    }
 }

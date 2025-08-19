@@ -55,6 +55,7 @@ interface ISuperVaultStrategy {
     error HOOK_VALIDATION_FAILED();
     error STRATEGY_PAUSED();
     error INVALID_MAX_SLIPPAGE_BPS();
+    error NO_PROPOSAL();
 
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
@@ -71,6 +72,7 @@ interface ISuperVaultStrategy {
     event HookRootProposed(bytes32 proposedRoot, uint256 effectiveTime);
     event EmergencyWithdrawableProposed(bool newWithdrawable, uint256 effectiveTime);
     event EmergencyWithdrawableUpdated(bool withdrawable);
+    event EmergencyWithdrawableProposalCanceled();
     event EmergencyWithdrawal(address indexed recipient, uint256 assets);
     event VaultFeeConfigUpdated(uint256 performanceFeeBps, address indexed recipient);
     event VaultFeeConfigProposed(uint256 performanceFeeBps, address indexed recipient, uint256 effectiveTime);
@@ -258,7 +260,7 @@ interface ISuperVaultStrategy {
     function updateMaxPPSSlippage(uint256 maxSlippageBps) external;
 
     /// @notice Manage emergency withdrawals
-    /// @param action Type of action: 1=Propose, 2=ExecuteActivation, 3=Withdraw
+    /// @param action Type of action: 1=Propose, 2=ExecuteActivation, 3=Withdraw, 4=CancelProposal
     /// @param recipient The recipient of the withdrawn assets (for action 3)
     /// @param amount The amount of assets to withdraw (for action 3)
     function manageEmergencyWithdraw(uint8 action, address recipient, uint256 amount) external;
