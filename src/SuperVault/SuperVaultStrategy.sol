@@ -277,6 +277,8 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
             _executeEmergencyWithdrawActivation();
         } else if (action == 3) {
             _performEmergencyWithdraw(recipient, amount);
+        } else if (action == 4) {
+            _cancelEmergencyWithdrawProposal();
         } else {
             revert ACTION_TYPE_DISALLOWED();
         }
@@ -815,11 +817,22 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
 
     /// @notice Internal function to execute an emergency withdraw
     function _executeEmergencyWithdrawActivation() internal {
+        if (emergencyWithdrawableEffectiveTime == 0) revert NO_PROPOSAL();
         if (block.timestamp < emergencyWithdrawableEffectiveTime) revert INVALID_TIMESTAMP();
         emergencyWithdrawable = proposedEmergencyWithdrawable;
         proposedEmergencyWithdrawable = false;
         emergencyWithdrawableEffectiveTime = 0;
         emit EmergencyWithdrawableUpdated(emergencyWithdrawable);
+    }
+
+    /// @notice Internal function to cancel an emergency withdraw proposal
+    function _cancelEmergencyWithdrawProposal() internal {
+        _isPrimaryStrategist(msg.sender);
+
+        if (emergencyWithdrawableEffectiveTime == 0) revert NO_PROPOSAL();
+        proposedEmergencyWithdrawable = false;
+        emergencyWithdrawableEffectiveTime = 0;
+        emit EmergencyWithdrawableProposalCanceled();
     }
 
     /// @notice Internal function to perform an emergency withdraw
