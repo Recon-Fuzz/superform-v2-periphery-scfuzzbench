@@ -754,6 +754,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
     /// @inheritdoc ISuperVaultAggregator
     function validateHook(
         address strategy,
+        address hookAddress,
         bytes calldata hookArgs,
         bytes32[] calldata globalProof,
         bytes32[] calldata strategyProof
@@ -776,7 +777,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         }
 
         // Try to validate against global root first
-        if (_validateSingleHook(hookArgs, globalProof, true, cache)) {
+        if (_validateSingleHook(hookAddress, hookArgs, globalProof, true, cache)) {
             return true;
         }
 
@@ -785,12 +786,13 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
             return false;
         }
 
-        return _validateSingleHook(hookArgs, strategyProof, false, cache);
+        return _validateSingleHook(hookAddress, hookArgs, strategyProof, false, cache);
     }
 
     /// @inheritdoc ISuperVaultAggregator
     function validateHooks(
         address strategy,
+        address[] calldata hookAddresses,
         bytes[] calldata hooksArgs,
         bytes32[][] calldata globalProofs,
         bytes32[][] calldata strategyProofs
@@ -802,7 +804,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         uint256 length = hooksArgs.length;
 
         // Ensure array lengths match
-        if (globalProofs.length != length || strategyProofs.length != length) {
+        if (hookAddresses.length != length || globalProofs.length != length || strategyProofs.length != length) {
             revert INVALID_ARRAY_LENGTH();
         }
 
@@ -823,11 +825,11 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         validHooks = new bool[](length);
         for (uint256 i; i < length; i++) {
             // Try global root first
-            if (_validateSingleHook(hooksArgs[i], globalProofs[i], true, cache)) {
+            if (_validateSingleHook(hookAddresses[i], hooksArgs[i], globalProofs[i], true, cache)) {
                 validHooks[i] = true;
             } else if (!cache.strategyHooksRootVetoed) {
                 // Only try strategy root if strategy hooks root is NOT vetoed
-                validHooks[i] = _validateSingleHook(hooksArgs[i], strategyProofs[i], false, cache);
+                validHooks[i] = _validateSingleHook(hookAddresses[i], hooksArgs[i], strategyProofs[i], false, cache);
             }
             // If both conditions fail, validHooks[i] remains false (default value)
         }
@@ -992,18 +994,22 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         return false;
     }
 
-    /// @notice Creates a leaf node for Merkle verification from hook arguments
+    /// @notice Creates a leaf node for Merkle verification from hook address and arguments
+    /// @param hookAddress The address of the hook contract
     /// @param hookArgs The packed-encoded hook arguments (from solidityPack in JS)
     /// @return leaf The leaf node hash
-    function _createLeaf(bytes calldata hookArgs) internal pure returns (bytes32) {
-        /// @dev note the leaf is just composed by the args, not by the address of the hook
-        /// @dev this means hooks with different addresses but with the same type of encodings, will have the
-        /// same authorization (same proof is going to be generated). Is this ok?
-        return keccak256(bytes.concat(keccak256(abi.encode(hookArgs))));
+    function _createLeaf(address hookAddress, bytes calldata hookArgs) internal pure returns (bytes32) {
+        /// @dev The leaf now includes both hook address and args to prevent cross-hook replay attacks
+        /// @dev Different hooks with identical encoded args will have different authorization leaves
+        /// @dev This matches StandardMerkleTree's standardLeafHash: keccak256(keccak256(abi.encode(hookAddress,
+        /// hookArgs)))
+        /// @dev but uses bytes.concat for explicit concatenation
+        return keccak256(bytes.concat(keccak256(abi.encode(hookAddress, hookArgs))));
     }
 
     /**
      * @dev Internal function to validate a single hook against either global or strategy root
+     * @param hookAddress The address of the hook contract
      * @param hookArgs Hook arguments
      * @param proof Merkle proof for the specified root
      * @param isGlobalProof Whether to validate against global root (true) or strategy root (false)
@@ -1011,6 +1017,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
      * @return True if hook is valid, false otherwise
      */
     function _validateSingleHook(
+        address hookAddress,
         bytes calldata hookArgs,
         bytes32[] calldata proof,
         bool isGlobalProof,
@@ -1020,8 +1027,8 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         pure
         returns (bool)
     {
-        // Create leaf node from the hook arguments
-        bytes32 leaf = _createLeaf(hookArgs);
+        // Create leaf node from the hook address and arguments
+        bytes32 leaf = _createLeaf(hookAddress, hookArgs);
 
         if (isGlobalProof) {
             // Validate against global root

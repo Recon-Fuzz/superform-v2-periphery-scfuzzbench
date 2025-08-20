@@ -80,7 +80,7 @@ class EfficientProofLookup {
         for (let i = 0; i < treeDump.values.length; i++) {
             const entry = treeDump.values[i];
             const hookAddress = entry.hookAddress.toLowerCase();
-            const encodedArgs = entry.value[0]; // The encoded args are the first (and only) value
+            const encodedArgs = entry.encodedHookArgs; // Encoded args stored separately
 
             // Create composite key for O(1) lookup
             const lookupKey = `${hookAddress}:${encodedArgs}`;

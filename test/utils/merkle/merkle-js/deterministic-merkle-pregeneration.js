@@ -200,6 +200,7 @@ DESCRIPTION:
                     encoding: 'utf8',
                     cwd: '../../../../', // Go back to project root
                     timeout: timeout,
+                    maxBuffer: 10 * 1024 * 1024, // 10MB buffer instead of default 1MB
                     env: testEnv
                 });
             } else {
@@ -208,6 +209,7 @@ DESCRIPTION:
                     encoding: 'utf8',
                     cwd: '../../../../', // Go back to project root
                     timeout: timeout,
+                    maxBuffer: 10 * 1024 * 1024, // 10MB buffer instead of default 1MB
                     env: testEnv
                 });
             }
@@ -753,6 +755,7 @@ DESCRIPTION:
                 {
                     encoding: 'utf8',
                     cwd: '../../../../', // Go back to project root for merkle generation
+                    maxBuffer: 10 * 1024 * 1024, // 10MB buffer instead of default 1MB
                     stdio: this.verbose ? 'inherit' : 'pipe'
                 }
             );

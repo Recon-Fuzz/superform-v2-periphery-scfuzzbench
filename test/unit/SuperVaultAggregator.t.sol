@@ -916,9 +916,12 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
 
     /// @notice Tests hook validation with single-leaf merkle tree (empty global proof)
     function test_ValidateHook_SingleLeafGlobalTree() public {
+        // Mock hook address
+        address mockHookAddress = address(0x1234567890123456789012345678901234567890);
+
         // Create hook arguments
         bytes memory hookArgs = abi.encode("test_hook_call", 123);
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(hookArgs))));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(mockHookAddress, hookArgs))));
 
         // Set global root to be the leaf itself (single-leaf tree)
         vm.prank(address(superGovernor));
@@ -934,7 +937,8 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         bytes32[] memory emptyGlobalProof = new bytes32[](0);
         bytes32[] memory emptyStrategyProof = new bytes32[](0);
 
-        bool isValid = superVaultAggregator.validateHook(strategy, hookArgs, emptyGlobalProof, emptyStrategyProof);
+        bool isValid =
+            superVaultAggregator.validateHook(strategy, mockHookAddress, hookArgs, emptyGlobalProof, emptyStrategyProof);
 
         assertTrue(isValid, "Hook should be valid with empty proof for single-leaf global tree");
     }
@@ -943,7 +947,8 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
     function test_ValidateHook_SingleLeafStrategyTree() public {
         // Create hook arguments
         bytes memory hookArgs = abi.encode("test_hook_call", 456);
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(hookArgs))));
+        address mockHookAddress = address(0x1234567890123456789012345678901234567890);
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(mockHookAddress, hookArgs))));
 
         // Set strategy root to be the leaf itself (single-leaf tree)
         vm.prank(strategist);
@@ -959,17 +964,22 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         bytes32[] memory emptyGlobalProof = new bytes32[](0);
         bytes32[] memory emptyStrategyProof = new bytes32[](0);
 
-        bool isValid = superVaultAggregator.validateHook(strategy, hookArgs, emptyGlobalProof, emptyStrategyProof);
+        bool isValid =
+            superVaultAggregator.validateHook(strategy, mockHookAddress, hookArgs, emptyGlobalProof, emptyStrategyProof);
 
         assertTrue(isValid, "Hook should be valid with empty proof for single-leaf strategy tree");
     }
 
     /// @notice Tests hook validation fails when leaf doesn't match single-leaf tree root
     function test_ValidateHook_SingleLeafTreeWrongLeaf() public {
+        // Mock hook addresses
+        address mockHookAddress = address(0x1234567890123456789012345678901234567890);
+        address differentHookAddress = address(0x2345678901234567890123456789012345678901);
+
         // Create hook arguments and different leaf
         bytes memory hookArgs = abi.encode("test_hook_call", 789);
         bytes memory differentHookArgs = abi.encode("different_hook_call", 999);
-        bytes32 correctLeaf = keccak256(bytes.concat(keccak256(abi.encode(differentHookArgs))));
+        bytes32 correctLeaf = keccak256(bytes.concat(keccak256(abi.encode(differentHookAddress, differentHookArgs))));
 
         // Set global root to be a different leaf (single-leaf tree)
         vm.prank(address(superGovernor));
@@ -985,7 +995,8 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         bytes32[] memory emptyGlobalProof = new bytes32[](0);
         bytes32[] memory emptyStrategyProof = new bytes32[](0);
 
-        bool isValid = superVaultAggregator.validateHook(strategy, hookArgs, emptyGlobalProof, emptyStrategyProof);
+        bool isValid =
+            superVaultAggregator.validateHook(strategy, mockHookAddress, hookArgs, emptyGlobalProof, emptyStrategyProof);
 
         assertFalse(isValid, "Hook should be invalid when leaf doesn't match single-leaf tree root");
     }
@@ -994,7 +1005,8 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
     function test_ValidateHook_VetoedRoots() public {
         // Create hook arguments
         bytes memory hookArgs = abi.encode("test_hook_call", 101_112);
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(hookArgs))));
+        address mockHookAddress = address(0x1234567890123456789012345678901234567890);
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(mockHookAddress, hookArgs))));
 
         // Set both global and strategy roots to be the leaf (single-leaf trees)
         vm.prank(address(superGovernor));
@@ -1020,7 +1032,8 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         bytes32[] memory emptyGlobalProof = new bytes32[](0);
         bytes32[] memory emptyStrategyProof = new bytes32[](0);
 
-        bool isValid = superVaultAggregator.validateHook(strategy, hookArgs, emptyGlobalProof, emptyStrategyProof);
+        bool isValid =
+            superVaultAggregator.validateHook(strategy, mockHookAddress, hookArgs, emptyGlobalProof, emptyStrategyProof);
 
         assertFalse(isValid, "Hook should be invalid when both roots are vetoed");
     }
@@ -1029,7 +1042,8 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
     function test_ValidateHook_OneRootVetoed() public {
         // Create hook arguments
         bytes memory hookArgs = abi.encode("test_hook_call", 131_415);
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(hookArgs))));
+        address mockHookAddress = address(0x1234567890123456789012345678901234567890);
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(mockHookAddress, hookArgs))));
 
         // Set strategy root to be the leaf (single-leaf tree)
         vm.prank(strategist);
@@ -1046,18 +1060,23 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         bytes32[] memory emptyGlobalProof = new bytes32[](0);
         bytes32[] memory emptyStrategyProof = new bytes32[](0);
 
-        bool isValid = superVaultAggregator.validateHook(strategy, hookArgs, emptyGlobalProof, emptyStrategyProof);
+        bool isValid =
+            superVaultAggregator.validateHook(strategy, mockHookAddress, hookArgs, emptyGlobalProof, emptyStrategyProof);
 
         assertFalse(isValid, "Hook should be invalid when global root is vetoed");
     }
 
     /// @notice Tests batch hook validation with mixed single-leaf and multi-leaf scenarios
     function test_ValidateHooks_BatchValidation() public {
+        // Mock hook addresses
+        address mockHookAddress1 = address(0x1234567890123456789012345678901234567890);
+        address mockHookAddress2 = address(0x2345678901234567890123456789012345678901);
+
         // Create multiple hook arguments
         bytes memory hookArgs1 = abi.encode("hook1", 1);
         bytes memory hookArgs2 = abi.encode("hook2", 2);
-        bytes32 leaf1 = keccak256(bytes.concat(keccak256(abi.encode(hookArgs1))));
-        bytes32 leaf2 = keccak256(bytes.concat(keccak256(abi.encode(hookArgs2))));
+        bytes32 leaf1 = keccak256(bytes.concat(keccak256(abi.encode(mockHookAddress1, hookArgs1))));
+        bytes32 leaf2 = keccak256(bytes.concat(keccak256(abi.encode(mockHookAddress2, hookArgs2))));
 
         // Set global root to first leaf (single-leaf tree)
         vm.prank(address(superGovernor));
@@ -1074,6 +1093,10 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         superVaultAggregator.executeStrategyHooksRootUpdate(strategy);
 
         // Prepare batch data
+        address[] memory hookAddresses = new address[](2);
+        hookAddresses[0] = mockHookAddress1;
+        hookAddresses[1] = mockHookAddress2;
+
         bytes[] memory hooksArgs = new bytes[](2);
         hooksArgs[0] = hookArgs1;
         hooksArgs[1] = hookArgs2;
@@ -1086,7 +1109,8 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         strategyProofs[0] = new bytes32[](0); // Empty proof
         strategyProofs[1] = new bytes32[](0); // Empty proof for single-leaf tree
 
-        bool[] memory validHooks = superVaultAggregator.validateHooks(strategy, hooksArgs, globalProofs, strategyProofs);
+        bool[] memory validHooks =
+            superVaultAggregator.validateHooks(strategy, hookAddresses, hooksArgs, globalProofs, strategyProofs);
 
         assertTrue(validHooks[0], "First hook should be valid against global root");
         assertTrue(validHooks[1], "Second hook should be valid against strategy root");
