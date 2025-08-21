@@ -22,10 +22,12 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
+    uint256 public nonce;
+
     /// @notice The SuperGovernor contract for validator verification
     ISuperGovernor public immutable SUPER_GOVERNOR;
     bytes32 public constant UPDATE_PPS_TYPEHASH = keccak256(
-        "UpdatePPS(address strategy,uint256 pps,uint256 ppsStdev,uint256 validatorSet,uint256 totalValidators,uint256 timestamp)"
+        "UpdatePPS(address strategy,uint256 pps,uint256 ppsStdev,uint256 validatorSet,uint256 totalValidators,uint256 timestamp, uint256 nonce)"
     );
 
     bytes32 private constant SUPER_VAULT_AGGREGATOR = keccak256("SUPER_VAULT_AGGREGATOR");
@@ -58,6 +60,7 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
         _validateProofs(
             args.strategy, args.proofs, args.pps, args.ppsStdev, args.validatorSet, args.totalValidators, args.timestamp
         );
+        nonce++;
 
         // Emit event that PPS has been validated
         emit PPSValidated(
@@ -113,6 +116,7 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
                 msg.sender
             );
         }
+        nonce++;
 
         ISuperVaultAggregator(SUPER_GOVERNOR.getAddress(SUPER_VAULT_AGGREGATOR)).batchForwardPPS(
             ISuperVaultAggregator.BatchForwardPPSArgs({
@@ -163,7 +167,8 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
                 ppsStdev,
                 validatorSet,
                 totalValidators,
-                timestamp
+                timestamp,
+                nonce
             )
         );
         bytes32 digest = _hashTypedDataV4(structHash);

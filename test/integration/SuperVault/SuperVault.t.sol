@@ -18,7 +18,6 @@ import { ISuperVault } from "../../../src/interfaces/SuperVault/ISuperVault.sol"
 import { SuperVault } from "../../../src/SuperVault/SuperVault.sol";
 import { SuperVaultEscrow } from "../../../src/SuperVault/SuperVaultEscrow.sol";
 import { SuperVaultStrategy } from "../../../src/SuperVault/SuperVaultStrategy.sol";
-import { ISuperVaultEscrow } from "../../../src/interfaces/SuperVault/ISuperVaultEscrow.sol";
 import { IECDSAPPSOracle } from "../../../src/interfaces/oracles/IECDSAPPSOracle.sol";
 import { ISuperVaultAggregator } from "../../../src/interfaces/SuperVault/ISuperVaultAggregator.sol";
 import { IERC7540Redeem, IERC7741 } from "../../../src/vendor/standards/ERC7540/IERC7540Vault.sol";
@@ -6013,7 +6012,8 @@ contract SuperVaultTest is BaseSuperVaultTest {
                 vars.ppsStdev,
                 vars.validatorSet,
                 vars.totalValidators,
-                vars.timestamp
+                vars.timestamp,
+                ecdsappsOracle.nonce()
             )
         );
         vars.ethSignedMessageHash = MessageHashUtils.toTypedDataHash(ecdsappsOracle.domainSeparator(), structHash);
@@ -6068,7 +6068,8 @@ contract SuperVaultTest is BaseSuperVaultTest {
                 vars.ppsStdev,
                 vars.validatorSet,
                 vars.totalValidators,
-                vars.timestamp
+                vars.timestamp,
+                ecdsappsOracle.nonce()
             )
         );
         bytes32 domainSeparator = ecdsappsOracle.domainSeparator();

@@ -1778,7 +1778,8 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
                 vars.ppsStdev,
                 vars.validatorSet,
                 vars.totalValidators,
-                vars.timestamp
+                vars.timestamp,
+                ecdsappsOracle.nonce()
             )
         );
         vars.ethSignedMessageHash = MessageHashUtils.toTypedDataHash(ecdsappsOracle.domainSeparator(), structHash);

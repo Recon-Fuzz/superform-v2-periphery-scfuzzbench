@@ -159,6 +159,45 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         );
     }
 
+    function test_UpdatePPS_InvalidReplay() public {
+        // Create valid proofs from multiple validators
+        bytes[] memory proofs = _createValidProofs(
+            address(svStrategy),
+            PPS,
+            PPS_STDEV,
+            2, // validatorSet
+            3, // totalValidators
+            block.timestamp,
+            new uint256[](0)
+        );
+
+        oracleECDSA.updatePPS(
+            IECDSAPPSOracle.UpdatePPSArgs({
+                strategy: address(svStrategy),
+                proofs: proofs,
+                pps: PPS,
+                ppsStdev: PPS_STDEV,
+                validatorSet: 2,
+                totalValidators: 3,
+                timestamp: block.timestamp
+            })
+        );
+
+        vm.expectRevert(IECDSAPPSOracle.INVALID_VALIDATOR.selector);
+        oracleECDSA.updatePPS(
+            IECDSAPPSOracle.UpdatePPSArgs({
+                strategy: address(svStrategy),
+                proofs: proofs,
+                pps: PPS,
+                ppsStdev: PPS_STDEV,
+                validatorSet: 2,
+                totalValidators: 3,
+                timestamp: block.timestamp
+            })
+        );
+    }
+
+
     function test_UpdatePPS_InvalidValidatorReverts() public {
         // Create valid proofs but with a non-validator
         uint256 nonValidatorPrivKey = 0x999;
@@ -176,7 +215,8 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
                 PPS_STDEV,
                 uint256(2),
                 uint256(3),
-                block.timestamp
+                block.timestamp,
+                oracleECDSA.nonce()
             )
         );
         bytes32 domainSeparator = oracleECDSA.domainSeparator();
@@ -248,7 +288,8 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
                 PPS_STDEV,
                 uint256(2),
                 uint256(3),
-                block.timestamp
+                block.timestamp,
+                oracleECDSA.nonce()
             )
         );
         bytes32 domainSeparator = oracleECDSA.domainSeparator();
@@ -289,7 +330,8 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
                 PPS_STDEV,
                 uint256(1),
                 uint256(3),
-                block.timestamp
+                block.timestamp,
+                oracleECDSA.nonce()
             )
         );
         bytes32 domainSeparator = oracleECDSA.domainSeparator();
@@ -681,7 +723,8 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
                 ppsStdev,
                 validatorSet,
                 totalValidators,
-                timestamp
+                timestamp,
+                oracleECDSA.nonce()
             )
         );
         bytes32 domainSeparator = oracleECDSA.domainSeparator();
