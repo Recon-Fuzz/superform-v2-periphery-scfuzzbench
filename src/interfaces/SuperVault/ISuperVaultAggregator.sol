@@ -407,7 +407,8 @@ interface ISuperVaultAggregator {
     function withdrawUpkeep(uint256 amount) external;
 
     /// @notice Claims upkeep tokens from the contract
-    function claimUpkeep() external;
+    /// @param amount Amount of UP tokens to claim
+    function claimUpkeep(uint256 amount) external;
 
     /*//////////////////////////////////////////////////////////////
                         AUTHORIZED CALLER MANAGEMENT

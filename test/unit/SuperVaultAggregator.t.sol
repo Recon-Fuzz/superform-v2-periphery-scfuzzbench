@@ -934,6 +934,10 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         vm.warp(8 days);
         superGovernor.executeUpkeepPaymentsChange();
 
+        vm.startPrank(sGovernor);
+        superGovernor.setAddress(superGovernor.SUPER_VAULT_AGGREGATOR(), address(superVaultAggregator));
+        vm.stopPrank();
+
         // Create second strategy for testing upkeep; otherwise is stale
         vm.prank(strategist);
         (, address strategy2,) = superVaultAggregator.createVault(
@@ -988,7 +992,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         uint256 superBankBalanceBefore = IERC20(upToken).balanceOf(_superBank);
         assertEq(superBankBalanceBefore, 0);
         vm.startPrank(address(governor));
-        superVaultAggregator.claimUpkeep();
+        superGovernor.executeUpkeepClaim(superVaultAggregator.claimableUpkeep());
         vm.stopPrank();
         uint256 superBankBalanceAfter = IERC20(upToken).balanceOf(_superBank);
         assertEq(superBankBalanceAfter, 1e18);

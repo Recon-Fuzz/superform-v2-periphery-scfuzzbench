@@ -90,14 +90,6 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         _;
     }
 
-    // @notice Validates that msg.sender is the upkeep claimer
-    modifier onlyUpkeepClaimer() {
-        if (!SUPER_GOVERNOR.hasRole(keccak256("GOVERNOR_ROLE"), msg.sender)) {
-            revert CALLER_NOT_AUTHORIZED();
-        }
-        _;
-    }
-
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -295,19 +287,22 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
     }
 
     /// @inheritdoc ISuperVaultAggregator
-    function claimUpkeep() external onlyUpkeepClaimer {
-        if (claimableUpkeep == 0) revert INSUFFICIENT_UPKEEP();
+    function claimUpkeep(uint256 amount) external {
+        // Only SUPER_GOVERNOR can claim upkeep
+        if (msg.sender != address(SUPER_GOVERNOR)) {
+            revert CALLER_NOT_AUTHORIZED();
+        }
+
+        if (claimableUpkeep < amount) revert INSUFFICIENT_UPKEEP();
+        claimableUpkeep -= amount;
 
         // Get the UP token address from SUPER_GOVERNOR
         address upToken = SUPER_GOVERNOR.getAddress(SUPER_GOVERNOR.UP());
 
         // Transfer UP tokens to `SuperBank`
         address _superBank = _getSuperBank();
-        IERC20(upToken).safeTransfer(_superBank, claimableUpkeep);
-        emit UpkeepClaimed(_superBank, claimableUpkeep);
-
-        // Reset claimableUpkeep
-        claimableUpkeep = 0;
+        IERC20(upToken).safeTransfer(_superBank, amount);
+        emit UpkeepClaimed(_superBank, amount);
     }
 
     /// @inheritdoc ISuperVaultAggregator
