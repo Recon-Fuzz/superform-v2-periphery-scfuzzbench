@@ -2231,6 +2231,30 @@ contract SuperVaultTest is BaseSuperVaultTest {
         );
     }
 
+
+    function test_CreateVaultWithSecondaryStrategists() public {
+        address[] memory secondaryStrategists = new address[](2);
+        secondaryStrategists[0] = address(0x1);
+        secondaryStrategists[1] = address(0x2);
+        (, address strategyAddr, ) = _createVaultWithSecondaryStrategists(
+            VaultCreationParams({
+                asset: address(asset),
+                strategist: address(this),
+                minUpdateInterval: 1000,
+                maxStaleness: 10_000,
+                performanceFeeBps: 1000,
+                symbol: "TV"
+            }),
+            secondaryStrategists
+        );
+
+
+        address[] memory retrievedStrategists = aggregator.getSecondaryStrategists(strategyAddr);
+        assertEq(retrievedStrategists.length, 2);
+        assertEq(retrievedStrategists[0], address(0x1));
+        assertEq(retrievedStrategists[1], address(0x2));
+    }
+
     struct VaultCreationParams {
         address asset;
         address strategist;
@@ -2250,6 +2274,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
                 name: "SuperVault",
                 symbol: params.symbol,
                 mainStrategist: params.strategist,
+                secondaryStrategists: new address[](0),
                 minUpdateInterval: params.minUpdateInterval,
                 maxStaleness: params.maxStaleness,
                 feeConfig: ISuperVaultStrategy.FeeConfig({
@@ -2259,6 +2284,28 @@ contract SuperVaultTest is BaseSuperVaultTest {
             })
         );
     }
+
+    function _createVaultWithSecondaryStrategists(VaultCreationParams memory params, address[] memory secondaryStrategists)
+        internal
+        returns (address vaultAddr, address strategyAddr, address escrowAddr)
+    {
+        (vaultAddr, strategyAddr, escrowAddr) = aggregator.createVault(
+            ISuperVaultAggregator.VaultCreationParams({
+                asset: params.asset,
+                name: "SuperVault",
+                symbol: params.symbol,
+                mainStrategist: params.strategist,
+                secondaryStrategists: secondaryStrategists,
+                minUpdateInterval: params.minUpdateInterval,
+                maxStaleness: params.maxStaleness,
+                feeConfig: ISuperVaultStrategy.FeeConfig({
+                    performanceFeeBps: params.performanceFeeBps,
+                    recipient: address(this)
+                })
+            })
+        );
+    }
+
 
     /*//////////////////////////////////////////////////////////////
                        STAKE CLAIM FLOW TEST

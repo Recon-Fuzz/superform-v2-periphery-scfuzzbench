@@ -169,6 +169,11 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         _strategyData[strategy].isPaused = false;
         _strategyData[strategy].mainStrategist = params.mainStrategist;
 
+        uint256 secondaryLen = params.secondaryStrategists.length;
+        for (uint256 i; i < secondaryLen; ++i) {
+            _strategyData[strategy].secondaryStrategists.add(params.secondaryStrategists[i]);
+        }
+
         // Set default threshold values
         _strategyData[strategy].dispersionThreshold = type(uint256).max; // Default: max (disabled)
         _strategyData[strategy].deviationThreshold = type(uint256).max; // Default: max (disabled)

@@ -76,6 +76,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
     uint256 public validator2PrivateKey;
     uint256 public validator3PrivateKey;
 
+
     function setUp() public virtual override {
         super.setUp();
         console2.log("--- SETUP BASE SUPERVAULT ---");
@@ -187,6 +188,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
                 name: "SuperVault",
                 symbol: _superVaultSymbol,
                 mainStrategist: STRATEGIST,
+                secondaryStrategists: new address[](0),
                 minUpdateInterval: 5,
                 maxStaleness: 300,
                 feeConfig: ISuperVaultStrategy.FeeConfig({ performanceFeeBps: 1000, recipient: address(this) })
@@ -237,6 +239,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
                 name: "SuperVault SA",
                 symbol: "SV_SA_USDC",
                 mainStrategist: smartAccountStrategist, // Use smart account instead of EOA
+                secondaryStrategists: new address[](0),
                 minUpdateInterval: 5,
                 maxStaleness: 300,
                 feeConfig: ISuperVaultStrategy.FeeConfig({ performanceFeeBps: 1000, recipient: address(this) })
