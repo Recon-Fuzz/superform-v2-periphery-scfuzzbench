@@ -96,6 +96,7 @@ interface ISuperVaultAggregator {
         string name;
         string symbol;
         address mainStrategist;
+        address[] secondaryStrategists;
         uint256 minUpdateInterval;
         uint256 maxStaleness;
         ISuperVaultStrategy.FeeConfig feeConfig;

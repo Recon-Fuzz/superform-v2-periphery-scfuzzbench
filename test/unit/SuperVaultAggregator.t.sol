@@ -71,6 +71,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
             ISuperVaultAggregator.VaultCreationParams({
                 asset: address(asset),
                 mainStrategist: strategist,
+                secondaryStrategists: new address[](0),
                 name: "Test Vault",
                 symbol: "TV",
                 minUpdateInterval: 5,
@@ -511,6 +512,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
             ISuperVaultAggregator.VaultCreationParams({
                 asset: address(asset),
                 mainStrategist: strategist,
+                secondaryStrategists: new address[](0),
                 name: "Test Vault 2",
                 symbol: "TV2",
                 minUpdateInterval: 5,
@@ -554,6 +556,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
             ISuperVaultAggregator.VaultCreationParams({
                 asset: address(asset),
                 mainStrategist: strategist2,
+                secondaryStrategists: new address[](0),
                 name: "Test Vault 2",
                 symbol: "TV2",
                 minUpdateInterval: 5,
@@ -715,6 +718,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
             ISuperVaultAggregator.VaultCreationParams({
                 asset: address(asset),
                 mainStrategist: strategist,
+                secondaryStrategists: new address[](0),
                 name: "Test Vault 2",
                 symbol: "TV2",
                 minUpdateInterval: 5,
@@ -785,6 +789,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
             ISuperVaultAggregator.VaultCreationParams({
                 asset: address(asset),
                 mainStrategist: strategist,
+                secondaryStrategists: new address[](0),
                 name: "Test Vault 2",
                 symbol: "TV2",
                 minUpdateInterval: 5,
@@ -862,6 +867,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
             ISuperVaultAggregator.VaultCreationParams({
                 asset: address(asset),
                 mainStrategist: strategist,
+                secondaryStrategists: new address[](0),
                 name: "Test Vault 2",
                 symbol: "TV2",
                 minUpdateInterval: 5,
@@ -944,6 +950,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
             ISuperVaultAggregator.VaultCreationParams({
                 asset: address(asset),
                 mainStrategist: strategist,
+                secondaryStrategists: new address[](0),
                 name: "Test Vault 2",
                 symbol: "TV2",
                 minUpdateInterval: 5,
