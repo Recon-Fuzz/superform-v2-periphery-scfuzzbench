@@ -310,7 +310,9 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
         uint256 sharesToMove = shares > availableAccumulatorShares ? availableAccumulatorShares : shares;
 
         // Pro-rata move of cost basis (NO PPS here; preserves fee correctness)
-        uint256 movedCostBasis = sharesToMove * fromState.accumulatorCostBasis / fromState.accumulatorShares;
+        uint256 movedCostBasis = sharesToMove == availableAccumulatorShares
+            ? fromState.accumulatorCostBasis
+            : Math.mulDiv(sharesToMove, fromState.accumulatorCostBasis, availableAccumulatorShares, Math.Rounding.Floor);
 
         fromState.accumulatorShares -= sharesToMove;
         fromState.accumulatorCostBasis -= movedCostBasis;
