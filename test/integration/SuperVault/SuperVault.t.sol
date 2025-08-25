@@ -2232,12 +2232,11 @@ contract SuperVaultTest is BaseSuperVaultTest {
         );
     }
 
-
     function test_CreateVaultWithSecondaryStrategists() public {
         address[] memory secondaryStrategists = new address[](2);
         secondaryStrategists[0] = address(0x1);
         secondaryStrategists[1] = address(0x2);
-        (, address strategyAddr, ) = _createVaultWithSecondaryStrategists(
+        (, address strategyAddr,) = _createVaultWithSecondaryStrategists(
             VaultCreationParams({
                 asset: address(asset),
                 strategist: address(this),
@@ -2248,7 +2247,6 @@ contract SuperVaultTest is BaseSuperVaultTest {
             }),
             secondaryStrategists
         );
-
 
         address[] memory retrievedStrategists = aggregator.getSecondaryStrategists(strategyAddr);
         assertEq(retrievedStrategists.length, 2);
@@ -2286,7 +2284,10 @@ contract SuperVaultTest is BaseSuperVaultTest {
         );
     }
 
-    function _createVaultWithSecondaryStrategists(VaultCreationParams memory params, address[] memory secondaryStrategists)
+    function _createVaultWithSecondaryStrategists(
+        VaultCreationParams memory params,
+        address[] memory secondaryStrategists
+    )
         internal
         returns (address vaultAddr, address strategyAddr, address escrowAddr)
     {
@@ -2306,7 +2307,6 @@ contract SuperVaultTest is BaseSuperVaultTest {
             })
         );
     }
-
 
     /*//////////////////////////////////////////////////////////////
                        STAKE CLAIM FLOW TEST
@@ -6119,7 +6119,6 @@ contract SuperVaultTest is BaseSuperVaultTest {
                 ecdsappsOracle.nonce()
             )
         );
-        bytes32 domainSeparator = ecdsappsOracle.domainSeparator();
         vars.ethSignedMessageHash = MessageHashUtils.toTypedDataHash(ecdsappsOracle.domainSeparator(), structHash);
 
         // Create signature (r, s, v) components using VALIDATOR_KEY (exactly as in _updateSuperVaultPPS)
