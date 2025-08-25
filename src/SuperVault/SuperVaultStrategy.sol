@@ -172,7 +172,7 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
     }
 
     /// @inheritdoc ISuperVaultStrategy
-    function fulfillRedeemRequests(FulfillArgs calldata args) external nonReentrant {
+    function fulfillRedeemRequests(FulfillArgs calldata args) external payable nonReentrant {
         _isStrategist(msg.sender);
 
         // Check if strategy is paused
