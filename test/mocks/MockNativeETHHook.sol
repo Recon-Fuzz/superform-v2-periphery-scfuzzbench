@@ -81,7 +81,7 @@ contract MockNativeETHHook is BaseHook, ISuperHookContextAware {
     {
         // Extract yield source from the standard position (bytes 32-52)
         address yieldSource = HookDataDecoder.extractYieldSource(data);
-        
+
         // Extract ETH value from the calldata (bytes 52-84)
         uint256 ethValue = 0;
         if (data.length >= 84) {
@@ -89,12 +89,12 @@ contract MockNativeETHHook is BaseHook, ISuperHookContextAware {
                 ethValue := calldataload(add(data.offset, 52))
             }
         }
-        
+
         // Use configured amount as fallback
         if (ethValue == 0) {
             ethValue = ethAmount;
         }
-        
+
         // Check if we should use previous hook amount
         if (usePrevAmount && prevHook != address(0)) {
             ethValue = ISuperHookResult(prevHook).getOutAmount(account);
@@ -103,11 +103,8 @@ contract MockNativeETHHook is BaseHook, ISuperHookContextAware {
         // Note: Cannot emit events in view function
 
         executions = new Execution[](1);
-        executions[0] = Execution({ 
-            target: yieldSource, 
-            value: ethValue, 
-            callData: abi.encodeWithSignature("execute()") 
-        });
+        executions[0] =
+            Execution({ target: yieldSource, value: ethValue, callData: abi.encodeWithSignature("execute()") });
     }
 
     /// @inheritdoc ISuperHookContextAware
@@ -161,8 +158,10 @@ contract MockNativeETHHook is BaseHook, ISuperHookContextAware {
     }
 
     function _postExecute(address, address account, bytes calldata) internal override {
-        // Update balance after execution
-        _setOutAmount(account.balance, account);
+        // Calculate difference between final and initial balance
+        uint256 initialBalance = getOutAmount(account);
+        uint256 finalBalance = account.balance;
+        _setOutAmount(initialBalance - finalBalance, account);
     }
 
     /*//////////////////////////////////////////////////////////////

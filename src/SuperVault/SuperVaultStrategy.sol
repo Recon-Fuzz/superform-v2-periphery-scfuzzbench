@@ -172,7 +172,7 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
     }
 
     /// @inheritdoc ISuperVaultStrategy
-    function fulfillRedeemRequests(FulfillArgs calldata args) external payable nonReentrant {
+    function fulfillRedeemRequests(FulfillArgs calldata args) external nonReentrant {
         _isStrategist(msg.sender);
 
         // Check if strategy is paused
@@ -504,8 +504,7 @@ contract SuperVaultStrategy is Initializable, ISuperVaultStrategy, ReentrancyGua
 
         vars.executions = vars.hookContract.build(address(0), address(this), hookCalldata);
         for (uint256 j; j < vars.executions.length; ++j) {
-            (vars.success,) =
-                vars.executions[j].target.call{ value: vars.executions[j].value }(vars.executions[j].callData);
+            (vars.success,) = vars.executions[j].target.call(vars.executions[j].callData);
             if (!vars.success) revert OPERATION_FAILED();
         }
         ISuperHook(address(vars.hookContract)).resetExecutionState(address(this));

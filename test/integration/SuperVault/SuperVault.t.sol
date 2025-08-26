@@ -6413,53 +6413,10 @@ contract SuperVaultTest is BaseSuperVaultTest {
         assertFalse(success, "Should fail when sending ETH to non-payable function");
     }
 
-    function test_FulfillRedeemRequests_AcceptsPayable() public {
-        // This test verifies that fulfillRedeemRequests can accept ETH (is payable)
-        uint256 ethAmount = 1 ether;
-
-        // Fund the strategist with ETH
-        vm.deal(STRATEGIST, ethAmount);
-
-        // Test that fulfillRedeemRequests is payable by calling it with ETH (it will revert but not due to payable)
-        ISuperVaultStrategy.FulfillArgs memory args = ISuperVaultStrategy.FulfillArgs({
-            controllers: new address[](0), // Empty array will cause ZERO_LENGTH revert
-            hooks: new address[](0),
-            hookCalldata: new bytes[](0),
-            expectedAssetsOrSharesOut: new uint256[](0),
-            globalProofs: new bytes32[][](0),
-            strategyProofs: new bytes32[][](0)
-        });
-
-        vm.startPrank(STRATEGIST);
-        vm.expectRevert(ISuperVaultStrategy.ZERO_LENGTH.selector);
-        strategy.fulfillRedeemRequests{ value: ethAmount }(args); // This proves it's payable
-        vm.stopPrank();
-    }
-
-    function test_FulfillRedeemRequests_WithNativeETHHook() public {
+    function test_executeHooks_WithNativeETHHook() public {
         vm.selectFork(FORKS[ETH]);
-        
         uint256 depositAmount = 1000e6; // 1000 USDC
         uint256 ethAmount = 0.5 ether;
-        uint256 userShares;
-
-        // Setup: Deposit to get shares first
-        vm.startPrank(accountEth);
-        asset.approve(address(vault), depositAmount);
-        userShares = vault.deposit(depositAmount, accountEth);
-        vm.stopPrank();
-
-        assertGt(vault.balanceOf(accountEth), 0, "User should have shares after deposit");
-
-        // Request redemption
-        vm.startPrank(accountEth);
-        vault.requestRedeem(userShares, accountEth, accountEth);
-        vm.stopPrank();
-
-        assertEq(strategy.pendingRedeemRequest(accountEth), userShares, "Pending redeem request should match user shares");
-
-        // Select ETH fork for MockNativeETHHook
-        vm.selectFork(FORKS[ETH]);
 
         // Add MockETHReceiver as active yield source
         address ethReceiver = contractAddresses[ETH]["MOCK_ETH_RECEIVER"];
@@ -6475,73 +6432,55 @@ contract SuperVaultTest is BaseSuperVaultTest {
         // Fund MockETHReceiver with USDC so it can transfer when hook executes
         deal(address(asset), ethReceiver, depositAmount);
 
-        // Get hook addresses and ETH receiver
-        address[] memory hooks = new address[](2);
-        hooks[0] = globalMerkleHooksPeriphery[0]; // MockNativeETHHook
-        hooks[1] = _getHookAddress(ETH, REDEEM_4626_VAULT_HOOK_KEY); // Redeem4626VaultHook
+        // STEP 1: Execute native ETH hook separately via executeHooks
+        address[] memory nativeHooks = new address[](1);
+        nativeHooks[0] = globalMerkleHooksPeriphery[0]; // MockNativeETHHook
 
-        bytes[] memory hookCalldata = new bytes[](2);
+        bytes[] memory nativeHookCalldata = new bytes[](1);
+        nativeHookCalldata[0] = _createMockNativeETHHookData(ethReceiver, ethAmount);
 
-        // MockNativeETHHook calldata - create similar to _createRedeem4626HookData pattern
-        hookCalldata[0] = _createMockNativeETHHookData(ethReceiver, ethAmount);
+        uint256[] memory nativeExpectedOut = new uint256[](1);
+        nativeExpectedOut[0] = ethAmount; // Expected ETH transfer amount
 
-        // Redeem4626VaultHook calldata - use proper _createRedeem4626HookData
-        address vaultAddress = realVaultAddresses[ETH][ERC4626_VAULT_KEY][AAVE_VAULT_KEY][USDC_KEY];
-        hookCalldata[1] = _createRedeem4626HookData(
-            _getYieldSourceOracleId(bytes32(bytes(ERC4626_YIELD_SOURCE_ORACLE_KEY)), MANAGER),
-            vaultAddress,
-            address(strategy),
-            userShares,
-            false
-        );
+        // Create argsForProofs for native hook
+        bytes[] memory nativeArgsForProofs = new bytes[](1);
+        nativeArgsForProofs[0] = ISuperHookInspector(nativeHooks[0]).inspect(nativeHookCalldata[0]);
 
-        uint256[] memory expectedOut = new uint256[](2);
-        expectedOut[0] = ethAmount; // Expected ETH transfer amount
-        expectedOut[1] = depositAmount; // Expected USDC from vault redeem
-
-        // Create argsForProofs using ISuperHookInspector.inspect() pattern
-        bytes[] memory argsForProofs = new bytes[](2);
-        argsForProofs[0] = ISuperHookInspector(hooks[0]).inspect(hookCalldata[0]);
-        argsForProofs[1] = ISuperHookInspector(hooks[1]).inspect(hookCalldata[1]);
-
-        // Create controllers array
-        address[] memory controllers = new address[](1);
-        controllers[0] = accountEth;
-
-        // Get proper merkle proofs for both hooks
-        bytes32[][] memory globalProofs = _getMerkleProofsForHooks(hooks, argsForProofs);
-        bytes32[][] memory strategyProofs = new bytes32[][](2);
-        strategyProofs[0] = new bytes32[](0);
-        strategyProofs[1] = new bytes32[](0);
+        // Get merkle proofs for native hook
+        bytes32[][] memory nativeGlobalProofs = _getMerkleProofsForHooks(nativeHooks, nativeArgsForProofs);
+        bytes32[][] memory nativeStrategyProofs = new bytes32[][](1);
+        nativeStrategyProofs[0] = new bytes32[](0);
 
         // Fund strategist with ETH for hook execution
         vm.deal(STRATEGIST, ethAmount);
 
-        // Execute fulfillRedeemRequests with native ETH hook
+        // Execute native ETH hook via executeHooks
         vm.startPrank(STRATEGIST);
-        strategy.fulfillRedeemRequests{value: ethAmount}(
-            ISuperVaultStrategy.FulfillArgs({
-                controllers: controllers,
-                hooks: hooks,
-                hookCalldata: hookCalldata,
-                expectedAssetsOrSharesOut: expectedOut,
-                globalProofs: globalProofs,
-                strategyProofs: strategyProofs
+        strategy.executeHooks{ value: ethAmount }(
+            ISuperVaultStrategy.ExecuteArgs({
+                hooks: nativeHooks,
+                hookCalldata: nativeHookCalldata,
+                expectedAssetsOrSharesOut: nativeExpectedOut,
+                globalProofs: nativeGlobalProofs,
+                strategyProofs: nativeStrategyProofs
             })
         );
         vm.stopPrank();
-
-        // Verify the redemption was successful
-        assertEq(strategy.pendingRedeemRequest(accountEth), 0, "Pending redeem request should be cleared");
-        assertGt(vault.maxWithdraw(accountEth), 0, "User should have claimable assets");
     }
 
-    function _createMockNativeETHHookData(address ethReceiver, uint256 ethAmount) internal pure returns (bytes memory) {
+    function _createMockNativeETHHookData(
+        address ethReceiver,
+        uint256 ethAmount
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         // Create calldata following the standard hook format: oracleId + yieldSource + amount
         return abi.encodePacked(
             bytes32(0), // oracle ID placeholder
             ethReceiver, // yield source (ETH receiver)
-            ethAmount    // ETH amount to send
+            ethAmount // ETH amount to send
         );
     }
 
