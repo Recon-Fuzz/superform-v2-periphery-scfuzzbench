@@ -15,12 +15,12 @@ contract GetAddressesFromBaseTest is BaseTest {
      * @dev This logs addresses for the merkle tree pre-generation system
      */
     function test_getAddresses() external view {
-        // Simply log each address individually to avoid stack too deep
-        console.log("VAULT_globalSVStrategy:", globalSVStrategy);
-        console.log("VAULT_globalSVGearStrategy:", globalSVGearStrategy);
-        console.log("VAULT_globalRuggableVault:", globalRuggableVault);
+        // Add SuperVaults here
+        console.log("globalSVStrategy:", globalSVStrategy);
+        console.log("globalSVGearStrategy:", globalSVGearStrategy);
+        console.log("globalRuggableVault:", globalRuggableVault);
 
-        // Test vault addresses
+        // Add vaults here
         console.log("VAULT_test1_DynamicAllocation_MockVault:", test1_DynamicAllocation_MockVault);
         console.log("VAULT_test3_UnderlyingVaults_StressTest:", test3_UnderlyingVaults_StressTest);
         console.log("VAULT_test6_yieldAccumulation_vault1:", test6_yieldAccumulation_vault1);
@@ -41,12 +41,13 @@ contract GetAddressesFromBaseTest is BaseTest {
             "VAULT_test10_RuggableVault_Withdraw_ConvertDistortion:", test10_RuggableVault_Withdraw_ConvertDistortion
         );
         console.log("VAULT_test11_Allocate_NewYieldSource:", test11_Allocate_NewYieldSource);
+        console.log("VAULT_MOCK_ETH_RECEIVER:", contractAddresses[ETH]["MOCK_ETH_RECEIVER"]);
 
-        console.log("HOOK_APPROVE_AND_DEPOSIT_4626_VAULT_HOOK:", globalMerkleHooks[0]);
-        console.log("HOOK_REDEEM_4626_VAULT_HOOK:", globalMerkleHooks[1]);
-        console.log("HOOK_APPROVE_AND_GEARBOX_STAKE_HOOK:", globalMerkleHooks[2]);
-        console.log("HOOK_GEARBOX_UNSTAKE_HOOK:", globalMerkleHooks[3]);
-        console.log("HOOK_MOCK_NATIVE_ETH_HOOK:", globalMerkleHooksPeriphery[0]);
-        console.log("MOCK_ETH_RECEIVER:", contractAddresses[ETH]["MOCK_ETH_RECEIVER"]);
+        // add hooks here
+        console.log("ApproveAndDeposit4626VaultHook:", globalMerkleHooks[0]);
+        console.log("Redeem4626VaultHook:", globalMerkleHooks[1]);
+        console.log("ApproveAndGearboxStakeHook:", globalMerkleHooks[2]);
+        console.log("GearboxUnstakeHook:", globalMerkleHooks[3]);
+        console.log("MockNativeETHHook:", globalMerkleHooksPeriphery[0]);
     }
 }
