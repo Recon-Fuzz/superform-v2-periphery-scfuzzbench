@@ -7400,7 +7400,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
         // Verify state
         assertEq(asset.balanceOf(address(strategy)), depositAmount, "Wrong strategy balance");
 
-        _depositFreeAssetsFromSingleAmount7540(depositAmount, address(vault), address(centrifugeVault)); // change vault to other underlying
+        _depositFreeAssetsFromSingleAmount7540(depositAmount, address(aaveVault), address(centrifugeVault)); // change vault to other underlying
 
         uint256 userShares = vault.balanceOf(accountEth);
         assertGt(userShares, 0, "No shares minted to user");
@@ -7409,6 +7409,12 @@ contract SuperVaultTest is BaseSuperVaultTest {
     function _setUp7540UnderlyingSuperVault() internal {
         // Set the vault to use the 7540 underlying
         vm.startPrank(MANAGER);
+        strategy.manageYieldSources(
+            address(fluidVault),
+            _getContract(ETH, ERC4626_YIELD_SOURCE_ORACLE_KEY),
+            2 // removeYieldSource
+        );
+
         strategy.manageYieldSource(
             address(centrifugeVault),
             _getContract(ETH, ERC7540_YIELD_SOURCE_ORACLE_KEY),
