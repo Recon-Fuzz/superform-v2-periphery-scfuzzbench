@@ -155,6 +155,14 @@
     {
       "symbol": "test_11_Allocate_NewYieldSource_Coverage",
       "address": "0x0d73a464b722bF807Fb4163Ebb5E487658620Dce"
+    },
+    {
+      "symbol": "MOCK_ETH_RECEIVER",
+      "address": "0x01d1cf44A0A7C83457F5dB373B3a01A95A4853da"
+    },
+    {
+      "symbol": "MOCK_ETH_RECEIVER_Coverage",
+      "address": "0x01d1cf44A0A7C83457F5dB373B3a01A95A4853da"
     }
   ],
   "10": [

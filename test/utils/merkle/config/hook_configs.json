@@ -1,0 +1,66 @@
+{
+    "ApproveAndDeposit4626VaultHook": {
+        "args": [
+            {
+                "name": "yieldSource",
+                "type": "yieldSource"
+            },
+            {
+                "name": "token",
+                "type": "token"
+            }
+        ]
+    },
+    "Redeem4626VaultHook": {
+        "args": [
+            {
+                "name": "yieldSource",
+                "type": "yieldSource"
+            },
+            {
+                "name": "owner",
+                "type": "beneficiary"
+            }
+        ]
+    },
+    "ApproveAndGearboxStakeHook": {
+        "args": [
+            {
+                "name": "yieldSource",
+                "type": "staking"
+            },
+            {
+                "name": "token",
+                "type": "token"
+            }
+        ]
+    },
+    "GearboxUnstakeHook": {
+        "args": [
+            {
+                "name": "yieldSource",
+                "type": "staking"
+            }
+        ]
+    },
+    "MockNativeETHHook": {
+        "args": [
+            {
+                "name": "yieldSource",
+                "type": "yieldSource"
+            }
+        ]
+    },
+    "Deposit5115VaultHook": {
+        "args": [
+            {
+                "name": "yieldSource",
+                "type": "yieldSource"
+            },
+            {
+                "name": "token",
+                "type": "token"
+            }
+        ]
+    }
+}

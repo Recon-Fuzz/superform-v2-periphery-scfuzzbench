@@ -8,7 +8,9 @@
  */
 
 const fs = require('fs');
+const path = require('path');
 const { execSync } = require('child_process');
+const AddressListGenerator = require('./generate-address-lists');
 
 class DeterministicMerkleGen {
     constructor() {
@@ -93,58 +95,44 @@ DESCRIPTION:
         const lines = output.split('\n');
         const addresses = {
             vaults: {},
+            superVaults: {},
             hooks: {}
         };
 
         // Look for console.log output lines
         for (const line of lines) {
-            // Original vault addresses
-            if (line.includes('VAULT_globalSVStrategy:')) {
-                addresses.vaults.globalSVStrategy = this.extractAddress(line);
-            } else if (line.includes('VAULT_globalSVGearStrategy:')) {
-                addresses.vaults.globalSVGearStrategy = this.extractAddress(line);
-            } else if (line.includes('VAULT_globalRuggableVault:')) {
-                addresses.vaults.globalRuggableVault = this.extractAddress(line);
+            // Dynamic vault detection - any line starting with "VAULT_"
+            if (line.includes('VAULT_')) {
+                const vaultMatch = line.match(/VAULT_([A-Za-z0-9_]+):\s*(0x[a-fA-F0-9]{40})/);
+                if (vaultMatch) {
+                    const vaultName = vaultMatch[1];
+                    const address = vaultMatch[2];
+                    addresses.vaults[vaultName] = address;
+                    this.log(`Detected vault: ${vaultName} -> ${address}`);
+                }
             }
-            // Test vault addresses
-            else if (line.includes('VAULT_test1_DynamicAllocation_MockVault:')) {
-                addresses.vaults.test1_DynamicAllocation_MockVault = this.extractAddress(line);
-            } else if (line.includes('VAULT_test3_UnderlyingVaults_StressTest:')) {
-                addresses.vaults.test3_UnderlyingVaults_StressTest = this.extractAddress(line);
-            } else if (line.includes('VAULT_test6_yieldAccumulation_vault1:')) {
-                addresses.vaults.test6_yieldAccumulation_vault1 = this.extractAddress(line);
-            } else if (line.includes('VAULT_test6_yieldAccumulation_vault2:')) {
-                addresses.vaults.test6_yieldAccumulation_vault2 = this.extractAddress(line);
-            } else if (line.includes('VAULT_test6_yieldAccumulation_vault3:')) {
-                addresses.vaults.test6_yieldAccumulation_vault3 = this.extractAddress(line);
-            } else if (line.includes('VAULT_test6_yieldAccumulation_WithRebalancing_vault1:')) {
-                addresses.vaults.test6_yieldAccumulation_WithRebalancing_vault1 = this.extractAddress(line);
-            } else if (line.includes('VAULT_test6_yieldAccumulation_WithRebalancing_vault2:')) {
-                addresses.vaults.test6_yieldAccumulation_WithRebalancing_vault2 = this.extractAddress(line);
-            } else if (line.includes('VAULT_test6_yieldAccumulation_WithRebalancing_vault3:')) {
-                addresses.vaults.test6_yieldAccumulation_WithRebalancing_vault3 = this.extractAddress(line);
-            } else if (line.includes('VAULT_test10_RuggableVault_Deposit:')) {
-                addresses.vaults.test10_RuggableVault_Deposit = this.extractAddress(line);
-            } else if (line.includes('VAULT_test10_RuggableVault_Withdraw:')) {
-                addresses.vaults.test10_RuggableVault_Withdraw = this.extractAddress(line);
-            } else if (line.includes('VAULT_test10_RuggableVault_Withdraw_ConvertDistortion:')) {
-                addresses.vaults.test10_RuggableVault_Withdraw_ConvertDistortion = this.extractAddress(line);
-            } else if (line.includes('VAULT_test11_Allocate_NewYieldSource:')) {
-                addresses.vaults.test11_Allocate_NewYieldSource = this.extractAddress(line);
+            // SuperVault detection - these should NOT have VAULT_ prefix
+            else if (line.includes('globalSVStrategy:') || line.includes('globalSVGearStrategy:') || line.includes('globalRuggableVault:')) {
+                const svMatch = line.match(/(global[A-Za-z0-9_]+):\s*(0x[a-fA-F0-9]{40})/);
+                if (svMatch) {
+                    const svName = svMatch[1];
+                    const address = svMatch[2];
+                    addresses.superVaults[svName] = address;
+                    this.log(`Detected SuperVault: ${svName} -> ${address}`);
+                }
             }
-
-            // Hook addresses
-            else if (line.includes('HOOK_APPROVE_AND_DEPOSIT_4626_VAULT_HOOK:')) {
-                addresses.hooks.APPROVE_AND_DEPOSIT_4626_VAULT_HOOK = this.extractAddress(line);
-            } else if (line.includes('HOOK_REDEEM_4626_VAULT_HOOK:')) {
-                addresses.hooks.REDEEM_4626_VAULT_HOOK = this.extractAddress(line);
-            } else if (line.includes('HOOK_APPROVE_AND_GEARBOX_STAKE_HOOK:')) {
-                addresses.hooks.APPROVE_AND_GEARBOX_STAKE_HOOK = this.extractAddress(line);
-            } else if (line.includes('HOOK_GEARBOX_UNSTAKE_HOOK:')) {
-                addresses.hooks.GEARBOX_UNSTAKE_HOOK = this.extractAddress(line);
-            } else if (line.includes('HOOK_MOCK_NATIVE_ETH_HOOK:')) {
-                addresses.hooks.MOCK_NATIVE_ETH_HOOK = this.extractAddress(line);
-            } else if (line.includes('MOCK_ETH_RECEIVER:')) {
+            // Dynamic hook detection - any line ending with "Hook:" (contract names)
+            else if (line.includes('Hook:')) {
+                const hookMatch = line.match(/([A-Za-z0-9]+Hook):\s*(0x[a-fA-F0-9]{40})/);
+                if (hookMatch) {
+                    const hookName = hookMatch[1]; // Use actual contract name (PascalCase)
+                    const address = hookMatch[2];
+                    addresses.hooks[hookName] = address;
+                    this.log(`Detected hook: ${hookName} -> ${address}`);
+                }
+            }
+            // Special case for MOCK_ETH_RECEIVER
+            else if (line.includes('MOCK_ETH_RECEIVER:')) {
                 addresses.mockETHReceiver = this.extractAddress(line);
             }
         }
@@ -153,6 +141,7 @@ DESCRIPTION:
         this.validateAddresses(addresses);
 
         this.log('Retrieved addresses from console output:', JSON.stringify(addresses, null, 2));
+        this.log(`Detected ${Object.keys(addresses.hooks).length} hooks and ${Object.keys(addresses.vaults).length} vaults`);
         return addresses;
     }
 
@@ -200,18 +189,19 @@ DESCRIPTION:
             if (isCoverage) {
                 this.log(`Detected coverage environment for address extraction (timeout: ${timeout}ms)`);
 
-                result = execSync('make forge-coverage-internal ARGS="--match-test test_getAddresses -vv"', {
+                const command = `make forge-test-internal TEST=test/utils/merkle/config/GetAddressesFromBaseTest.s.sol ARGS="--match-test test_getAddresses -vv"`;
+                result = execSync(command, {
                     encoding: 'utf8',
-                    cwd: '../../../../', // Go back to project root
+                    cwd: path.join(__dirname, '../../../..'), // Go to project root
                     timeout: timeout,
                     maxBuffer: 10 * 1024 * 1024, // 10MB buffer instead of default 1MB
                     env: testEnv
                 });
             } else {
                 this.log(`Running regular test for address extraction (timeout: ${timeout}ms)`);
-                result = execSync('make forge-test-internal TEST=test/utils/merkle/merkle-js/GetAddressesFromBaseTest.s.sol ARGS="--match-test test_getAddresses -vv"', {
+                result = execSync('make forge-test-internal TEST=test/utils/merkle/config/GetAddressesFromBaseTest.s.sol ARGS="--match-test test_getAddresses -vv"', {
                     encoding: 'utf8',
-                    cwd: '../../../../', // Go back to project root
+                    cwd: path.join(__dirname, '../../../..'), // Go to project root
                     timeout: timeout,
                     maxBuffer: 10 * 1024 * 1024, // 10MB buffer instead of default 1MB
                     env: testEnv
@@ -222,18 +212,11 @@ DESCRIPTION:
             return this.parseConsoleOutput(result);
 
         } catch (error) {
-            this.log('Error getting addresses from BaseTest test:', error.message);
-            if (this.verbose && error.stdout) {
-                this.log('Forge stdout:', error.stdout);
+            this.log('❌ Error during merkle tree generation:', error.message);
+            if (this.verbose) {
+                this.log('Error details:', error.stack);
             }
-            if (this.verbose && error.stderr) {
-                this.log('Forge stderr:', error.stderr);
-            }
-
             throw error;
-
-            // Fallback: try to extract from existing test artifacts
-            //return this.extractAddressesFromTestArtifacts();
         }
     }
 
@@ -250,7 +233,7 @@ DESCRIPTION:
      * Validate calculated addresses
      */
     validateAddresses(addresses) {
-        const requiredVaults = [
+        const requiredSuperVaults = [
             'globalSVStrategy',
             'globalSVGearStrategy',
             'globalRuggableVault'
@@ -274,23 +257,28 @@ DESCRIPTION:
 
 
         const requiredHooks = [
-            'APPROVE_AND_DEPOSIT_4626_VAULT_HOOK',
-            'REDEEM_4626_VAULT_HOOK', 
-            'APPROVE_AND_GEARBOX_STAKE_HOOK',
-            'GEARBOX_UNSTAKE_HOOK',
-            'MOCK_NATIVE_ETH_HOOK'
+            'ApproveAndDeposit4626VaultHook',
+            'Redeem4626VaultHook',
+            'ApproveAndGearboxStakeHook',
+            'GearboxUnstakeHook',
+            'MockNativeETHHook'
         ];
 
-        // Check vaults
-        if (!addresses.vaults) {
-            throw new Error('Missing vaults object');
+        // Check SuperVaults (these are in addresses.superVaults, not addresses.vaults)
+        if (!addresses.superVaults) {
+            throw new Error('Missing superVaults object');
         }
 
-        // Check required vaults
-        for (const vault of requiredVaults) {
-            if (!addresses.vaults[vault] || addresses.vaults[vault] === '0x0000000000000000000000000000000000000000') {
-                throw new Error(`Invalid or missing vault address for ${vault}: ${addresses.vaults[vault]}`);
+        // Check required SuperVaults
+        for (const superVault of requiredSuperVaults) {
+            if (!addresses.superVaults[superVault] || addresses.superVaults[superVault] === '0x0000000000000000000000000000000000000000') {
+                throw new Error(`Invalid or missing vault address for ${superVault}: ${addresses.superVaults[superVault]}`);
             }
+        }
+
+        // Check regular vaults
+        if (!addresses.vaults) {
+            throw new Error('Missing vaults object');
         }
 
         // Check test vaults (optional - not all test environments may have them)
@@ -719,59 +707,44 @@ DESCRIPTION:
     }
 
     /**
-     * Generate merkle tree using existing script
+     * Generate merkle tree using new dynamic system
      */
-    async generateMerkleTree(addresses) {
+    async generateMerkleTree(addresses, chainId = 1) {
         // Ensure clean state before generation
         this.cleanupCacheFiles();
 
-        const hookAddresses = Object.values(addresses.hooks);
+        const hookAddresses = addresses.hooks;
         const vaultAddresses = Object.values(addresses.vaults);
 
-        this.log(`Generating merkle tree with ${hookAddresses.length} hooks and ${vaultAddresses.length} vaults`);
+        this.log(`Generating merkle tree with ${Object.keys(hookAddresses).length} hooks and ${vaultAddresses.length} vaults`);
 
-        const scriptPath = 'test/utils/merkle/merkle-js/build-hook-merkle-trees.js';
-        const localScriptPath = './build-hook-merkle-trees.js';
-
-        if (!fs.existsSync(localScriptPath)) {
-            throw new Error(`Merkle generation script not found: ${localScriptPath}`);
+        // Update address lists with detected vaults and SuperVaults
+        const allDetectedAddresses = { ...addresses.vaults, ...addresses.superVaults };
+        if (Object.keys(allDetectedAddresses).length > 0) {
+            this.log('Updating address lists with detected vaults and SuperVaults...');
+            const AddressListGenerator = require('./generate-address-lists.js');
+            const generator = new AddressListGenerator();
+            generator.addDetectedVaults(allDetectedAddresses);
         }
 
-        // Order the hook addresses according to the expected order in build-hook-merkle-trees.js
-        const orderedHookAddresses = [
-            addresses.hooks.APPROVE_AND_DEPOSIT_4626_VAULT_HOOK,
-            addresses.hooks.REDEEM_4626_VAULT_HOOK,
-            addresses.hooks.APPROVE_AND_GEARBOX_STAKE_HOOK,
-            addresses.hooks.GEARBOX_UNSTAKE_HOOK,
-            addresses.hooks.MOCK_NATIVE_ETH_HOOK
-        ];
+        // Generate merkle trees with detected hooks
+        console.log('\n=== Generating Merkle Trees ===');
+        const { generateMerkleTrees } = require('./build-hook-merkle-trees');
+        const detectedHookNames = Object.keys(addresses.hooks);
 
-        this.log(`Hook addresses being passed:`);
-        this.log(`  ApproveAndDeposit4626VaultHook: ${orderedHookAddresses[0]}`);
-        this.log(`  Redeem4626VaultHook: ${orderedHookAddresses[1]}`);
-        this.log(`  ApproveAndGearboxStakeHook: ${orderedHookAddresses[2]}`);
-        this.log(`  GearboxUnstakeHook: ${orderedHookAddresses[3]}`);
-        this.log(`  MockNativeETHHook: ${orderedHookAddresses[4]}`);
+        if (detectedHookNames.length === 0) {
+            throw new Error('No hooks detected from console output');
+        }
 
-        const hooksString = orderedHookAddresses.join(',');
-        const vaultsString = vaultAddresses.join(',');
-        const mockETHReceiver = addresses.mockETHReceiver || '0x0000000000000000000000000000000000000000';
-
-        this.log(`MockETHReceiver address: ${mockETHReceiver}`);
+        console.log(`Generating merkle trees for hooks: ${detectedHookNames.join(', ')}`);
 
         try {
-            execSync(
-                `node ${scriptPath} "${hooksString}" "${vaultsString}" "${mockETHReceiver}"`,
-                {
-                    encoding: 'utf8',
-                    cwd: '../../../../', // Go back to project root for merkle generation
-                    maxBuffer: 10 * 1024 * 1024, // 10MB buffer instead of default 1MB
-                    stdio: this.verbose ? 'inherit' : 'pipe'
-                }
-            );
-            this.log('Merkle tree generation completed');
+            const result = await generateMerkleTrees(addresses.hooks, chainId);
+            console.log('Merkle tree generation completed successfully');
+            return result;
         } catch (error) {
-            throw new Error(`Merkle generation failed: ${error.message}`);
+            console.error('Error generating merkle trees:', error);
+            throw error;
         }
     }
 
