@@ -7406,7 +7406,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
         (, uint256 superformFee, uint256 recipientFee) = strategy.previewPerformanceFee(account, userShares);
 
         // Step 5: Fulfill Redeem
-        _fulfillRedeem7540Underlying(userShares, address(centrifugeVault), address(aaveVault), account);
+        _fulfillRedeem7540Underlying(userShares, address(aaveVault), address(centrifugeVault), account);
 
         // Verify balances
         assertEq(asset.balanceOf(account), preRedeemUserAssets, "User assets not returned");
