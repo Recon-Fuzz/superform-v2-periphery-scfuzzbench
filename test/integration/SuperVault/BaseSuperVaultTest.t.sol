@@ -14,6 +14,14 @@ import { MessageHashUtils } from "openzeppelin-contracts/contracts/utils/cryptog
 
 import { ModuleKitHelpers, AccountInstance, UserOpData } from "modulekit/ModuleKit.sol";
 
+// centrifuge mocks
+import { IRoot } from "@superform-v2-core/test/mocks/centrifuge/IRoot.sol";
+import { ITranche } from "@superform-v2-core/test/mocks/centrifuge/ITranch.sol";
+import { RestrictionManagerLike } from "@superform-v2-core/test/mocks/centrifuge/IRestrictionManagerLike.sol";
+import { IInvestmentManager } from "@superform-v2-core/test/mocks/centrifuge/IInvestmentManager.sol";
+import { IPoolManager } from "@superform-v2-core/test/mocks/centrifuge/IPoolManager.sol";
+import { IERC7540 } from "@superform-v2-core/src/vendor/vaults/7540/IERC7540.sol";
+
 // superform
 import { SuperVault } from "../../../src/SuperVault/SuperVault.sol";
 import { SuperVaultStrategy } from "../../../src/SuperVault/SuperVaultStrategy.sol";
@@ -75,6 +83,21 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
     uint256 public validator1PrivateKey;
     uint256 public validator2PrivateKey;
     uint256 public validator3PrivateKey;
+
+    // Centrifuge
+    uint64 public poolId;
+    uint128 public assetId;
+    bytes16 public trancheId;
+
+    address public rootManager;
+    IRoot public rootCentrifuge;
+    IPoolManager public poolManager;
+
+    IERC7540 public centrifugeVault;
+    address public yieldSource7540AddressETH_USDC;
+
+    IInvestmentManager public investmentManager;
+    RestrictionManagerLike public restrictionManager;
 
     function setUp() public virtual override {
         super.setUp();
@@ -151,6 +174,13 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         validator1PrivateKey = 0x20;
         validator2PrivateKey = 0x30;
         validator3PrivateKey = 0x40;
+
+        // Centrifuge setup
+        rootManager = 0x0C1fDfd6a1331a875EA013F3897fc8a76ada5DfC;
+        yieldSource7540AddressETH_USDC =
+            realVaultAddresses[ETH][ERC7540_FULLY_ASYNC_KEY][CENTRIFUGE_USDC_VAULT_KEY][USDC_KEY];
+        vm.label(yieldSource7540AddressETH_USDC, "CentrifugeUSDCVault");
+        centrifugeVault = IERC7540(yieldSource7540AddressETH_USDC);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -259,6 +289,44 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         vm.stopPrank();
 
         return (vaultAddr, strategyAddr, escrowAddr);
+    }
+
+    /**
+     * @notice Sets up the SuperVault with 7540 underlying yield source
+     */
+    function _setUp7540UnderlyingSuperVault() internal {
+        // Set the vault to use the 7540 underlying
+        vm.startPrank(MANAGER);
+        strategy.manageYieldSource(
+            address(fluidVault),
+            _getContract(ETH, ERC4626_YIELD_SOURCE_ORACLE_KEY),
+            2 // removeYieldSource
+        );
+
+        strategy.manageYieldSource(
+            address(centrifugeVault),
+            _getContract(ETH, ERC7540_YIELD_SOURCE_ORACLE_KEY),
+            0 // addYieldSource
+        );
+        vm.stopPrank();
+
+        // Centrifuge setup
+        address share = IERC7540(yieldSource7540AddressETH_USDC).share();
+        address mngr = ITranche(share).hook();
+
+        restrictionManager = RestrictionManagerLike(mngr);
+        vm.startPrank(RestrictionManagerLike(mngr).root());
+        restrictionManager.updateMember(share, address(vault), type(uint64).max);
+        vm.stopPrank();
+
+        poolId = centrifugeVault.poolId();
+        assertEq(poolId, 4_139_607_887);
+        trancheId = centrifugeVault.trancheId();
+        assertEq(trancheId, bytes16(0x97aa65f23e7be09fcd62d0554d2e9273));
+
+        poolManager = IPoolManager(0x91808B5E2F6d7483D41A681034D7c9DbB64B9E29);
+        assetId = poolManager.assetToId(address(asset));
+        assertEq(assetId, uint128(242_333_941_209_166_991_950_178_742_833_476_896_417));
     }
 
     /**
@@ -672,12 +740,8 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
             0
         );
 
-        fulfillHooksData[1] = _createApproveAndRequestDeposit7540HookData(
-            vault2,
-            address(asset),
-            depositAmount - halfAmount,
-            false
-        );
+        fulfillHooksData[1] =
+            _createApproveAndRequestDeposit7540HookData(vault2, address(asset), depositAmount - halfAmount, false);
 
         uint256[] memory expectedAssetsOrSharesOut = new uint256[](2);
         expectedAssetsOrSharesOut[0] = IERC4626(address(vault1)).convertToShares(halfAmount);
@@ -699,10 +763,57 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         );
         vm.stopPrank();
 
+        _execute7540DepositFlow(depositAmount);
+
         (uint256 pricePerShare) = _getSuperVaultPricePerShare();
         uint256 shares = depositAmount.mulDiv(strategy.PRECISION(), pricePerShare);
 
         _trackDeposit(accountEth, shares, depositAmount);
+    }
+
+    function _execute7540DepositFlow(uint256 depositAmount) internal {
+        uint256 userExpectedShares = centrifugeVault.convertToShares(depositAmount);
+
+        vm.startPrank(rootManager);
+
+        investmentManager.fulfillDepositRequest(
+            poolId, trancheId, address(vault), assetId, uint128(depositAmount), uint128(userExpectedShares)
+        );
+        vm.stopPrank();
+
+        uint256 maxDeposit = centrifugeVault.maxDeposit(address(vault));
+        userExpectedShares = centrifugeVault.convertToShares(maxDeposit);
+
+        address[] memory hooksAddressesDeposit = new address[](1);
+        hooksAddressesDeposit[0] = _getHookAddress(ETH, DEPOSIT_7540_VAULT_HOOK_KEY);
+
+        bytes[] memory depositHooksData = new bytes[](1);
+        depositHooksData[0] = _createDeposit7540VaultHookData(
+            _getYieldSourceOracleId(bytes32(bytes(ERC7540_YIELD_SOURCE_ORACLE_KEY)), MANAGER),
+            address(centrifugeVault),
+            maxDeposit,
+            false,
+            address(0),
+            0
+        );
+
+        uint256[] memory expectedAssetsOrSharesOutDeposit = new uint256[](1);
+        expectedAssetsOrSharesOutDeposit[0] = userExpectedShares;
+
+        bytes[] memory argsForDepositProofs = new bytes[](1);
+        argsForDepositProofs[0] = ISuperHookInspector(hooksAddressesDeposit[0]).inspect(depositHooksData[0]);
+
+        vm.startPrank(MANAGER);
+        strategy.executeHooks(
+            ISuperVaultStrategy.ExecuteArgs({
+                hooks: hooksAddressesDeposit,
+                hookCalldata: depositHooksData,
+                expectedAssetsOrSharesOut: expectedAssetsOrSharesOutDeposit,
+                globalProofs: _getMerkleProofsForHooks(hooksAddressesDeposit, argsForDepositProofs),
+                strategyProofs: new bytes32[][](2)
+            })
+        );
+        vm.stopPrank();
     }
 
     // Local variables struct for _depositFreeAssetsFromSingleAmountViaSmartAccount
@@ -1189,6 +1300,133 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
             })
         );
         vm.stopPrank();
+    }
+
+    // Local variables struct for _fulfillRedeem
+    struct FulfillRedeem7540UnderlyingLocalVars {
+        address[] requestingUsers;
+        address[] withdrawHookAddress;
+        address[] fulfillHooksAddresses;
+        uint256 centrifugeSharesOut;
+        uint256 aaveSharesOut;
+        bytes[] fulfillHooksData;
+        uint256 totalSvAssets;
+        uint256 pricePerShare;
+        uint256 amountForVault1;
+        uint256 amountForVault2;
+        uint256 underlyingSharesForVault1;
+        uint256 underlyingSharesForVault2;
+        uint256[] expectedAssetsOrSharesOut;
+    }
+
+    /**
+     * @notice Fulfills a redeem request from both underlying vaults
+     * @param redeemShares The number of shares to redeem
+     * @param vault1 The address of the first vault
+     * @param vault2 The address of the second vault (7540 vault)
+     */
+    function _fulfillRedeem7540Underlying(uint256 redeemShares, address vault1, address vault2) internal {
+        FulfillRedeem7540UnderlyingLocalVars memory vars;
+
+        vars.requestingUsers = new address[](1);
+        vars.requestingUsers[0] = accountEth;
+
+        vars.withdrawHookAddress[0] = _getHookAddress(ETH, REDEEM_4626_VAULT_HOOK_KEY);
+        vars.withdrawHookAddress[1] = _getHookAddress(ETH, WITHDRAW_7540_VAULT_HOOK_KEY);
+
+        vars.fulfillHooksAddresses = new address[](2);
+        vars.fulfillHooksAddresses[0] = vars.withdrawHookAddress[0];
+        vars.fulfillHooksAddresses[1] = vars.withdrawHookAddress[1];
+
+        (vars.aaveSharesOut, vars.centrifugeSharesOut) = _calculateVaultShares7540Underlying(redeemShares);
+
+        _requestRedeemFrom7540Underlying(vars.centrifugeSharesOut, vault2);
+
+        vars.fulfillHooksData = new bytes[](2);
+        vars.fulfillHooksData[0] = _createRedeem4626HookData(
+            _getYieldSourceOracleId(bytes32(bytes(ERC4626_YIELD_SOURCE_ORACLE_KEY)), MANAGER),
+            vault1,
+            address(strategy),
+            vars.aaveSharesOut,
+            false
+        );
+
+        uint256 centrifugeAssetsOut = IERC7540(vault2).convertToAssets(vars.centrifugeSharesOut);
+        vars.fulfillHooksData[1] = _createWithdraw7540VaultHookData(
+            _getYieldSourceOracleId(bytes32(bytes(ERC7540_YIELD_SOURCE_ORACLE_KEY)), MANAGER),
+            vault2,
+            centrifugeAssetsOut,
+            false
+        );
+
+        (vars.totalSvAssets,) = totalAssetHelper.totalAssets(address(strategy));
+        vars.pricePerShare = vars.totalSvAssets.mulDiv(strategy.PRECISION(), vault.totalSupply(), Math.Rounding.Floor);
+
+        vars.amountForVault1 = vars.aaveSharesOut * vault.PRECISION() / vars.pricePerShare;
+        vars.amountForVault2 = vars.centrifugeSharesOut * vault.PRECISION() / vars.pricePerShare;
+
+        vars.underlyingSharesForVault1 = IERC4626(address(vault1)).convertToShares(vars.amountForVault1);
+        vars.underlyingSharesForVault2 = IERC7540(address(vault2)).convertToShares(vars.amountForVault2);
+
+        vars.expectedAssetsOrSharesOut = new uint256[](2);
+        vars.expectedAssetsOrSharesOut[0] = IERC4626(address(vault1)).convertToAssets(vars.underlyingSharesForVault1);
+        vars.expectedAssetsOrSharesOut[1] = IERC7540(address(vault2)).convertToAssets(vars.underlyingSharesForVault2);
+
+        vm.startPrank(MANAGER);
+        bytes[] memory argsForProofs = new bytes[](2);
+        argsForProofs[0] = ISuperHookInspector(vars.fulfillHooksAddresses[0]).inspect(vars.fulfillHooksData[0]);
+        argsForProofs[1] = ISuperHookInspector(vars.fulfillHooksAddresses[1]).inspect(vars.fulfillHooksData[1]);
+
+        strategy.fulfillRedeemRequests(
+            ISuperVaultStrategy.FulfillArgs({
+                controllers: vars.requestingUsers,
+                hooks: vars.fulfillHooksAddresses,
+                hookCalldata: vars.fulfillHooksData,
+                expectedAssetsOrSharesOut: vars.expectedAssetsOrSharesOut,
+                globalProofs: _getMerkleProofsForHooks(vars.fulfillHooksAddresses, argsForProofs),
+                strategyProofs: new bytes32[][](2)
+            })
+        );
+        vm.stopPrank();
+    }
+
+    /**
+     * @notice Requests a redeem from the 7540 vault
+     * @param redeemShares The number of shares to redeem
+     * @param vault7540 The address of the 7540 vault
+     */
+    function _requestRedeemFrom7540Underlying(uint256 redeemShares, address vault7540) internal {
+        address[] memory hooksAddresses = new address[](1);
+        hooksAddresses[0] = _getHookAddress(ETH, REQUEST_REDEEM_7540_VAULT_HOOK_KEY);
+
+        bytes[] memory hooksData = new bytes[](1);
+        hooksData[0] = _createRequestRedeem7540VaultHookData(
+            _getYieldSourceOracleId(bytes32(bytes(ERC7540_YIELD_SOURCE_ORACLE_KEY)), MANAGER),
+            vault7540, redeemShares, false);
+
+        uint256[] memory expectedAssetsOrSharesOut = new uint256[](1);
+        expectedAssetsOrSharesOut[0] = IERC7540(vault7540).convertToAssets(redeemShares);
+
+        bytes[] memory argsForProofs = new bytes[](1);
+        argsForProofs[0] = ISuperHookInspector(hooksAddresses[0]).inspect(hooksData[0]);
+
+        vm.startPrank(MANAGER);
+        strategy.executeHooks(
+            ISuperVaultStrategy.ExecuteArgs({
+                hooks: hooksAddresses,
+                hookCalldata: hooksData,
+                expectedAssetsOrSharesOut: expectedAssetsOrSharesOut,
+                globalProofs: _getMerkleProofsForHooks(hooksAddresses, argsForProofs),
+                strategyProofs: new bytes32[][](2)
+            })
+        );
+        vm.stopPrank();
+
+        vm.prank(rootManager);
+
+        investmentManager.fulfillRedeemRequest(
+            poolId, trancheId, address(vault), assetId, uint128(expectedAssetsOrSharesOut[0]), uint128(redeemShares)
+        );
     }
 
     function _completeDepositFlow(uint256 depositAmount) internal {
@@ -1910,6 +2148,39 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         }
 
         return (fluidSharesOut, aaveSharesOut);
+    }
+
+    /**
+     * @notice Calculates the shares out for each vault based on the redeem shares
+     * @param redeemShares The number of shares to redeem
+     * @return aaveSharesOut The number of shares out for the aave vault
+     * @return centrifugeSharesOut The number of shares out for the centrifuge vault
+     */
+    function _calculateVaultShares7540Underlying(uint256 redeemShares)
+        internal
+        view
+        returns (uint256 aaveSharesOut, uint256 centrifugeSharesOut)
+    {   
+        // Get current shares in each vault
+        uint256 aaveShares = aaveVault.balanceOf(address(strategy));
+        uint256 centrifugeShares = IERC20Metadata(centrifugeVault.share()).balanceOf(address(strategy));
+
+        // Convert shares to underlying asset values
+        uint256 aaveUsdcValue = aaveVault.convertToAssets(aaveShares);
+        uint256 centrifugeUsdcValue = centrifugeVault.convertToAssets(centrifugeShares);
+
+        console2.log("aaveUsdcValue", aaveUsdcValue);
+        console2.log("centrifugeUsdcValue", centrifugeUsdcValue);
+
+        // Calculate proportional split based on USD values
+        uint256 totalUsdValue = aaveUsdcValue + centrifugeUsdcValue;
+
+        if (totalUsdValue > 0) {
+            aaveSharesOut = (redeemShares * aaveUsdcValue) / totalUsdValue;
+            centrifugeSharesOut = redeemShares - aaveSharesOut; // Use subtraction to avoid rounding errors
+        }
+
+        return (aaveSharesOut, centrifugeSharesOut);
     }
 
     /**
