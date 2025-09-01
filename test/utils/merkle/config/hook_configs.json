@@ -95,14 +95,6 @@
             }
         ]
     },
-    "ApproveAndRequestRedeem7540VaultHook": {
-        "args": [
-            {
-                "name": "yieldSource",
-                "type": "yieldSource"
-            }
-        ]
-    },
     "RequestRedeem7540VaultHook": {
         "args": [
             {
