@@ -100,7 +100,7 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
         _validateCoreContracts(coreAddresses);
 
         // Deploy periphery contracts
-        PeripheryContracts memory peripheryContracts = _deployPeripheryContracts(chainId, coreAddresses);
+        PeripheryContracts memory peripheryContracts = _deployPeripheryContracts(chainId);
 
         // Configure contracts
         _configurePeripheryContracts(peripheryContracts, coreAddresses);
@@ -122,7 +122,7 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
         _validateCoreContracts(coreAddresses);
 
         // Deploy periphery contracts
-        PeripheryContracts memory peripheryContracts = _deployPeripheryContracts(chainId, coreAddresses);
+        PeripheryContracts memory peripheryContracts = _deployPeripheryContracts(chainId);
 
         // Configure contracts
         _configurePeripheryContracts(peripheryContracts, coreAddresses);
@@ -232,10 +232,7 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
         console2.log("  SuperLedger:", coreAddresses.superLedger);
     }
 
-    function _deployPeripheryContracts(
-        uint64 chainId,
-        CoreContractAddresses memory coreAddresses
-    )
+    function _deployPeripheryContracts(uint64 chainId)
         internal
         returns (PeripheryContracts memory peripheryContracts)
     {
@@ -271,14 +268,19 @@ contract DeployV2Periphery is DeployV2Base, ConfigPeriphery {
             "SuperVaultImplementation",
             chainId,
             __getSalt("SuperVaultImplementation"),
-            vm.getCode("script/locked-bytecode/SuperVault.json")
+            abi.encodePacked(
+                vm.getCode("script/locked-bytecode/SuperVault.json"), abi.encode(peripheryContracts.superGovernor)
+            )
         );
 
         peripheryContracts.strategyImpl = __deployContractIfNeeded(
             "SuperVaultStrategyImplementation",
             chainId,
             __getSalt("SuperVaultStrategyImplementation"),
-            vm.getCode("script/locked-bytecode/SuperVaultStrategy.json")
+            abi.encodePacked(
+                vm.getCode("script/locked-bytecode/SuperVaultStrategy.json"),
+                abi.encode(peripheryContracts.superGovernor)
+            )
         );
 
         peripheryContracts.escrowImpl = __deployContractIfNeeded(
