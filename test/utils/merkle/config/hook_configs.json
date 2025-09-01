@@ -107,6 +107,14 @@
             }
         ]
     },
+    "RequestRedeem7540VaultHook": {
+        "args": [
+            {
+                "name": "yieldSource",
+                "type": "yieldSource"
+            }
+        ]
+    },
     "Redeem7540VaultHook": {
         "args": [
             {
