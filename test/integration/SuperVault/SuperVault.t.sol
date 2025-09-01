@@ -35,14 +35,6 @@ import { MockNativeETHHook } from "../../mocks/MockNativeETHHook.sol";
 import { MockETHReceiver } from "../../mocks/MockETHReceiver.sol";
 import { Create2 } from "openzeppelin-contracts/contracts/utils/Create2.sol";
 
-// centrifuge mocks
-import { IRoot } from "@superform-v2-core/test/mocks/centrifuge/IRoot.sol";
-import { ITranche } from "@superform-v2-core/test/mocks/centrifuge/ITranch.sol";
-import { RestrictionManagerLike } from "@superform-v2-core/test/mocks/centrifuge/IRestrictionManagerLike.sol";
-import { IInvestmentManager } from "@superform-v2-core/test/mocks/centrifuge/IInvestmentManager.sol";
-import { IPoolManager } from "@superform-v2-core/test/mocks/centrifuge/IPoolManager.sol";
-import { IERC7540 } from "@superform-v2-core/src/vendor/vaults/7540/IERC7540.sol";
-
 contract SuperVaultTest is BaseSuperVaultTest {
     using Math for uint256;
 
@@ -60,21 +52,6 @@ contract SuperVaultTest is BaseSuperVaultTest {
     SuperVault gearSuperVault;
     SuperVaultEscrow escrowGearSuperVault;
     SuperVaultStrategy strategyGearSuperVault;
-
-    // Centrifuge
-    uint64 public poolId;
-    uint128 public assetId;
-    bytes16 public trancheId;
-
-    IRoot public root;
-    address public rootManager;
-    IPoolManager public poolManager;
-
-    IERC7540 public centrifugeVault;
-    address public yieldSource7540AddressETH_USDC;
-
-    IInvestmentManager public investmentManager;
-    RestrictionManagerLike public restrictionManager;
 
     function setUp() public override {
         super.setUp();
@@ -103,13 +80,6 @@ contract SuperVaultTest is BaseSuperVaultTest {
         console2.log("gearboxStakingAddr: ", gearboxStakingAddr);
         vm.label(gearboxStakingAddr, "GearboxStaking");
         gearboxFarmingPool = IGearboxFarmingPool(gearboxStakingAddr);
-
-        // Centrifuge setup
-        rootManager = 0x0C1fDfd6a1331a875EA013F3897fc8a76ada5DfC;
-        yieldSource7540AddressETH_USDC =
-            realVaultAddresses[ETH][ERC7540_FULLY_ASYNC_KEY][CENTRIFUGE_USDC_VAULT_KEY][USDC_KEY];
-        vm.label(yieldSource7540AddressETH_USDC, "CentrifugeUSDCVault");
-        centrifugeVault = IERC7540(yieldSource7540AddressETH_USDC);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -7425,41 +7395,21 @@ contract SuperVaultTest is BaseSuperVaultTest {
         // Verify shares are escrowed
         assertEq(IERC20(vault.share()).balanceOf(account), 0, "User shares not transferred from account");
         assertEq(IERC20(vault.share()).balanceOf(address(escrow)), userShares, "Shares not transferred to escrow");
-    }
 
-    function _setUp7540UnderlyingSuperVault() internal {
-        // Set the vault to use the 7540 underlying
-        vm.startPrank(MANAGER);
-        strategy.manageYieldSource(
-            address(fluidVault),
-            _getContract(ETH, ERC4626_YIELD_SOURCE_ORACLE_KEY),
-            2 // removeYieldSource
-        );
+        console2.log("--pps before---", aggregator.getPPS(address(strategy)));
+        vm.warp(block.timestamp + 6);
+        _updateSuperVaultPPS(address(strategy), address(vault));
 
-        strategy.manageYieldSource(
-            address(centrifugeVault),
-            _getContract(ETH, ERC7540_YIELD_SOURCE_ORACLE_KEY),
-            0 // addYieldSource
-        );
-        vm.stopPrank();
+        console2.log("--pps after---", aggregator.getPPS(address(strategy)));
 
-        // Centrifuge setup
-        address share = IERC7540(yieldSource7540AddressETH_USDC).share();
-        address mngr = ITranche(share).hook();
+        (, uint256 superformFee, uint256 recipientFee) = strategy.previewPerformanceFee(accountEth, userShares);
 
-        restrictionManager = RestrictionManagerLike(mngr);
-        vm.startPrank(RestrictionManagerLike(mngr).root());
-        restrictionManager.updateMember(share, address(vault), type(uint64).max);
-        vm.stopPrank();
+        // Step 5: Fulfill Redeem
+        _fulfillRedeem7540Underlying(userShares, address(centrifugeVault), address(aaveVault));
 
-        poolId = centrifugeVault.poolId();
-        assertEq(poolId, 4_139_607_887);
-        trancheId = centrifugeVault.trancheId();
-        assertEq(trancheId, bytes16(0x97aa65f23e7be09fcd62d0554d2e9273));
-
-        poolManager = IPoolManager(0x91808B5E2F6d7483D41A681034D7c9DbB64B9E29);
-        assetId = poolManager.assetToId(address(asset));
-        assertEq(assetId, uint128(242_333_941_209_166_991_950_178_742_833_476_896_417));
+        // Verify balances
+        assertEq(asset.balanceOf(account), preRedeemUserAssets, "User assets not returned");
+        assertEq(asset.balanceOf(TREASURY), feeBalanceBefore + superformFee + recipientFee, "Fee balance not correct");
     }
 
     /*//////////////////////////////////////////////////////////////
