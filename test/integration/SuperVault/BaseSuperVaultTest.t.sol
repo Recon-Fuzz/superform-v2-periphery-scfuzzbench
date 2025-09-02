@@ -2187,7 +2187,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
     {
         // Get current shares in each vault
         uint256 vault1Shares = IERC4626(vault1).balanceOf(address(strategy));
-        uint256 vault2Shares = IERC7540(vault2).balanceOf(address(strategy));
+        uint256 vault2Shares = IERC20Metadata(IERC7540(vault2).share()).balanceOf(address(strategy));
 
         // Convert shares to underlying asset values
         uint256 vault1UsdcValue = IERC4626(vault1).convertToAssets(vault1Shares);
