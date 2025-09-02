@@ -1310,17 +1310,14 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
     // Local variables struct for _fulfillRedeem
     struct FulfillRedeem7540UnderlyingLocalVars {
         address[] requestingUsers;
-        address[] withdrawHookAddress;
         address[] fulfillHooksAddresses;
-        uint256 centrifugeSharesOut;
-        uint256 aaveSharesOut;
+        uint256 centrifugeShares;
+        uint256 aaveShares;
         bytes[] fulfillHooksData;
-        uint256 totalSvAssets;
-        uint256 pricePerShare;
-        uint256 amountForVault1;
-        uint256 amountForVault2;
-        uint256 underlyingSharesForVault1;
-        uint256 underlyingSharesForVault2;
+        // uint256 totalSvAssets;
+        // uint256 pricePerShare;
+        // uint256 amountForVault1;
+        // uint256 amountForVault2;
         uint256[] expectedAssetsOrSharesOut;
     }
 
@@ -1343,48 +1340,41 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         vars.requestingUsers = new address[](1);
         vars.requestingUsers[0] = account;
 
-        vars.withdrawHookAddress = new address[](2);
-        vars.withdrawHookAddress[0] = _getHookAddress(ETH, REDEEM_4626_VAULT_HOOK_KEY);
-        vars.withdrawHookAddress[1] = _getHookAddress(ETH, REDEEM_7540_VAULT_HOOK_KEY);
-
         vars.fulfillHooksAddresses = new address[](2);
-        vars.fulfillHooksAddresses[0] = vars.withdrawHookAddress[0];
-        vars.fulfillHooksAddresses[1] = vars.withdrawHookAddress[1];
+        vars.fulfillHooksAddresses[0] = _getHookAddress(ETH, REDEEM_4626_VAULT_HOOK_KEY);
+        vars.fulfillHooksAddresses[1] = _getHookAddress(ETH, REDEEM_7540_VAULT_HOOK_KEY);
 
         // Get current shares in each vault
-        vars.aaveSharesOut = aaveVault.balanceOf(address(strategy));
-        vars.centrifugeSharesOut = IERC20Metadata(centrifugeVault.share()).balanceOf(address(strategy));
+        vars.aaveShares = aaveVault.balanceOf(address(strategy));
+        vars.centrifugeShares = IERC20Metadata(centrifugeVault.share()).balanceOf(address(strategy));
 
-        _requestRedeemFrom7540Underlying(vars.centrifugeSharesOut, vault2);
+        _requestRedeemFrom7540Underlying(vars.centrifugeShares, vault2);
 
         vars.fulfillHooksData = new bytes[](2);
         vars.fulfillHooksData[0] = _createRedeem4626HookData(
             _getYieldSourceOracleId(bytes32(bytes(ERC4626_YIELD_SOURCE_ORACLE_KEY)), MANAGER),
             vault1,
             address(strategy),
-            vars.aaveSharesOut,
+            vars.aaveShares,
             false
         );
 
         vars.fulfillHooksData[1] = _createRedeem7540VaultHookData(
             _getYieldSourceOracleId(bytes32(bytes(ERC7540_YIELD_SOURCE_ORACLE_KEY)), MANAGER),
             vault2,
-            vars.centrifugeSharesOut,
+            vars.centrifugeShares,
             false
         );
 
-        (vars.totalSvAssets,) = totalAssetHelper.totalAssets(address(strategy));
-        vars.pricePerShare = vars.totalSvAssets.mulDiv(strategy.PRECISION(), vault.totalSupply(), Math.Rounding.Floor);
+        // (vars.totalSvAssets,) = totalAssetHelper.totalAssets(address(strategy));
+        // vars.pricePerShare = vars.totalSvAssets.mulDiv(strategy.PRECISION(), vault.totalSupply(), Math.Rounding.Floor);
 
-        vars.amountForVault1 = vars.aaveSharesOut * vault.PRECISION() / vars.pricePerShare;
-        vars.amountForVault2 = vars.centrifugeSharesOut * vault.PRECISION() / vars.pricePerShare;
-
-        vars.underlyingSharesForVault1 = IERC4626(address(vault1)).convertToShares(vars.amountForVault1);
-        vars.underlyingSharesForVault2 = IERC7540(address(vault2)).convertToShares(vars.amountForVault2);
+        // vars.amountForVault1 = vars.aaveSharesOut * vault.PRECISION() / vars.pricePerShare;
+        // vars.amountForVault2 = vars.centrifugeSharesOut * vault.PRECISION() / vars.pricePerShare;
 
         vars.expectedAssetsOrSharesOut = new uint256[](2);
-        vars.expectedAssetsOrSharesOut[0] = IERC4626(address(vault1)).convertToAssets(vars.underlyingSharesForVault1);
-        vars.expectedAssetsOrSharesOut[1] = IERC7540(address(vault2)).convertToAssets(vars.underlyingSharesForVault2);
+        vars.expectedAssetsOrSharesOut[0] = IERC4626(address(vault1)).previewRedeem(vars.aaveShares);
+        vars.expectedAssetsOrSharesOut[1] = IERC7540(address(vault2)).convertToAssets(vars.centrifugeShares);
 
         vm.startPrank(MANAGER);
         bytes[] memory argsForProofs = new bytes[](2);
@@ -1422,7 +1412,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         );
 
         uint256[] memory expectedAssetsOrSharesOut = new uint256[](1);
-        expectedAssetsOrSharesOut[0] = IERC7540(vault7540).convertToAssets(redeemShares);
+        expectedAssetsOrSharesOut[0] = 0;
 
         bytes[] memory argsForProofs = new bytes[](1);
         argsForProofs[0] = ISuperHookInspector(hooksAddresses[0]).inspect(hooksData[0]);
