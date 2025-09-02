@@ -310,7 +310,8 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         );
         vm.stopPrank();
 
-        ISuperVaultStrategy.YieldSourceInfo[] memory yieldSourcesList = ISuperVaultStrategy(strategy).getYieldSourcesList();
+        ISuperVaultStrategy.YieldSourceInfo[] memory yieldSourcesList =
+            ISuperVaultStrategy(strategy).getYieldSourcesList();
 
         assertEq(yieldSourcesList.length, 2);
         assertEq(yieldSourcesList[0].sourceAddress, address(aaveVault));
@@ -1158,38 +1159,20 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         vars.fulfillHooksData = new bytes[](3);
         // allocate up to the max allocation rate in the three Vaults
         vars.fulfillHooksData[0] = _createApproveAndDeposit4626HookData(
-            vars.yieldSourceOracleId,
-            vault1,
-            vars.assetAddress,
-            allocationAmountVault1,
-            false,
-            address(0),
-            0
+            vars.yieldSourceOracleId, vault1, vars.assetAddress, allocationAmountVault1, false, address(0), 0
         );
         vars.fulfillHooksData[1] = _createApproveAndDeposit4626HookData(
-            vars.yieldSourceOracleId,
-            vault2,
-            vars.assetAddress,
-            allocationAmountVault2,
-            false,
-            address(0),
-            0
+            vars.yieldSourceOracleId, vault2, vars.assetAddress, allocationAmountVault2, false, address(0), 0
         );
         vars.fulfillHooksData[2] = _createApproveAndDeposit4626HookData(
-            vars.yieldSourceOracleId,
-            vault3,
-            vars.assetAddress,
-            allocationAmountVault3,
-            false,
-            address(0),
-            0
+            vars.yieldSourceOracleId, vault3, vars.assetAddress, allocationAmountVault3, false, address(0), 0
         );
 
         vars.expectedAssetsOrSharesOut = new uint256[](3);
         vars.expectedAssetsOrSharesOut[0] = IERC4626(address(vault1)).convertToShares(allocationAmountVault1);
         vars.expectedAssetsOrSharesOut[1] = IERC4626(address(vault2)).convertToShares(allocationAmountVault2);
         vars.expectedAssetsOrSharesOut[2] = IERC4626(address(vault3)).convertToShares(allocationAmountVault3);
-        
+
         vm.startPrank(MANAGER);
         vars.argsForProofs = new bytes[](3);
         vars.argsForProofs[0] = ISuperHookInspector(vars.fulfillHooksAddresses[0]).inspect(vars.fulfillHooksData[0]);
@@ -1203,7 +1186,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
             globalProofs: _getMerkleProofsForHooks(vars.fulfillHooksAddresses, vars.argsForProofs),
             strategyProofs: new bytes32[][](3)
         });
-        
+
         strategy.executeHooks(vars.executeArgs);
         vm.stopPrank();
     }
@@ -1368,7 +1351,8 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         vars.fulfillHooksAddresses[0] = _getHookAddress(ETH, REDEEM_4626_VAULT_HOOK_KEY);
         vars.fulfillHooksAddresses[1] = _getHookAddress(ETH, REDEEM_7540_VAULT_HOOK_KEY);
 
-        (vars.aaveSharesOut, vars.centrifugeSharesOut) = _calculateVaultShares7540Underlying(redeemShares, vault1, vault2);
+        (vars.aaveSharesOut, vars.centrifugeSharesOut) =
+            _calculateVaultShares7540Underlying(redeemShares, vault1, vault2);
 
         uint256 aaveShares = IERC4626(address(vault1)).balanceOf(address(strategy));
         uint256 centrifugeShares = IERC20Metadata(centrifugeVault.share()).balanceOf(address(strategy));
@@ -1449,8 +1433,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
             })
         );
         vm.stopPrank();
-        
-         
+
         uint256 expectedAssets = IERC7540(address(vault7540)).convertToAssets(redeemShares);
 
         vm.prank(rootManager);
@@ -2180,7 +2163,11 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         return (fluidSharesOut, aaveSharesOut);
     }
 
-    function _calculateVaultShares7540Underlying(uint256 redeemShares, address vault1, address vault2)
+    function _calculateVaultShares7540Underlying(
+        uint256 redeemShares,
+        address vault1,
+        address vault2
+    )
         internal
         view
         returns (uint256 vault1SharesOut, uint256 vault2SharesOut)
