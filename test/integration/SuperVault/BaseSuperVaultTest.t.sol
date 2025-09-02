@@ -1346,7 +1346,10 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         vars.fulfillHooksAddresses[0] = _getHookAddress(ETH, REDEEM_4626_VAULT_HOOK_KEY);
         vars.fulfillHooksAddresses[1] = _getHookAddress(ETH, REDEEM_7540_VAULT_HOOK_KEY);
 
-        (vars.aaveSharesOut, vars.centrifugeSharesOut) = _calculateVaultShares7540Underlying(redeemShares);
+        // (vars.aaveSharesOut, vars.centrifugeSharesOut) = _calculateVaultShares7540Underlying(redeemShares);
+
+        vars.aaveSharesOut = aaveVault.balanceOf(address(strategy));
+        vars.centrifugeSharesOut = IERC20Metadata(centrifugeVault.share()).balanceOf(address(strategy));
 
         _requestRedeemFrom7540Underlying(vars.centrifugeSharesOut, vault2);
 
@@ -2166,7 +2169,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
     {
         // Get current shares in each vault
         uint256 aaveShares = aaveVault.balanceOf(address(strategy));
-        uint256 centrifugeShares = centrifugeVault.balanceOf(address(strategy));
+        uint256 centrifugeShares = IERC20Metadata(centrifugeVault.share()).balanceOf(address(strategy));
 
         // Convert shares to underlying asset values
         uint256 aaveUsdcValue = aaveVault.convertToAssets(aaveShares);
@@ -2179,8 +2182,8 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         uint256 totalUsdValue = aaveUsdcValue + centrifugeUsdcValue;
 
         if (totalUsdValue > 0) {
-            aaveSharesOut = (redeemShares * aaveUsdcValue) / totalUsdValue;
-            centrifugeSharesOut = redeemShares - aaveSharesOut; // Use subtraction to avoid rounding errors
+            centrifugeSharesOut = (redeemShares * centrifugeUsdcValue) / totalUsdValue;
+            aaveSharesOut = redeemShares - centrifugeSharesOut; // Use subtraction to avoid rounding errors
 
             console2.log("aaveSharesOut", aaveSharesOut);
             console2.log("centrifugeSharesOut", centrifugeSharesOut);
