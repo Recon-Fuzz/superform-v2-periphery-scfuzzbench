@@ -43,8 +43,8 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
             : address(redeemHook);
         executeArgs.hookCalldata[0] = approveAndDepositCalldata;
         executeArgs.expectedAssetsOrSharesOut[0] = amountToInvest;
-        executeArgs.globalProofs[0] = new bytes32[](0);
-        executeArgs.strategyProofs[0] = new bytes32[](0);
+        executeArgs.globalProofs[0] = new bytes32[](1);
+        executeArgs.strategyProofs[0] = new bytes32[](1);
 
         // Execute the hook to transfer funds to investment vault (with automatic approval)
         this.superVaultStrategy_executeHooks{value: msg.value}(executeArgs);
