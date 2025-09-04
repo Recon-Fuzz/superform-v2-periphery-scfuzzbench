@@ -14,6 +14,7 @@ import {Deposit4626VaultHook} from "lib/v2-core/src/hooks/vaults/4626/Deposit462
 import {ApproveAndDeposit4626VaultHook} from "lib/v2-core/src/hooks/vaults/4626/ApproveAndDeposit4626VaultHook.sol";
 import {Redeem4626VaultHook} from "lib/v2-core/src/hooks/vaults/4626/Redeem4626VaultHook.sol";
 import {MockERC20} from "@recon/MockERC20.sol";
+import {YieldSourceType} from "./managers/YieldManager.sol";
 
 // forge test --match-contract CryticToFoundry -vv
 contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
@@ -24,7 +25,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     // forge test --match-test test_crytic -vvv
     function test_crytic() public {
         add_new_vault();
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
     }
 
     /// === SuperVaultTargets Functions ===
@@ -232,7 +233,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
 
         // Manage yield source
         address yieldSource = _getYieldSource(); // Use existing vault as yield source
-        address oracle = address(yieldSourceOracle);
+        address oracle = _getYieldSourceOracleForType(YieldSourceType.ERC4626);
         uint8 action = 0; // Add yield source
 
         superVaultStrategy_manageYieldSource(yieldSource, oracle, action);
@@ -248,7 +249,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         uint8[] memory actions = new uint8[](1);
 
         yieldSources[0] = _getYieldSource();
-        oracles[0] = address(yieldSourceOracle);
+        oracles[0] = _getYieldSourceOracleForType(YieldSourceType.ERC4626);
         actions[0] = 0; // Add yield source
 
         superVaultStrategy_manageYieldSources(yieldSources, oracles, actions);
@@ -258,7 +259,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     function test_superVaultStrategy_manageYieldSource_clamped() public {
         // Use contract itself as it's the main manager
         // Use the clamped version from target functions
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
     }
 
     // 19. superVaultStrategy_handleOperations4626Deposit - manageYieldSource must be called first
@@ -266,7 +267,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         switchActor(1);
 
         // First manage yield source (prerequisite)
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         // Now handle operations for 4626 deposit
         address controller = _getActor();
@@ -280,7 +281,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         switchActor(1);
 
         // First manage yield source (prerequisite)
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         // Now handle operations for 4626 mint
         address controller = _getActor();
@@ -299,7 +300,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     // 21. superVaultStrategy_handleOperations7540 - manageYieldSource must be called first
     function test_superVaultStrategy_handleOperations7540() public {
         // First manage yield source (prerequisite)
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC7540);
 
         switchActor(1);
 
@@ -322,7 +323,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     // 22. superVaultStrategy_updateSuperVaultState - manageYieldSource must be called first
     function test_superVaultStrategy_updateSuperVaultState() public {
         // First manage yield source (prerequisite)
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address controller = _getActor();
@@ -345,7 +346,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     // 23. superVaultStrategy_moveAccumulatorOnTransfer - handleOperations4626Deposit or handleOperations4626Mint must be called first
     function test_superVaultStrategy_moveAccumulatorOnTransfer() public {
         // First manage yield source and handle operations (prerequisites)
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address controller = _getActor();
@@ -363,7 +364,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     // 24. superVaultStrategy_fulfillRedeemRequests - handleOperations4626Deposit or handleOperations4626Mint and updateSuperVaultState must be called first
     function test_superVaultStrategy_fulfillRedeemRequests() public {
         // First manage yield source (prerequisite)
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address controller = _getActor();
@@ -406,7 +407,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     // 25. superVaultStrategy_executeHooks - manageYieldSource and updateSuperVaultState must be called first
     function test_superVaultStrategy_executeHooks() public {
         // First manage yield source (prerequisite)
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address controller = _getActor();
@@ -439,7 +440,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     // 26. superVaultStrategy_manageEmergencyWithdraw - manageYieldSource and handleOperations4626Deposit or handleOperations4626Mint must be called first
     function test_superVaultStrategy_manageEmergencyWithdraw() public {
         // First manage yield source and handle operations (prerequisites)
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address controller = _getActor();
@@ -898,7 +899,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         // Add the investment vault as a yield source to the strategy
         superVaultStrategy_manageYieldSource(
             investmentVault,
-            address(yieldSourceOracle),
+            _getYieldSourceOracleForType(YieldSourceType.ERC4626),
             0 // Add yield source
         );
 
@@ -1037,15 +1038,13 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
 
     function test_userDepositToInvestmentVaultFlowNoRegistration() public {
         // Add the investment vault as a yield source to the strategy
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         // Switch to a user and deposit into SuperVault
-        switchActor(1);
-        address user = _getActor();
         uint256 depositAmount = 1000e18;
 
         // User deposits
-        superVault_deposit(depositAmount, user);
+        superVault_deposit(depositAmount, _getActor());
 
         // Amount to invest in the investment vault
         uint256 amountToInvest = 500e18; // Half of the deposited amount
@@ -1125,7 +1124,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
 
     function test_erc4626_approveAndDepositViaHook() public {
         _switchYieldSource(0); // Use ERC4626 yield source
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address user = _getActor();
@@ -1133,24 +1132,45 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         superVault_deposit(depositAmount, user);
 
         uint256 amountToInvest = 500e18;
-        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsBefore = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
-        assertTrue(strategyAssetsBefore >= amountToInvest, "Strategy should have enough assets");
+        assertTrue(
+            strategyAssetsBefore >= amountToInvest,
+            "Strategy should have enough assets"
+        );
 
         superVaultStrategy_executeHooks_clamped(true, amountToInvest);
 
-        uint256 strategyAssetsAfter = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsAfter = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 strategyAssetsAfter = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsAfter = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
-        assertTrue(strategyAssetsAfter < strategyAssetsBefore, "Strategy should have fewer assets");
-        assertTrue(vaultAssetsAfter > vaultAssetsBefore, "Vault should have more assets");
-        assertEq(strategyAssetsBefore - strategyAssetsAfter, amountToInvest, "Correct amount transferred");
+        assertTrue(
+            strategyAssetsAfter < strategyAssetsBefore,
+            "Strategy should have fewer assets"
+        );
+        assertTrue(
+            vaultAssetsAfter > vaultAssetsBefore,
+            "Vault should have more assets"
+        );
+        assertEq(
+            strategyAssetsBefore - strategyAssetsAfter,
+            amountToInvest,
+            "Correct amount transferred"
+        );
     }
 
     function test_erc4626_multipleDepositViaHooks() public {
         _switchYieldSource(0); // Use ERC4626 yield source
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address user = _getActor();
@@ -1160,33 +1180,57 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         // Test multiple deposits to same vault via hooks
         uint256 firstInvestment = 300e18;
         uint256 secondInvestment = 200e18;
-        
-        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsBefore = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+
+        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
         // First deposit
         superVaultStrategy_executeHooks_clamped(true, firstInvestment);
-        
-        uint256 strategyAssetsAfter1 = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsAfter1 = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+
+        uint256 strategyAssetsAfter1 = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsAfter1 = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
         // Second deposit
         superVaultStrategy_executeHooks_clamped(true, secondInvestment);
-        
-        uint256 strategyAssetsAfter2 = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsAfter2 = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+
+        uint256 strategyAssetsAfter2 = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsAfter2 = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
         // Verify both deposits worked correctly
-        assertEq(strategyAssetsBefore - strategyAssetsAfter1, firstInvestment, "First deposit correct amount");
-        assertEq(strategyAssetsAfter1 - strategyAssetsAfter2, secondInvestment, "Second deposit correct amount");
-        assertEq(vaultAssetsAfter2 - vaultAssetsBefore, firstInvestment + secondInvestment, "Total vault assets correct");
+        assertEq(
+            strategyAssetsBefore - strategyAssetsAfter1,
+            firstInvestment,
+            "First deposit correct amount"
+        );
+        assertEq(
+            strategyAssetsAfter1 - strategyAssetsAfter2,
+            secondInvestment,
+            "Second deposit correct amount"
+        );
+        assertEq(
+            vaultAssetsAfter2 - vaultAssetsBefore,
+            firstInvestment + secondInvestment,
+            "Total vault assets correct"
+        );
     }
 
     /// === Additional Hook Execution Pattern Tests ===
 
     function test_hookExecutionWithLargeAmount() public {
         // Test based on the working guide pattern but with larger amount
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address user = _getActor();
@@ -1194,26 +1238,47 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         superVault_deposit(depositAmount, user);
 
         uint256 amountToInvest = 1000e18; // Large investment
-        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 investmentVaultAssetsBefore = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 investmentVaultAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
-        assertTrue(strategyAssetsBefore >= amountToInvest, "Strategy should have enough assets to invest");
+        assertTrue(
+            strategyAssetsBefore >= amountToInvest,
+            "Strategy should have enough assets to invest"
+        );
 
         superVaultStrategy_executeHooks_clamped(true, amountToInvest);
 
-        uint256 strategyAssetsAfter = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 investmentVaultAssetsAfter = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 strategyAssetsAfter = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 investmentVaultAssetsAfter = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
-        assertTrue(strategyAssetsAfter < strategyAssetsBefore, "Strategy should have fewer assets after hook execution");
-        assertTrue(investmentVaultAssetsAfter > investmentVaultAssetsBefore, "Investment vault should have more assets");
-        
+        assertTrue(
+            strategyAssetsAfter < strategyAssetsBefore,
+            "Strategy should have fewer assets after hook execution"
+        );
+        assertTrue(
+            investmentVaultAssetsAfter > investmentVaultAssetsBefore,
+            "Investment vault should have more assets"
+        );
+
         uint256 assetsTransferred = strategyAssetsBefore - strategyAssetsAfter;
-        assertEq(assetsTransferred, amountToInvest, "Transferred assets should match expected amount");
+        assertEq(
+            assetsTransferred,
+            amountToInvest,
+            "Transferred assets should match expected amount"
+        );
     }
 
     function test_hookExecutionWithSmallAmount() public {
         // Test with minimal amount to verify precision
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address user = _getActor();
@@ -1221,23 +1286,39 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         superVault_deposit(depositAmount, user);
 
         uint256 amountToInvest = 1e18; // Small investment (1 token)
-        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 investmentVaultAssetsBefore = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 investmentVaultAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
         superVaultStrategy_executeHooks_clamped(true, amountToInvest);
 
-        uint256 strategyAssetsAfter = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 investmentVaultAssetsAfter = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 strategyAssetsAfter = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 investmentVaultAssetsAfter = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
-        assertEq(strategyAssetsBefore - strategyAssetsAfter, amountToInvest, "Small amount transferred correctly");
-        assertEq(investmentVaultAssetsAfter - investmentVaultAssetsBefore, amountToInvest, "Vault received small amount correctly");
+        assertEq(
+            strategyAssetsBefore - strategyAssetsAfter,
+            amountToInvest,
+            "Small amount transferred correctly"
+        );
+        assertEq(
+            investmentVaultAssetsAfter - investmentVaultAssetsBefore,
+            amountToInvest,
+            "Vault received small amount correctly"
+        );
     }
 
     /// === ERC7540 Vault Hook Interaction Tests ===
 
     function test_erc7540_vaultInteractionViaHooks() public {
         _switchYieldSource(2); // Use ERC7540 yield source
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC7540);
 
         switchActor(1);
         address user = _getActor();
@@ -1245,25 +1326,46 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         superVault_deposit(depositAmount, user);
 
         uint256 amountToInvest = 500e18;
-        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsBefore = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
-        assertTrue(strategyAssetsBefore >= amountToInvest, "Strategy should have enough assets");
+        assertTrue(
+            strategyAssetsBefore >= amountToInvest,
+            "Strategy should have enough assets"
+        );
 
         // Test hook execution with ERC7540 yield source
         superVaultStrategy_executeHooks_clamped(true, amountToInvest);
 
-        uint256 strategyAssetsAfter = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsAfter = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 strategyAssetsAfter = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsAfter = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
-        assertTrue(strategyAssetsAfter < strategyAssetsBefore, "Strategy should have fewer assets");
-        assertTrue(vaultAssetsAfter > vaultAssetsBefore, "Vault should have more assets");
-        assertEq(strategyAssetsBefore - strategyAssetsAfter, amountToInvest, "Correct amount transferred");
+        assertTrue(
+            strategyAssetsAfter < strategyAssetsBefore,
+            "Strategy should have fewer assets"
+        );
+        assertTrue(
+            vaultAssetsAfter > vaultAssetsBefore,
+            "Vault should have more assets"
+        );
+        assertEq(
+            strategyAssetsBefore - strategyAssetsAfter,
+            amountToInvest,
+            "Correct amount transferred"
+        );
     }
 
     function test_erc7540_multipleDepositViaHooks() public {
         _switchYieldSource(2); // Use ERC7540 yield source
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC7540);
 
         switchActor(1);
         address user = _getActor();
@@ -1273,36 +1375,62 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         // Test multiple deposits to ERC7540 vault via hooks
         uint256 firstInvestment = 300e18;
         uint256 secondInvestment = 250e18;
-        
-        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsBefore = MockERC20(_getAsset()).balanceOf(_getYieldSource());
 
-        assertTrue(strategyAssetsBefore >= firstInvestment + secondInvestment, "Strategy should have enough assets");
+        uint256 strategyAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsBefore = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
+
+        assertTrue(
+            strategyAssetsBefore >= firstInvestment + secondInvestment,
+            "Strategy should have enough assets"
+        );
 
         // First deposit
         superVaultStrategy_executeHooks_clamped(true, firstInvestment);
-        
-        uint256 strategyAssetsAfter1 = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsAfter1 = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+
+        uint256 strategyAssetsAfter1 = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsAfter1 = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
         // Second deposit
         superVaultStrategy_executeHooks_clamped(true, secondInvestment);
-        
-        uint256 strategyAssetsAfter2 = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 vaultAssetsAfter2 = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+
+        uint256 strategyAssetsAfter2 = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 vaultAssetsAfter2 = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
 
         // Verify both deposits worked correctly
-        assertEq(strategyAssetsBefore - strategyAssetsAfter1, firstInvestment, "First deposit correct amount");
-        assertEq(strategyAssetsAfter1 - strategyAssetsAfter2, secondInvestment, "Second deposit correct amount");
-        assertEq(vaultAssetsAfter2 - vaultAssetsBefore, firstInvestment + secondInvestment, "Total vault assets correct");
+        assertEq(
+            strategyAssetsBefore - strategyAssetsAfter1,
+            firstInvestment,
+            "First deposit correct amount"
+        );
+        assertEq(
+            strategyAssetsAfter1 - strategyAssetsAfter2,
+            secondInvestment,
+            "Second deposit correct amount"
+        );
+        assertEq(
+            vaultAssetsAfter2 - vaultAssetsBefore,
+            firstInvestment + secondInvestment,
+            "Total vault assets correct"
+        );
     }
 
     /// === Cross-Standard Hook Interaction Tests ===
 
-
     function test_hookExecutionStateConsistency() public {
         // Test that hook execution maintains consistent state across operations
-        superVaultStrategy_manageYieldSource_clamped();
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType.ERC4626);
 
         switchActor(1);
         address user = _getActor();
@@ -1310,14 +1438,18 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         superVault_deposit(depositAmount, user);
 
         // Record initial state
-        uint256 initialStrategyAssets = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 initialVaultAssets = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 initialStrategyAssets = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 initialVaultAssets = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
         uint256 initialUserShares = superVault.balanceOf(user);
 
         // Execute multiple hook operations
         uint256[] memory amounts = new uint256[](3);
         amounts[0] = 200e18;
-        amounts[1] = 300e18;  
+        amounts[1] = 300e18;
         amounts[2] = 100e18;
 
         uint256 totalInvested = 0;
@@ -1327,12 +1459,28 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         }
 
         // Verify final state consistency
-        uint256 finalStrategyAssets = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        uint256 finalVaultAssets = MockERC20(_getAsset()).balanceOf(_getYieldSource());
+        uint256 finalStrategyAssets = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+        uint256 finalVaultAssets = MockERC20(_getAsset()).balanceOf(
+            _getYieldSource()
+        );
         uint256 finalUserShares = superVault.balanceOf(user);
 
-        assertEq(initialStrategyAssets - finalStrategyAssets, totalInvested, "Total strategy assets transferred correctly");
-        assertEq(finalVaultAssets - initialVaultAssets, totalInvested, "Total vault assets received correctly");
-        assertEq(finalUserShares, initialUserShares, "User shares should remain unchanged during hook executions");
+        assertEq(
+            initialStrategyAssets - finalStrategyAssets,
+            totalInvested,
+            "Total strategy assets transferred correctly"
+        );
+        assertEq(
+            finalVaultAssets - initialVaultAssets,
+            totalInvested,
+            "Total vault assets received correctly"
+        );
+        assertEq(
+            finalUserShares,
+            initialUserShares,
+            "User shares should remain unchanged during hook executions"
+        );
     }
 }

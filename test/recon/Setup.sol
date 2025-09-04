@@ -97,7 +97,6 @@ abstract contract Setup is
     Withdraw7540VaultHook withdraw7540Hook;
 
     // Mocks
-    MockYieldSourceOracle yieldSourceOracle; // Legacy - keep for compatibility
     MockERC4626YieldSourceOracle erc4626YieldSourceOracle;
     MockERC5115YieldSourceOracle erc5115YieldSourceOracle;
     MockERC7540YieldSourceOracle erc7540YieldSourceOracle;
@@ -168,13 +167,6 @@ abstract contract Setup is
         );
 
         // 8. Deploy Mocks and Oracles
-        // Deploy legacy oracle for backward compatibility
-        yieldSourceOracle = new MockYieldSourceOracle(
-            1e18,
-            1000e18,
-            1000e18,
-            true
-        );
 
         // Deploy specific oracles for each yield source type
         erc4626YieldSourceOracle = new MockERC4626YieldSourceOracle();
@@ -345,7 +337,6 @@ abstract contract Setup is
         } else if (sourceType == YieldSourceType.ERC7540) {
             return address(erc7540YieldSourceOracle);
         }
-        return address(yieldSourceOracle); // fallback to legacy oracle
     }
 
     function _getERC4626YieldSourceOracle() internal view returns (address) {

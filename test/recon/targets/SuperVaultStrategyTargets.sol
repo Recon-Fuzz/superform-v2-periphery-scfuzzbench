@@ -10,16 +10,21 @@ import {vm} from "@chimera/Hevm.sol";
 // Helpers
 import {Panic} from "@recon/Panic.sol";
 
+import {YieldSourceType} from "test/recon/managers/YieldManager.sol";
 import "src/SuperVault/SuperVaultStrategy.sol";
 
 abstract contract SuperVaultStrategyTargets is BaseTargetFunctions, Properties {
     /// CUSTOM TARGET FUNCTIONS - Add your own target functions here ///
 
     /// @dev Clamps the action type to 0 to add a vault as a yield source
-    function superVaultStrategy_manageYieldSource_clamped() public {
+    function superVaultStrategy_manageYieldSource_clamped(
+        YieldSourceType sourceType
+    ) public {
+        address yieldSourceOracle = _getYieldSourceOracleForType(sourceType);
+
         superVaultStrategy_manageYieldSource(
             _getYieldSource(),
-            address(yieldSourceOracle),
+            yieldSourceOracle,
             0
         );
     }
