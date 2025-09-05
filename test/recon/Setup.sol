@@ -106,6 +106,19 @@ abstract contract Setup is
     address erc5115YieldSource;
     address erc7540YieldSource;
 
+    /// === MODIFIERS === ///
+    /// Prank admin and actor
+
+    modifier asAdmin() {
+        vm.prank(address(this));
+        _;
+    }
+
+    modifier asActor() {
+        vm.prank(address(_getActor()));
+        _;
+    }
+
     /// === Setup === ///
     /// This contains all calls to be performed in the tester constructor, both for Echidna and Foundry
     function setup() internal virtual override {
@@ -284,19 +297,6 @@ abstract contract Setup is
         _finalizeAssetDeployment(_getActors(), approvalArray, type(uint88).max);
     }
 
-    /// === MODIFIERS === ///
-    /// Prank admin and actor
-
-    modifier asAdmin() {
-        vm.prank(address(this));
-        _;
-    }
-
-    modifier asActor() {
-        vm.prank(address(_getActor()));
-        _;
-    }
-
     /// Get hook addresses for different yield source types
 
     function _getApproveAndDepositHookForType(
@@ -349,5 +349,12 @@ abstract contract Setup is
 
     function _getERC7540YieldSourceOracle() internal view returns (address) {
         return address(erc7540YieldSourceOracle);
+    }
+
+    // Helpers
+    function _getRandomActor(uint256 entropy) public view returns (address) {
+        address[] memory actors = _getActors();
+
+        return actors[entropy % actors.length];
     }
 }

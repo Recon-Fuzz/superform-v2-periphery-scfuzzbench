@@ -12,13 +12,75 @@ import {Panic} from "@recon/Panic.sol";
 
 import "src/SuperVault/SuperVault.sol";
 
+/// @dev All receivers are inherently clamped to actors to make checking properties easier
 abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     /// CUSTOM TARGET FUNCTIONS - Add your own target functions here ///
-
+    function superVault_requestRedeem_clamped() public {
+        uint256 shares = superVault.balanceOf(_getActor());
+        superVault_requestRedeem(shares);
+    }
     /// AUTO GENERATED TARGET FUNCTIONS - WARNING: DO NOT DELETE OR MODIFY THIS LINE ///
 
     function superVault_approve(address spender, uint256 value) public asActor {
         superVault.approve(spender, value);
+    }
+
+    function superVault_burnShares(uint256 amount) public asActor {
+        superVault.burnShares(amount);
+    }
+
+    function superVault_cancelRedeem() public asActor {
+        superVault.cancelRedeem(_getActor());
+    }
+
+    function superVault_deposit(uint256 assets) public asActor {
+        superVault.deposit(assets, _getActor());
+    }
+
+    function superVault_invalidateNonce(bytes32 nonce) public asActor {
+        superVault.invalidateNonce(nonce);
+    }
+
+    function superVault_mint(uint256 shares) public asActor {
+        superVault.mint(shares, _getActor());
+    }
+
+    function superVault_redeem(uint256 shares) public asActor {
+        superVault.redeem(shares, _getActor(), _getActor());
+    }
+
+    function superVault_withdraw(uint256 assets) public asActor {
+        superVault.withdraw(assets, _getActor(), _getActor());
+    }
+
+    function superVault_requestRedeem(uint256 shares) public asActor {
+        superVault.requestRedeem(shares, _getActor(), _getActor());
+    }
+
+    function superVault_setOperator(
+        uint256 entropy,
+        bool approved
+    ) public asActor {
+        address operator = _getRandomActor(entropy);
+        superVault.setOperator(operator, approved);
+    }
+
+    function superVault_transfer(
+        uint256 entropy,
+        uint256 value
+    ) public asActor {
+        address to = _getRandomActor(entropy);
+        superVault.transfer(to, value);
+    }
+
+    function superVault_transferFrom(
+        uint256 entropyFrom,
+        uint256 entropyTo,
+        uint256 value
+    ) public asActor {
+        address from = _getRandomActor(entropyFrom);
+        address to = _getRandomActor(entropyTo);
+        superVault.transferFrom(from, to, value);
     }
 
     /// @dev removed because signature components not fuzzable
@@ -39,70 +101,4 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     //         signature
     //     );
     // }
-
-    function superVault_burnShares(uint256 amount) public asActor {
-        superVault.burnShares(amount);
-    }
-
-    function superVault_cancelRedeem(address controller) public asActor {
-        superVault.cancelRedeem(controller);
-    }
-
-    function superVault_deposit(
-        uint256 assets,
-        address receiver
-    ) public asActor {
-        superVault.deposit(assets, receiver);
-    }
-
-    function superVault_invalidateNonce(bytes32 nonce) public asActor {
-        superVault.invalidateNonce(nonce);
-    }
-
-    function superVault_mint(uint256 shares, address receiver) public asActor {
-        superVault.mint(shares, receiver);
-    }
-
-    function superVault_redeem(
-        uint256 shares,
-        address receiver,
-        address controller
-    ) public asActor {
-        superVault.redeem(shares, receiver, controller);
-    }
-
-    function superVault_requestRedeem(
-        uint256 shares,
-        address controller,
-        address owner
-    ) public asActor {
-        superVault.requestRedeem(shares, controller, owner);
-    }
-
-    function superVault_setOperator(
-        address operator,
-        bool approved
-    ) public asActor {
-        superVault.setOperator(operator, approved);
-    }
-
-    function superVault_transfer(address to, uint256 value) public asActor {
-        superVault.transfer(to, value);
-    }
-
-    function superVault_transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) public asActor {
-        superVault.transferFrom(from, to, value);
-    }
-
-    function superVault_withdraw(
-        uint256 assets,
-        address receiver,
-        address controller
-    ) public asActor {
-        superVault.withdraw(assets, receiver, controller);
-    }
 }
