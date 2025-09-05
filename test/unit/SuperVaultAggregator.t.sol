@@ -2052,4 +2052,189 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         assertEq(IERC20(upToken).balanceOf(superBank), slashAmount, "SuperBank should receive slashed amount");
         assertEq(IERC20(upToken).balanceOf(manager), withdrawAmount, "Manager should have withdrawn amount");
     }
+
+    /// @notice Test fair cost distribution in batchForwardPPS with mixed stale and fresh entries
+    /// @dev Validates that only non-stale entries are charged and costs are distributed fairly
+    function test_BatchForwardPPS_FairCostDistribution_WithStaleEntries() public {
+        BatchForwardPPSTestVars memory vars;
+        
+        // Set up as PPS Oracle to be able to call forwardPPS
+        vm.startPrank(sGovernor);
+        superGovernor.setActivePPSOracle(address(this));
+        superGovernor.proposeUpkeepPaymentsChange(true);
+        vm.stopPrank();
+
+        vm.warp(8 days);
+        superGovernor.executeUpkeepPaymentsChange();
+
+        vm.startPrank(sGovernor);
+        superGovernor.setAddress(superGovernor.SUPER_VAULT_AGGREGATOR(), address(superVaultAggregator));
+        vm.stopPrank();
+        
+        vars.totalUpkeepCost = 1e18; // 1 token total cost
+
+        // Create additional strategies for comprehensive testing
+        vm.prank(manager);
+        (, vars.strategy2,) = superVaultAggregator.createVault(
+            ISuperVaultAggregator.VaultCreationParams({
+                asset: address(asset),
+                mainManager: manager,
+                secondaryManagers: new address[](0),
+                name: "Test Vault 2",
+                symbol: "TV2",
+                minUpdateInterval: 5,
+                maxStaleness: 300,
+                feeConfig: ISuperVaultStrategy.FeeConfig({ performanceFeeBps: 1000, managementFeeBps: 0, recipient: manager })
+            })
+        );
+
+        vm.prank(manager);
+        (, vars.strategy3,) = superVaultAggregator.createVault(
+            ISuperVaultAggregator.VaultCreationParams({
+                asset: address(asset),
+                mainManager: manager,
+                secondaryManagers: new address[](0),
+                name: "Test Vault 3",
+                symbol: "TV3",
+                minUpdateInterval: 5,
+                maxStaleness: 300,
+                feeConfig: ISuperVaultStrategy.FeeConfig({ performanceFeeBps: 1000, managementFeeBps: 0, recipient: manager })
+            })
+        );
+
+        vm.prank(manager);
+        (, vars.strategy4,) = superVaultAggregator.createVault(
+            ISuperVaultAggregator.VaultCreationParams({
+                asset: address(asset),
+                mainManager: manager,
+                secondaryManagers: new address[](0),
+                name: "Test Vault 4",
+                symbol: "TV4",
+                minUpdateInterval: 5,
+                maxStaleness: 300,
+                feeConfig: ISuperVaultStrategy.FeeConfig({ performanceFeeBps: 1000, managementFeeBps: 0, recipient: manager })
+            })
+        );
+
+        // Get initial timestamps
+        vars.baseTimestamp = block.timestamp;
+        
+        // Prepare batch data with mix of fresh and stale entries
+        vars.strategies = new address[](4);
+        vars.strategies[0] = strategy;        // Fresh entry
+        vars.strategies[1] = vars.strategy2;  // Stale entry (will be exempt)
+        vars.strategies[2] = vars.strategy3;  // Fresh entry
+        vars.strategies[3] = vars.strategy4;  // Stale entry (will be exempt)
+
+        vars.ppss = new uint256[](4);
+        vars.ppss[0] = 1.1e18;
+        vars.ppss[1] = 1.2e18;
+        vars.ppss[2] = 1.3e18;
+        vars.ppss[3] = 1.4e18;
+
+        vars.ppsStdevs = new uint256[](4);
+        vars.ppsStdevs[0] = 0;
+        vars.ppsStdevs[1] = 0;
+        vars.ppsStdevs[2] = 0;
+        vars.ppsStdevs[3] = 0;
+
+        vars.validatorSets = new uint256[](4);
+        vars.validatorSets[0] = 1;
+        vars.validatorSets[1] = 1;
+        vars.validatorSets[2] = 1;
+        vars.validatorSets[3] = 1;
+
+        vars.totalValidators = new uint256[](4);
+        vars.totalValidators[0] = 1;
+        vars.totalValidators[1] = 1;
+        vars.totalValidators[2] = 1;
+        vars.totalValidators[3] = 1;
+
+        vars.timestamps = new uint256[](4);
+        vars.timestamps[0] = vars.baseTimestamp + 350;  // Fresh (10 seconds old when warped to +360)
+        vars.timestamps[1] = vars.baseTimestamp + 10;   // Stale (350 seconds old when warped to +360)
+        vars.timestamps[2] = vars.baseTimestamp + 340;  // Fresh (20 seconds old when warped to +360)  
+        vars.timestamps[3] = vars.baseTimestamp + 20;   // Stale (340 seconds old when warped to +360)
+
+        // Fund and deposit upkeep balance for the manager
+        // Manager needs sufficient upkeep balance to cover the costs
+        deal(address(asset), manager, vars.totalUpkeepCost);
+        vm.startPrank(manager);
+        address _upToken = superGovernor.getAddress(superGovernor.UP());
+        deal(_upToken, manager, vars.totalUpkeepCost);
+        IERC20(_upToken).approve(address(superVaultAggregator), vars.totalUpkeepCost);
+        superVaultAggregator.depositUpkeep(manager, vars.totalUpkeepCost);
+        vm.stopPrank();
+
+        // Record initial balances
+        vars.initialOracleBalance = asset.balanceOf(address(this));
+        vars.initialTreasuryBalance = asset.balanceOf(treasury);
+
+        // Wait for minimum interval to pass
+        vm.warp(vars.baseTimestamp + 350);
+
+        // Execute batch update
+        superVaultAggregator.batchForwardPPS(
+            ISuperVaultAggregator.BatchForwardPPSArgs({
+                strategies: vars.strategies,
+                ppss: vars.ppss,
+                ppsStdevs: vars.ppsStdevs,
+                validatorSets: vars.validatorSets,
+                totalValidators: vars.totalValidators,
+                timestamps: vars.timestamps
+            })
+        );
+
+        // Verify cost distribution logic:
+        // - Only 2 entries are chargeable (strategies[0] and strategies[2])
+        // - Total cost should be split: 1e18 / 2 = 5e17 per entry
+        // - No remainder since 1000 is evenly divisible by 2
+        
+        vars.expectedCostPerEntry = vars.totalUpkeepCost / 2; // 5e17
+        vars.expectedTotalCharged = vars.expectedCostPerEntry * 2; // 1e18
+
+        // Verify manager's upkeep balance was deducted correctly
+        assertEq(
+            superVaultAggregator.getUpkeepBalance(manager),
+            0, // All upkeep should be consumed for the 2 chargeable entries
+            "Manager upkeep balance should be fully consumed"
+        );
+
+        // Verify claimable upkeep increased by the charged amount
+        assertEq(
+            superVaultAggregator.claimableUpkeep(),
+            vars.expectedTotalCharged,
+            "Claimable upkeep should equal total charged amount"
+        );
+
+        // Verify PPS updates were applied to all valid strategies
+        assertEq(superVaultAggregator.getPPS(strategy), vars.ppss[0], "Strategy 1 PPS should be updated");
+        assertEq(superVaultAggregator.getPPS(vars.strategy2), vars.ppss[1], "Strategy 2 PPS should be updated despite being stale");
+        assertEq(superVaultAggregator.getPPS(vars.strategy3), vars.ppss[2], "Strategy 3 PPS should be updated");
+        assertEq(superVaultAggregator.getPPS(vars.strategy4), vars.ppss[3], "Strategy 4 PPS should be updated despite being stale");
+
+        // Verify timestamps were updated for all strategies
+        assertEq(superVaultAggregator.getLastUpdateTimestamp(strategy), vars.timestamps[0]);
+        assertEq(superVaultAggregator.getLastUpdateTimestamp(vars.strategy2), vars.timestamps[1]);
+        assertEq(superVaultAggregator.getLastUpdateTimestamp(vars.strategy3), vars.timestamps[2]);
+        assertEq(superVaultAggregator.getLastUpdateTimestamp(vars.strategy4), vars.timestamps[3]);
+    }
+}
+
+struct BatchForwardPPSTestVars {
+    address strategy2;
+    address strategy3;
+    address strategy4;
+    uint256 baseTimestamp;
+    uint256 totalUpkeepCost;
+    uint256 initialOracleBalance;
+    uint256 initialTreasuryBalance;
+    uint256 expectedCostPerEntry;
+    uint256 expectedTotalCharged;
+    address[] strategies;
+    uint256[] ppss;
+    uint256[] ppsStdevs;
+    uint256[] validatorSets;
+    uint256[] totalValidators;
+    uint256[] timestamps;
 }

@@ -228,33 +228,63 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
         if (strategiesLength == 0) revert ZERO_ARRAY_LENGTH();
 
-        bool upkeepExempt = false;
-        uint256 upkeepPerStrategy;
+        // Determine payments status and compute per-batch cost split across chargeable entries only
+        bool paymentsEnabled = SUPER_GOVERNOR.isUpkeepPaymentsEnabled();
+        bool upkeepExempt = !paymentsEnabled;
+        uint256 totalCost = paymentsEnabled
+            ? SUPER_GOVERNOR.getUpkeepCostPerUpdate()
+            : 0;
 
-        // Check if upkeep payments are globally disabled in SuperGovernor
-        if (SUPER_GOVERNOR.isUpkeepPaymentsEnabled()) {
-            // Calculate upkeep cost per strategy
-            upkeepPerStrategy = SUPER_GOVERNOR.getUpkeepCostPerUpdate() / strategiesLength;
-        } else {
-            upkeepExempt = true;
-            upkeepPerStrategy = 0;
+        uint256 chargeableCount;
+        if (paymentsEnabled) {
+            for (uint256 i; i < strategiesLength; ++i) {
+                // Skip invalid strategies without reverting
+                if (!_superVaultStrategies.contains(args.strategies[i]))
+                    continue;
+ 
+                // Count only non-stale entries as chargeable
+                if (
+                    block.timestamp - args.timestamps[i] <= _strategyData[args.strategies[i]].maxStaleness
+                ) {
+                        ++chargeableCount;
+                }
+            }
+        }
+
+        // Compute per-entry charge and remainder to ensure total charged equals totalCost
+        uint256 perEntry = 0;
+        uint256 remainder = 0;
+        if (paymentsEnabled && chargeableCount > 0) {
+            perEntry = totalCost / chargeableCount;
+            remainder = totalCost % chargeableCount;
         }
 
         // Process all valid strategies
-        for (uint256 i; i < strategiesLength; i++) {
+        for (uint256 i; i < strategiesLength; ++i) {
             // Skip invalid strategies without reverting
             if (!_superVaultStrategies.contains(args.strategies[i])) continue;
 
-            uint256 upkeepCost = upkeepPerStrategy;
-            if (upkeepCost > 0) {
+            uint256 upkeepCost = 0;
+            if (paymentsEnabled) {
                 // check exemption due to staleness of a given strategy
                 if (block.timestamp - args.timestamps[i] > _strategyData[args.strategies[i]].maxStaleness) {
                     upkeepCost = 0;
                     emit StaleUpdate(args.strategies[i], address(0), args.timestamps[i]);
+                } else {
+                    // Split the total batch cost fairly across chargeable entries
+                    upkeepCost = perEntry;
+
+                    if (remainder > 0) {
+                        // Allocate the remainder deterministically to first 'remainder' entries
+                        unchecked {
+                            ++upkeepCost;
+                            --remainder;
+                        }
+                    }
                 }
             }
 
-            // Forward update, not exempt from upkeep in batch updates
+            // Forward update
             _forwardPPS(
                 ForwardPPSArgs({
                     strategy: args.strategies[i],
