@@ -41,11 +41,14 @@ contract SuperVaultTest is BaseSuperVaultTest {
     address operator = address(0x123);
     uint256 constant userPrivateKey = 0xA11CE; // Replace with a known good testing private key
     address userAddress; // Will be derived from private key
+
     ERC7540YieldSourceOracle public oracle;
     ISuperLedger public superLedgerETH;
+
     address gearToken;
     IERC4626 gearboxVault;
     IGearboxFarmingPool gearboxFarmingPool;
+
     SuperVault gearSuperVault;
     SuperVaultEscrow escrowGearSuperVault;
     SuperVaultStrategy strategyGearSuperVault;
@@ -7304,6 +7307,65 @@ contract SuperVaultTest is BaseSuperVaultTest {
             ethReceiver, // yield source (ETH receiver)
             ethAmount // ETH amount to send
         );
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                       7540 UNDERLYING TESTS
+    //////////////////////////////////////////////////////////////*/
+    function test_7540Underlying_E2E_Flow() public {
+        // Set up the vault
+        _setUp7540UnderlyingSuperVault();
+
+        AccountInstance memory instance = accInstances[0];
+        address account = instance.account;
+
+        // Deposit USDC into the SuperVault
+        uint256 depositAmount = 1000e6; // 1000 USDC
+        _getTokens(address(asset), account, depositAmount);
+        __deposit(instance, depositAmount);
+
+        // Verify state
+        assertEq(asset.balanceOf(address(strategy)), depositAmount, "Wrong strategy balance");
+
+        _depositFreeAssetsFromSingleAmount7540(depositAmount, address(aaveVault), address(centrifugeVault));
+
+        uint256 userShares = vault.balanceOf(account);
+        assertGt(userShares, 0, "No shares minted to user");
+
+        // Record balances before redeem
+        uint256 preRedeemUserAssets = asset.balanceOf(account);
+        uint256 feeBalanceBefore = asset.balanceOf(TREASURY);
+
+        // Fast forward time to simulate yield on underlying vaults
+        vm.warp(block.timestamp + 50 weeks);
+
+        console2.log("--pps before---", aggregator.getPPS(address(strategy)));
+
+        _updateSuperVaultPPS(address(strategy), address(vault));
+
+        console2.log("--pps after---", aggregator.getPPS(address(strategy)));
+
+        // Step 4: Request Redeem
+        __requestRedeem(instance, userShares, false);
+
+        // Verify shares are escrowed
+        assertEq(IERC20(vault.share()).balanceOf(account), 0, "User shares not transferred from account");
+        assertEq(IERC20(vault.share()).balanceOf(address(escrow)), userShares, "Shares not transferred to escrow");
+
+        console2.log("--pps before---", aggregator.getPPS(address(strategy)));
+        vm.warp(block.timestamp + 1 weeks);
+        _updateSuperVaultPPS(address(strategy), address(vault));
+
+        console2.log("--pps after---", aggregator.getPPS(address(strategy)));
+
+        (, uint256 superformFee, uint256 recipientFee) = strategy.previewPerformanceFee(account, userShares);
+
+        // Step 5: Fulfill Redeem
+        _fulfillRedeem7540Underlying(userShares, address(aaveVault), address(centrifugeVault), account);
+
+        // Verify balances
+        assertEq(asset.balanceOf(account), preRedeemUserAssets, "User assets not returned");
+        assertEq(asset.balanceOf(TREASURY), feeBalanceBefore + superformFee + recipientFee, "Fee balance not correct");
     }
 
     /*//////////////////////////////////////////////////////////////
