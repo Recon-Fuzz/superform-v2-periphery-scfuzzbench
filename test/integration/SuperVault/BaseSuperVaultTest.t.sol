@@ -1077,6 +1077,12 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         argsForProofs[0] = ISuperHookInspector(fulfillHooksAddresses[0]).inspect(fulfillHooksData[0]);
         argsForProofs[1] = ISuperHookInspector(fulfillHooksAddresses[1]).inspect(fulfillHooksData[1]);
 
+        console2.log("----argsForProofsLength", argsForProofs.length);
+        console2.log("----argsForProofs[0]");
+        console2.logBytes(argsForProofs[0]);
+        console2.log("----argsForProofs[1]");
+        console2.logBytes(argsForProofs[1]);
+
         strategy.fulfillRedeemRequests(
             ISuperVaultStrategy.FulfillArgs({
                 controllers: requestingUsers,
