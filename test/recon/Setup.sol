@@ -260,19 +260,19 @@ abstract contract Setup is
         withdraw7540Hook = new Withdraw7540VaultHook();
 
         // Register all hooks with SuperGovernor
-        // ERC4626 Hooks (deposit hooks are non-lockable, redeem hooks are lockable)
+        // ERC4626 Hooks (deposit hooks are regular hooks, redeem hooks are fulfill request hooks)
         superGovernor.registerHook(address(approveAndDeposit4626Hook), false);
         superGovernor.registerHook(address(deposit4626Hook), false);
-        superGovernor.registerHook(address(redeem4626Hook), true);
+        superGovernor.registerHook(address(redeem4626Hook), true); // fulfill request hook
 
         // ERC5115 Hooks
         superGovernor.registerHook(address(approveAndDeposit5115Hook), false);
         superGovernor.registerHook(address(deposit5115Hook), false);
-        superGovernor.registerHook(address(redeem5115Hook), true);
+        superGovernor.registerHook(address(redeem5115Hook), true); // fulfill request hook
 
-        // ERC7540 Hooks (deposit/request hooks are non-lockable, redeem/withdraw hooks are lockable)
+        // ERC7540 Hooks (deposit/request hooks are regular hooks, redeem/withdraw hooks are fulfill request hooks)
         superGovernor.registerHook(address(deposit7540Hook), false);
-        superGovernor.registerHook(address(redeem7540Hook), true);
+        superGovernor.registerHook(address(redeem7540Hook), true); // fulfill request hook
         superGovernor.registerHook(address(requestDeposit7540Hook), false);
         superGovernor.registerHook(address(requestRedeem7540Hook), false);
         superGovernor.registerHook(
@@ -296,7 +296,7 @@ abstract contract Setup is
             address(claimCancelRedeemRequest7540Hook),
             false
         );
-        superGovernor.registerHook(address(withdraw7540Hook), true);
+        superGovernor.registerHook(address(withdraw7540Hook), true); // fulfill request hook
 
         // 12. Set up approval array for contracts that need token access
         address[] memory approvalArray = new address[](6);
