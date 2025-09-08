@@ -109,6 +109,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         superVaultAggregator.changePrimaryManager(strategy, newManager);
     }
 
+    /// @dev won't achieve coverage until issue outlined here is resolved: https://github.com/Recon-Fuzz/superform-review/issues/5
     function superVaultAggregator_slashStake(
         address manager,
         uint256 amount

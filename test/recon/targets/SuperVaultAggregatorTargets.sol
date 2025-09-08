@@ -17,6 +17,18 @@ abstract contract SuperVaultAggregatorTargets is
     Properties
 {
     /// CUSTOM TARGET FUNCTIONS - Add your own target functions here ///
+    function superVaultAggregator_proposeChangePrimaryManager_clamped() public {
+        superVaultAggregator_proposeChangePrimaryManager(
+            address(superVaultStrategy),
+            _getActor()
+        );
+    }
+
+    function superVaultAggregator_executeChangePrimaryManager_clamped() public {
+        superVaultAggregator_executeChangePrimaryManager(
+            address(superVaultStrategy)
+        );
+    }
 
     /// AUTO GENERATED TARGET FUNCTIONS - WARNING: DO NOT DELETE OR MODIFY THIS LINE ///
 
