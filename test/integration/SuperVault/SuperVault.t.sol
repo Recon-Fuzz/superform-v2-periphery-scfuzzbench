@@ -1989,10 +1989,10 @@ contract SuperVaultTest is BaseSuperVaultTest {
         _fulfillRedeem(userShares, address(fluidVault), address(aaveVault));
 
         // Calculate expected assets based on shares
-        uint256 claimableAssets = vault.maxWithdraw(accountEth);
+        uint256 claimableShares = vault.maxRedeem(accountEth);
 
         // Step 6: Claim Withdraw
-        _claimWithdraw(claimableAssets);
+        _claimWithdraw(claimableShares);
 
         uint256 totalFeesTaken = superformFee + recipientFee;
 
