@@ -2219,30 +2219,42 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         configSuperLedger = ISuperLedgerConfiguration(_getContract(ETH, SUPER_LEDGER_CONFIGURATION_KEY));
         superLedgerETH = ISuperLedger(_getContract(ETH, SUPER_LEDGER_KEY));
 
-        // Get the existing yield source oracle ID that was created with MANAGER address
-        bytes32 yieldSourceOracleId =
-            keccak256(abi.encodePacked(bytes32(bytes(ERC7540_YIELD_SOURCE_ORACLE_KEY)), MANAGER));
+        // Get the existing yield source oracle IDs that were created with MANAGER address
+        bytes32 erc4626OracleId = keccak256(abi.encodePacked(bytes32(bytes(ERC4626_YIELD_SOURCE_ORACLE_KEY)), MANAGER));
+        bytes32 erc7540OracleId = keccak256(abi.encodePacked(bytes32(bytes(ERC7540_YIELD_SOURCE_ORACLE_KEY)), MANAGER));
 
+        // Get the oracle addresses
+        address erc4626Oracle = _getContract(ETH, ERC4626_YIELD_SOURCE_ORACLE_KEY);
+        address erc7540Oracle = _getContract(ETH, ERC7540_YIELD_SOURCE_ORACLE_KEY);
+
+        // Create configs for both ERC4626 and ERC7540 oracles
         ISuperLedgerConfiguration.YieldSourceOracleConfigArgs[] memory configs =
-            new ISuperLedgerConfiguration.YieldSourceOracleConfigArgs[](1);
+            new ISuperLedgerConfiguration.YieldSourceOracleConfigArgs[](2);
         configs[0] = ISuperLedgerConfiguration.YieldSourceOracleConfigArgs({
-            yieldSourceOracle: address(oracle),
+            yieldSourceOracle: erc4626Oracle,
+            feePercent: 0,
+            feeRecipient: address(this),
+            ledger: address(superLedgerETH)
+        });
+        configs[1] = ISuperLedgerConfiguration.YieldSourceOracleConfigArgs({
+            yieldSourceOracle: erc7540Oracle,
             feePercent: 0,
             feeRecipient: address(this),
             ledger: address(superLedgerETH)
         });
 
-        bytes32[] memory yieldSourceOracleIds = new bytes32[](1);
-        yieldSourceOracleIds[0] = yieldSourceOracleId;
+        bytes32[] memory yieldSourceOracleIds = new bytes32[](2);
+        yieldSourceOracleIds[0] = erc4626OracleId;
+        yieldSourceOracleIds[1] = erc7540OracleId;
 
-        // Propose the configuration change to set fee to 0
+        // Propose the configuration changes to set fees to 0
         vm.prank(MANAGER);
         configSuperLedger.proposeYieldSourceOracleConfig(yieldSourceOracleIds, configs);
 
         // Wait for the timelock period (1 week)
         vm.warp(block.timestamp + 1 weeks);
 
-        // Accept the proposal
+        // Accept the proposals
         vm.prank(MANAGER);
         configSuperLedger.acceptYieldSourceOracleConfigProposal(yieldSourceOracleIds);
     }
