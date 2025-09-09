@@ -53,11 +53,14 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         );
 
         // Get the hook address and calldata
-        (address hookAddress, bytes memory hookCalldata) = _getHookAddressAndCalldata(
-            hookType,
-            amountToInvest,
-            usePrevHookAmount
-        );
+        (
+            address hookAddress,
+            bytes memory hookCalldata
+        ) = _getHookAddressAndCalldata(
+                hookType,
+                amountToInvest,
+                usePrevHookAmount
+            );
 
         // Create ExecuteArgs for the hook
         ISuperVaultStrategy.ExecuteArgs memory executeArgs = ISuperVaultStrategy
@@ -236,18 +239,6 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
                 address(superVaultStrategy) // Controller
             );
         }
-    }
-
-    // Keep the original function for backwards compatibility
-    function superVaultStrategy_executeHooks_clamped(
-        bool depositHook,
-        uint256 amountToInvest
-    ) public payable {
-        // Call the generalized version with appropriate hook type
-        // depositHook=true maps to ApproveAndDeposit4626 (enum value 0)
-        // depositHook=false maps to Redeem4626 (enum value 2)
-        uint256 hookType = depositHook ? 0 : 2;
-        superVaultStrategy_executeHooks_clamped(hookType, amountToInvest, false);
     }
 
     /// AUTO GENERATED TARGET FUNCTIONS - WARNING: DO NOT DELETE OR MODIFY THIS LINE ///
