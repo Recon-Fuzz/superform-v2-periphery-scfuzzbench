@@ -81,6 +81,72 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
         );
     }
 
+    /// @dev Property: maxRedeem is reset to 0 after full redemption
+    function doomsday_maxRedeemResetsAfterFullRedemption(
+        uint256 sharesToMint
+    ) public stateless {
+        // 1. Deposit to get shares
+        superVault.mint(sharesToMint, _getActor());
+
+        uint256 shares = superVault.maxRedeem(_getActor());
+
+        // 2. Request full redemption
+        superVault.requestRedeem(shares, _getActor(), _getActor());
+
+        // 3. Fulfill the redemption request
+        ISuperVaultStrategy.FulfillArgs
+            memory fulfillArgs = _createFulfillRedeemArgs(shares);
+        superVaultStrategy.fulfillRedeemRequests(fulfillArgs);
+
+        // 4. Check maxRedeem before claiming
+        uint256 maxRedeemBeforeClaim = superVault.maxRedeem(_getActor());
+
+        // 5. Claim the full redemption
+        superVault.redeem(shares, _getActor(), _getActor());
+
+        // 6. Check maxRedeem is reset to 0 after full redemption
+        uint256 maxRedeemAfterClaim = superVault.maxRedeem(_getActor());
+        eq(
+            maxRedeemAfterClaim,
+            0,
+            "maxRedeem should be reset to 0 after full redemption"
+        );
+    }
+
+    /// @dev Property: maxWithdraw is reset to 0 after full withdrawal
+    function doomsday_maxWithdrawResetsAfterFullWithdrawal(
+        uint256 assetsToDeposit
+    ) public stateless {
+        // 1. Deposit to get shares
+        superVault.deposit(assetsToDeposit, _getActor());
+
+        uint256 shares = superVault.balanceOf(_getActor());
+
+        // 2. Request redemption of all shares
+        superVault.requestRedeem(shares, _getActor(), _getActor());
+
+        // 3. Fulfill the redemption request
+        ISuperVaultStrategy.FulfillArgs
+            memory fulfillArgs = _createFulfillRedeemArgs(shares);
+        superVaultStrategy.fulfillRedeemRequests(fulfillArgs);
+
+        // 4. Check maxWithdraw after fulfillment and use that value
+        uint256 maxWithdrawable = superVault.maxWithdraw(_getActor());
+
+        // 5. Withdraw the exact amount returned by maxWithdraw
+        superVault.withdraw(maxWithdrawable, _getActor(), _getActor());
+
+        // 6. Check maxWithdraw is reset to 0 after full withdrawal
+        uint256 maxWithdrawAfter = superVault.maxWithdraw(_getActor());
+        eq(
+            maxWithdrawAfter,
+            0,
+            "maxWithdraw should be reset to 0 after full withdrawal"
+        );
+    }
+
+    // Helpers
+
     /// @dev Helper function to create FulfillArgs for redeem requests
     function _createFulfillRedeemArgs(
         uint256 amount

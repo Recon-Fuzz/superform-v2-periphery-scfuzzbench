@@ -5,8 +5,9 @@
 | --- | --- | --- | --- |
 | `doomsday_mintRedeemSymmetrical` | deposit/redeem is symmetrical, no value gained due to rounding |  |  |
 | `doomsday_depositWithdrawSymmetrical` | deposit/withdraw is symmetrical, no value gained due to rounding |  |  |
-| `property_x` | `maxRedeem` is reset to 0 after full redemption |  |  |
-| `property_x` | `maxWithdraw` is reset to 0 after full withdrawal |  |  |
+| `doomsday_maxRedeemResetsAfterFullRedemption` | `maxRedeem` is reset to 0 after full redemption |  |  |
+| `doomsday_maxRedeemResetsAfterFullRedemption` | `maxRedeem` is reset to 0 after full redemption |  |  |
+| `doomsday_maxWithdrawResetsAfterFullWithdrawal` | `maxWithdraw` is reset to 0 after full withdrawal |  |  |
 | `property_x` | estimate internal PPS on request, check if fulfillment causes this estimation to be altered |  |  |
 | `property_x` | current PPS doesn't change on deposit |  |  |
 | `property_x` | current PPS doesn't change on redeem |  |  |
