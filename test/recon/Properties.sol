@@ -39,4 +39,13 @@ abstract contract Properties is BeforeAfter, Asserts {
             );
         }
     }
+
+    /// @dev Property: maxRedeem and maxWithdraw should always be equivalent
+    function property_maxRedeemMaxWithdrawSymmetry() public {
+        uint256 maxWithdraw = superVault.maxWithdraw(_getActor());
+        uint256 maxWithdrawAsShares = superVault.convertToShares(maxWithdraw);
+        uint256 maxRedeem = superVault.maxRedeem(_getActor());
+
+        eq(maxWithdrawAsShares, maxRedeem, "maxWithdrawAsShares != maxRedeem");
+    }
 }

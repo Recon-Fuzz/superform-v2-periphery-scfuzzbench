@@ -12,6 +12,7 @@
 | `property_naivePPSDoesntChangeOnRedeem` | fulfillRedeemRequest doesn't change naive PPS | ✅ |  |
 | `property_oraclePPSDoesntChangeOnAddOrRemove` | oracle PPS doesn't change on deposit/mint/redeem/withdraw | ✅ |  |
 | `property_naivePPSDoesntChangeOnAddOrRemove` | naive PPS (assets/shares in system) never changes on deposit/mint/redeem/withdraw  | ✅ |  |
+| `property_maxRedeemMaxWithdrawSymmetry` | `maxRedeem` and `maxWithdraw` should always be equivalent  | ✅ |  |
 
 
 ## SuperVaultAggregator 
