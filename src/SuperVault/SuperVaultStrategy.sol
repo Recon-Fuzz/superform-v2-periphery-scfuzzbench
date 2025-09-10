@@ -283,10 +283,15 @@ contract SuperVaultStrategy is ISuperVaultStrategy, Initializable, ReentrancyGua
         if (args.globalProofs.length != hooksLength) revert INVALID_ARRAY_LENGTH();
         if (args.strategyProofs.length != hooksLength) revert INVALID_ARRAY_LENGTH();
 
-        uint256 processedShares;
         uint256 currentPPS = getStoredPPS();
         if (currentPPS == 0) revert INVALID_PPS();
 
+        // Pre-calculate totals to ensure no overburn of escrowed shares
+        uint256 totalRequestedShares;
+        for (uint256 i; i < controllersLength; ++i) {
+            totalRequestedShares += superVaultState[args.controllers[i]].pendingRedeemRequest;
+        }
+        uint256 intendedShares;
         for (uint256 i; i < hooksLength; ++i) {
             address hook = args.hooks[i];
             if (!_isFulfillRequestsHook(hook)) revert INVALID_HOOK();
@@ -296,11 +301,34 @@ contract SuperVaultStrategy is ISuperVaultStrategy, Initializable, ReentrancyGua
             }
             if (args.expectedAssetsOrSharesOut[i] == 0) revert ZERO_EXPECTED_VALUE();
 
+            intendedShares += ISuperHookInflowOutflow(hook).decodeAmount(
+                args.hookCalldata[i]
+            );
+        }
+
+        // Enforce both lower- and upper-bounds on intended shares to prevent escrow overburn
+        if (intendedShares + TOLERANCE_CONSTANT < totalRequestedShares)
+        {
+            revert INVALID_REDEEM_FILL();
+        }
+
+
+        if (intendedShares > totalRequestedShares + TOLERANCE_CONSTANT)
+        {
+            revert INVALID_REDEEM_FILL();
+        }
+
+        uint256 processedShares;
+        for (uint256 i; i < hooksLength; ++i) {
+            address hook = args.hooks[i];
             uint256 amountSharesSpent = _processSingleFulfillHookExecution(
                 hook, args.hookCalldata[i], args.expectedAssetsOrSharesOut[i], currentPPS
             );
             processedShares += amountSharesSpent;
         }
+
+        // Post-condition: processed shares must match intended shares
+        if (processedShares != intendedShares) revert INVALID_REDEEM_FILL();
 
         _processRedeemFulfillments(args.controllers, controllersLength, processedShares, currentPPS);
 
@@ -684,6 +712,11 @@ contract SuperVaultStrategy is ISuperVaultStrategy, Initializable, ReentrancyGua
             totalRequestedAmount += controllerRequestedAmount[i];
         }
         if (processedShares + TOLERANCE_CONSTANT < totalRequestedAmount) {
+            revert INVALID_REDEEM_FILL();
+        }
+        
+        // Prevent burning more shares than the selected controllers' total pending shares
+        if (processedShares > totalRequestedAmount + TOLERANCE_CONSTANT) {
             revert INVALID_REDEEM_FILL();
         }
 
