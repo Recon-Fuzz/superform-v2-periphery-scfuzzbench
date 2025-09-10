@@ -10,7 +10,7 @@ contract MockChainlinkOracle {
         answeredInRound = 1;
     }
 
-    function decimals() external view returns (uint8) {
+    function decimals() external pure returns (uint8) {
         return 8;
     }
 }
