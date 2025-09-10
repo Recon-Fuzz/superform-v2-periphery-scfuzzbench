@@ -102,7 +102,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
         uint256 maxRedeemBeforeClaim = superVault.maxRedeem(_getActor());
 
         // 5. Claim the full redemption
-        superVault.redeem(shares, _getActor(), _getActor());
+        superVault.redeem(maxRedeemBeforeClaim, _getActor(), _getActor());
 
         // 6. Check maxRedeem is reset to 0 after full redemption
         uint256 maxRedeemAfterClaim = superVault.maxRedeem(_getActor());
@@ -152,78 +152,92 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     ) public stateless {
         address[] memory actors = _getActors();
         if (actors.length < 3) return; // Need at least 3 actors for this test
-        
+
         // Arrays to track actors and their requests
         address[] memory testActors = new address[](3);
         uint256[] memory requestedShares = new uint256[](3);
         uint256[] memory sharesBefore = new uint256[](3);
-        
+
         // 1. Setup: Each actor deposits and requests redemption
         for (uint256 i = 0; i < 3; i++) {
             // Get unique actor
             testActors[i] = actors[actorIndexes[i] % actors.length];
-            
+
             // Switch to this actor
             vm.startPrank(testActors[i]);
-            
+
             // Mint shares for this actor
             if (sharesToMint[i] > 0) {
                 superVault.mint(sharesToMint[i], testActors[i]);
             }
-            
+
             // Get actual share balance
             sharesBefore[i] = superVault.balanceOf(testActors[i]);
             requestedShares[i] = sharesBefore[i];
-            
+
             // Request redemption of all shares
             if (requestedShares[i] > 0) {
-                superVault.requestRedeem(requestedShares[i], testActors[i], testActors[i]);
+                superVault.requestRedeem(
+                    requestedShares[i],
+                    testActors[i],
+                    testActors[i]
+                );
             }
-            
+
             vm.stopPrank();
         }
-        
+
         // 2. Create multi-actor FulfillArgs
-        ISuperVaultStrategy.FulfillArgs memory fulfillArgs = _createMultiActorFulfillArgs(
-            testActors,
-            requestedShares
-        );
-        
+        ISuperVaultStrategy.FulfillArgs
+            memory fulfillArgs = _createMultiActorFulfillArgs(
+                testActors,
+                requestedShares
+            );
+
         // Calculate total expected from FulfillArgs
         uint256 totalExpectedFromArgs = 0;
-        for (uint256 i = 0; i < fulfillArgs.expectedAssetsOrSharesOut.length; i++) {
+        for (
+            uint256 i = 0;
+            i < fulfillArgs.expectedAssetsOrSharesOut.length;
+            i++
+        ) {
             totalExpectedFromArgs += fulfillArgs.expectedAssetsOrSharesOut[i];
         }
-        
+
         // Get SuperVaultStrategy balance before fulfillment
-        uint256 strategyBalanceBefore = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        
+        uint256 strategyBalanceBefore = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+
         // 3. Fulfill all redemption requests at once
         superVaultStrategy.fulfillRedeemRequests(fulfillArgs);
-        
+
         // Get SuperVaultStrategy balance after fulfillment
-        uint256 strategyBalanceAfter = MockERC20(_getAsset()).balanceOf(address(superVaultStrategy));
-        
+        uint256 strategyBalanceAfter = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+
         // 4. Calculate total fulfilled as the change in strategy balance
         // If balance increased, that's the amount fulfilled (assets moved into strategy)
         uint256 totalFulfilled = 0;
         if (strategyBalanceAfter > strategyBalanceBefore) {
             totalFulfilled = strategyBalanceAfter - strategyBalanceBefore;
         }
-        
+
         // 5. Check individual actors' maxRedeem values
         for (uint256 i = 0; i < 3; i++) {
             if (requestedShares[i] > 0) {
                 uint256 maxRedeemable = superVault.maxRedeem(testActors[i]);
-                
+
                 lte(
                     maxRedeemable,
                     requestedShares[i],
                     "Actor's maxRedeem should not exceed requested shares"
                 );
-                
+
                 // Also verify pending request was properly reduced
-                uint256 pendingRequest = superVaultStrategy.pendingRedeemRequest(testActors[i]);
+                uint256 pendingRequest = superVaultStrategy
+                    .pendingRedeemRequest(testActors[i]);
                 eq(
                     pendingRequest,
                     0,
@@ -231,13 +245,13 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
                 );
             }
         }
-        
+
         // 6. Critical check: Total assets transferred to strategy must not exceed sum of expectedAssetsOrSharesOut
         lte(
             totalFulfilled,
             totalExpectedFromArgs,
             "Total assets transferred to strategy should not exceed sum of expectedAssetsOrSharesOut"
-        )
+        );
     }
 
     // Helpers
@@ -248,18 +262,18 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
         uint256[] memory amounts
     ) internal view returns (ISuperVaultStrategy.FulfillArgs memory) {
         uint256 numActors = controllers.length;
-        
+
         address[] memory hooks = new address[](numActors);
         bytes[] memory hookCalldata = new bytes[](numActors);
         uint256[] memory expectedAssetsOrSharesOut = new uint256[](numActors);
         bytes32[][] memory globalProofs = new bytes32[][](numActors);
         bytes32[][] memory strategyProofs = new bytes32[][](numActors);
-        
+
         for (uint256 i = 0; i < numActors; i++) {
             hooks[i] = _getRedeemHookForType(
                 _getYieldSourceTypeFromAddress(_getYieldSource())
             );
-            
+
             if (
                 _getYieldSourceTypeFromAddress(_getYieldSource()) ==
                 YieldSourceType.ERC4626
@@ -279,12 +293,12 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
                     false
                 );
             }
-            
+
             expectedAssetsOrSharesOut[i] = amounts[i];
             globalProofs[i] = new bytes32[](0);
             strategyProofs[i] = new bytes32[](0);
         }
-        
+
         return
             ISuperVaultStrategy.FulfillArgs({
                 controllers: controllers,
