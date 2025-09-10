@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0
 pragma solidity ^0.8.0;
 
+// Recon deps
 import {BaseTargetFunctions} from "@chimera/BaseTargetFunctions.sol";
-import {BeforeAfter} from "../BeforeAfter.sol";
-import {Properties} from "../Properties.sol";
-// Chimera deps
 import {vm} from "@chimera/Hevm.sol";
-
-// Helpers
 import {Panic} from "@recon/Panic.sol";
 
 import "src/SuperVault/SuperVault.sol";
+
+import {OpType} from "test/recon/BeforeAfter.sol";
+import {BeforeAfter} from "../BeforeAfter.sol";
+import {Properties} from "../Properties.sol";
 
 /// @dev All receivers are inherently clamped to actors to make checking properties easier
 abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
@@ -35,7 +35,9 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         superVault.cancelRedeem(_getActor());
     }
 
-    function superVault_deposit(uint256 assets) public asActor {
+    function superVault_deposit(
+        uint256 assets
+    ) public asActor updateGhostsWithOpType(OpType.ADD) {
         superVault.deposit(assets, _getActor());
     }
 
@@ -43,15 +45,21 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         superVault.invalidateNonce(nonce);
     }
 
-    function superVault_mint(uint256 shares) public asActor {
+    function superVault_mint(
+        uint256 shares
+    ) public asActor updateGhostsWithOpType(OpType.ADD) {
         superVault.mint(shares, _getActor());
     }
 
-    function superVault_redeem(uint256 shares) public asActor {
+    function superVault_redeem(
+        uint256 shares
+    ) public asActor updateGhostsWithOpType(OpType.REMOVE) {
         superVault.redeem(shares, _getActor(), _getActor());
     }
 
-    function superVault_withdraw(uint256 assets) public asActor {
+    function superVault_withdraw(
+        uint256 assets
+    ) public asActor updateGhostsWithOpType(OpType.REMOVE) {
         superVault.withdraw(assets, _getActor(), _getActor());
     }
 

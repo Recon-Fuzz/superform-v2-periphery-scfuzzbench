@@ -10,8 +10,7 @@
 | `doomsday_maxWithdrawResetsAfterFullWithdrawal` | `maxWithdraw` is reset to 0 after full withdrawal | ✅ |  |
 | `doomsday_fulfillDoesntOverRedeemMultipleActors` | fulfillRedeemRequests doesn't redeem more than requested for multiple actors | ✅ |  |
 | `property_x` | estimate internal PPS on request, check if fulfillment causes this estimation to be altered |  |  |
-| `property_x` | current PPS doesn't change on deposit |  |  |
-| `property_x` | current PPS doesn't change on redeem |  |  |
+| `property_oraclePPSDoesntChangeOnAddOrRemove` | oracle PPS doesn't change on deposit/mint/redeem/withdraw |  |  |
 | `property_x` | implied PPS (assets/share in system) never changes on deposit  |  |  |
 | `property_x` | implied PPS (assets/share in system) never changes on redeem  |  |  |
 
