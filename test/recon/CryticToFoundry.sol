@@ -2,21 +2,21 @@
 pragma solidity ^0.8.0;
 
 import {FoundryAsserts} from "@chimera/FoundryAsserts.sol";
-
-import "forge-std/console2.sol";
-
-import {Test} from "forge-std/Test.sol";
-import {TargetFunctions} from "./TargetFunctions.sol";
-import {ISuperVaultStrategy} from "src/interfaces/SuperVault/ISuperVaultStrategy.sol";
-import {ISuperVaultAggregator} from "src/interfaces/SuperVault/ISuperVaultAggregator.sol";
-import {MerkleTestHelper} from "./helpers/MerkleTestHelper.sol";
+import {MockERC20} from "@recon/MockERC20.sol";
+import {Test, console2} from "forge-std/Test.sol";
 import {Deposit4626VaultHook} from "lib/v2-core/src/hooks/vaults/4626/Deposit4626VaultHook.sol";
 import {ApproveAndDeposit4626VaultHook} from "lib/v2-core/src/hooks/vaults/4626/ApproveAndDeposit4626VaultHook.sol";
 import {Redeem4626VaultHook} from "lib/v2-core/src/hooks/vaults/4626/Redeem4626VaultHook.sol";
-import {MockERC20} from "@recon/MockERC20.sol";
+
+import {IECDSAPPSOracle} from "src/interfaces/oracles/IECDSAPPSOracle.sol";
+import {ISuperVaultStrategy} from "src/interfaces/SuperVault/ISuperVaultStrategy.sol";
+import {ISuperVaultAggregator} from "src/interfaces/SuperVault/ISuperVaultAggregator.sol";
+import {YieldSourceType} from "test/recon/managers/YieldManager.sol";
+
+import {MerkleTestHelper} from "./helpers/MerkleTestHelper.sol";
+import {TargetFunctions} from "./TargetFunctions.sol";
 import {MockERC4626Tester} from "./mocks/MockERC4626Tester.sol";
 import {YieldSourceType} from "./managers/YieldManager.sol";
-import {IECDSAPPSOracle} from "src/interfaces/oracles/IECDSAPPSOracle.sol";
 
 // forge test --match-contract CryticToFoundry -vv
 contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
@@ -25,15 +25,23 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     }
 
     // Helper function to execute a single hook with proper array creation
-    function _executeSingleHook(uint256 hookType, uint256 amount, bool usePrevAmount) internal {
+    function _executeSingleHook(
+        uint256 hookType,
+        uint256 amount,
+        bool usePrevAmount
+    ) internal {
         uint256[] memory hookTypes = new uint256[](1);
         hookTypes[0] = hookType;
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
         bool[] memory usePrevAmounts = new bool[](1);
         usePrevAmounts[0] = usePrevAmount;
-        
-        superVaultStrategy_executeHooks_clamped(hookTypes, amounts, usePrevAmounts);
+
+        superVaultStrategy_executeHooks_clamped(
+            hookTypes,
+            amounts,
+            usePrevAmounts
+        );
     }
 
     // Test the new multi-hook functionality
@@ -114,31 +122,40 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
 
         /*
          * PROOF OF LINE 586 REACHABILITY:
-         * 
+         *
          * When this test runs with multiple hooks where:
          * 1. First hook executes normally (prevHook starts as address(0))
          * 2. Second hook has usePrevHookAmount = true
-         * 
+         *
          * The SuperVaultStrategy executeHooks function will:
          * 1. Execute first hook successfully, setting prevHook to first hook's address
          * 2. Start executing second hook
-         * 3. Check: usePrevHookAmount = true AND prevHook != address(0) 
+         * 3. Check: usePrevHookAmount = true AND prevHook != address(0)
          * 4. This triggers line 586: if (usePrevHookAmount && prevHook != address(0)) {
          * 5. Inside this block, it calls _getPreviousHookOutAmount(prevHook)
          * 6. Performs slippage validation on the previous hook's output
-         * 
+         *
          * The test will fail due to validation, but line 586 IS reached and executed.
          */
-        
+
         // This will reach line 586 even though it may fail validation
         // The failure proves the line was reached because the validation logic was executed
-        try this.superVaultStrategy_executeHooks_clamped(hookTypes, amounts, usePrevAmounts) {
+        try
+            this.superVaultStrategy_executeHooks_clamped(
+                hookTypes,
+                amounts,
+                usePrevAmounts
+            )
+        {
             // If it succeeds, line 586 was reached and passed all validations
             assertTrue(true, "Line 586 reached and validation passed");
         } catch {
             // If it fails, line 586 was still reached but validation failed
             // This still proves the line is reachable with multiple hooks
-            assertTrue(true, "Line 586 reached but validation failed - still proves reachability");
+            assertTrue(
+                true,
+                "Line 586 reached but validation failed - still proves reachability"
+            );
         }
     }
 
@@ -155,7 +172,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         // prevHook = address(0), so condition (usePrevHookAmount && prevHook != address(0)) is false
         // (Single hook execution would work fine, but the usePrevHookAmount logic is never triggered)
 
-        // CASE 2: Multiple hooks - line 586 IS reachable  
+        // CASE 2: Multiple hooks - line 586 IS reachable
         // After first hook executes, prevHook != address(0), so condition can be true
         uint256[] memory hookTypes = new uint256[](2);
         uint256[] memory amounts = new uint256[](2);
@@ -165,20 +182,32 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         amounts[0] = 300e18;
         usePrevAmounts[0] = false;
 
-        hookTypes[1] = 0; // ApproveAndDeposit4626 (can use prevHook)  
+        hookTypes[1] = 0; // ApproveAndDeposit4626 (can use prevHook)
         amounts[1] = 250e18;
         usePrevAmounts[1] = true; // NOW line 586 is reachable: usePrevHookAmount=true AND prevHook!=address(0)
 
         // This execution will reach line 586 during the second hook
-        try this.superVaultStrategy_executeHooks_clamped(hookTypes, amounts, usePrevAmounts) {
-            assertTrue(true, "Multiple hooks with usePrevHookAmount successfully reached line 586");
+        try
+            this.superVaultStrategy_executeHooks_clamped(
+                hookTypes,
+                amounts,
+                usePrevAmounts
+            )
+        {
+            assertTrue(
+                true,
+                "Multiple hooks with usePrevHookAmount successfully reached line 586"
+            );
         } catch {
-            assertTrue(true, "Multiple hooks reached line 586 but failed validation - still proves reachability");
+            assertTrue(
+                true,
+                "Multiple hooks reached line 586 but failed validation - still proves reachability"
+            );
         }
-        
+
         // CONCLUSION: Line 586 (usePrevHookAmount logic) is only reachable when:
         // 1. Multiple hooks are executed AND
-        // 2. A subsequent hook has usePrevHookAmount = true AND  
+        // 2. A subsequent hook has usePrevHookAmount = true AND
         // 3. prevHook != address(0) (which happens after first hook executes)
     }
 
@@ -2718,5 +2747,35 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         console2.log(
             "Line 1280 (!args.isExempt) condition was TRUE, entering the block"
         );
+    }
+
+    /// Reproducers
+    // forge test --match-test test_doomsday_mintRedeemSymmetrical_1 -vvv
+    function test_doomsday_mintRedeemSymmetrical_1() public {
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType(0));
+
+        superVault_mint(2);
+
+        // superVaultStrategy_executeHooks_clamped(17034, 1, false);
+        _executeSingleHook(17034, 1, false);
+
+        yieldSource_simulateGain(620363132890971);
+
+        doomsday_mintRedeemSymmetrical(626386102211729);
+    }
+
+    // forge test --match-test test_doomsday_depositWithdrawSymmetrical_2 -vvv
+    function test_doomsday_depositWithdrawSymmetrical_2() public {
+        yieldSource_switchToERC7540();
+
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType(0));
+
+        superVault_mint(2);
+
+        _executeSingleHook(0, 1, false);
+
+        yieldSource_increaseYield(9698929233162);
+
+        doomsday_depositWithdrawSymmetrical(980372307);
     }
 }

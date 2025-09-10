@@ -20,7 +20,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
         revert("stateless");
     }
 
-    /// @dev Property: deposit/redeem is symmetrical
+    /// @dev Property: mint/redeem is symmetrical
     function doomsday_mintRedeemSymmetrical(
         uint256 sharesToMint
     ) public stateless {
