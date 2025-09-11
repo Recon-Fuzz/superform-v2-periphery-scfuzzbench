@@ -314,24 +314,6 @@ contract MockERC4626Tester is ERC4626 {
         lossOnWithdraw = _lossOnWithdraw;
     }
 
-    /// @dev Increase the yield by a given percentage by taking assets from the caller.
-    /// @param increasePercentageFP4 Percentage increase in basis points (e.g., 100 = 1%)
-    function increaseYield(uint256 increasePercentageFP4) public {
-        require(increasePercentageFP4 <= 10000, "Invalid percentage");
-        uint256 amount = (totalAssets() * increasePercentageFP4) / 10000;
-        MockERC20(asset).transferFrom(msg.sender, address(this), amount);
-    }
-
-    /// @dev Decrease the yield by a given percentage by burning the underlying asset from the vault.
-    /// @param decreasePercentageFP4 Percentage decrease in basis points (e.g., 100 = 1%)
-    function decreaseYield(uint256 decreasePercentageFP4) public {
-        require(decreasePercentageFP4 <= 10000, "Invalid percentage");
-        uint256 amount = (totalAssets() * decreasePercentageFP4) / 10000;
-        MockERC20(asset).transfer(address(0xbeef), amount);
-
-        totalLosses += amount;
-    }
-
     /// @dev Set the decimal offset. Only possible with no supply.
     function setDecimalsOffset(uint8 targetDecimalsOffset) external {
         if (totalSupply != 0) {

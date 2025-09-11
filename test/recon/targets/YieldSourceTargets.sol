@@ -378,36 +378,6 @@ abstract contract YieldSourceTargets is BaseTargetFunctions, Properties {
         // Note: ERC5115 and ERC7540 don't have setLossOnWithdraw function
     }
 
-    function yieldSource_increaseYield(
-        uint256 increasePercentageFP4
-    ) public asActor {
-        YieldSourceType currentType = _getCurrentYieldSourceType();
-        address yieldSource = _getYieldSource();
-
-        if (currentType == YieldSourceType.ERC4626) {
-            MockERC4626Tester(yieldSource).increaseYield(increasePercentageFP4);
-        } else if (currentType == YieldSourceType.ERC5115) {
-            MockERC5115Tester(yieldSource).increaseYield(increasePercentageFP4);
-        } else if (currentType == YieldSourceType.ERC7540) {
-            MockERC7540Tester(yieldSource).increaseYield(increasePercentageFP4);
-        }
-    }
-
-    function yieldSource_decreaseYield(
-        uint256 decreasePercentageFP4
-    ) public asActor {
-        YieldSourceType currentType = _getCurrentYieldSourceType();
-        address yieldSource = _getYieldSource();
-
-        if (currentType == YieldSourceType.ERC4626) {
-            MockERC4626Tester(yieldSource).decreaseYield(decreasePercentageFP4);
-        } else if (currentType == YieldSourceType.ERC5115) {
-            MockERC5115Tester(yieldSource).decreaseYield(decreasePercentageFP4);
-        } else if (currentType == YieldSourceType.ERC7540) {
-            MockERC7540Tester(yieldSource).decreaseYield(decreasePercentageFP4);
-        }
-    }
-
     /// Yield source management functions ///
     function yieldSource_switchToERC4626() public {
         _switchYieldSource(0); // Switch to first yield source (ERC4626)
@@ -425,5 +395,4 @@ abstract contract YieldSourceTargets is BaseTargetFunctions, Properties {
         // Randomly switch between the three deployed yield sources
         _switchYieldSource(entropy);
     }
-
 }
