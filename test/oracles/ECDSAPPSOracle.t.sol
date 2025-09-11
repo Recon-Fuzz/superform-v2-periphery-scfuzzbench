@@ -63,7 +63,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
 
         // Create a new governor specifically for these tests
         governor =
-            new SuperGovernor(governorAddress, governorAddress, governorAddress, TREASURY, CHAIN_1_POLYMER_PROVER);
+            new SuperGovernor(governorAddress, governorAddress, governorAddress, governorAddress, TREASURY, CHAIN_1_POLYMER_PROVER);
 
         // Deploy implementation contracts first
         address vaultImpl = address(new SuperVault(address(governor)));
@@ -775,9 +775,12 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         // Second strategy has empty proofs array (should trigger ZERO_LENGTH_ARRAY error)
         data.proofsArray[1] = new bytes[](0);
 
-        // Call should revert because validation fails on the second strategy
+        // Expect the ProofValidationFailed event to be emitted for the second strategy
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(data.strategy2, "ZERO_LENGTH_ARRAY()");
+
+        // Call should not revert but emit validation failure event
         vm.prank(user);
-        vm.expectRevert(IECDSAPPSOracle.ZERO_LENGTH_ARRAY.selector);
         oracleECDSA.batchUpdatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: data.strategies,

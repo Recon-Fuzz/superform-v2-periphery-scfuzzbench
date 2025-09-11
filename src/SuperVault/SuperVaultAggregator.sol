@@ -305,7 +305,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
             _forwardPPS(
                 ForwardPPSArgs({
                     strategy: args.strategies[i],
-                    isExempt: !paymentsEnabled,
+                    isExempt: !paymentsEnabled, // If payments are disabled, all updates are exempt from UP payments
                     pps: args.ppss[i],
                     ppsStdev: args.ppsStdevs[i],
                     validatorSet: args.validatorSets[i],

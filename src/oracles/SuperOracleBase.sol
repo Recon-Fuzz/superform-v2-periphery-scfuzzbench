@@ -41,9 +41,6 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
     uint256 internal constant TIMELOCK_PERIOD = 1 weeks;
     bytes32 internal constant AVERAGE_PROVIDER = keccak256("AVERAGE_PROVIDER");
 
-    address internal constant NATIVE_TOKEN = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
-    address internal constant USD = address(840);
-
     // SuperGovernor address
     address public immutable SUPER_GOVERNOR;
 
@@ -327,22 +324,8 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
         // Get decimals
         uint8 feedDecimals = _getOracleDecimals(AggregatorV3Interface(oracle));
     
-        uint8 baseDecimals;
-        uint8 quoteDecimals;
-        /// @dev ISO convention for USD would be 2 decimals
-        ///         However, by following ISO convention it would mean JPY has 0 decimals
-        ///         The `safeDecimals()` function returns 18 in case `.decimals()` call reverts
-        if (base == NATIVE_TOKEN || base == USD) {
-            baseDecimals = 18;
-        } else {
-            baseDecimals = IERC20(base).safeDecimals();
-        }
-        if (quote == NATIVE_TOKEN || quote == USD) {
-            quoteDecimals = 18;
-        } else {
-            quoteDecimals = IERC20(quote).safeDecimals();
-        }
-
+        uint8 baseDecimals = IERC20(base).safeDecimals();
+        uint8 quoteDecimals = IERC20(quote).safeDecimals();
 
         // Calculate quote amount with proper decimal scaling
         quoteAmount =

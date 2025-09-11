@@ -4,6 +4,7 @@ pragma solidity 0.8.30;
 // external
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Superform
 import { ISuperGovernor, FeeType } from "./interfaces/ISuperGovernor.sol";
@@ -98,6 +99,10 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     uint256 private _proposedMinStaleness;
     uint256 private _minStalenesEffectiveTime;
 
+    // Oracle constants
+    address private constant NATIVE_TOKEN = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
+    address private constant USD_TOKEN = address(840);
+
     // Timelock configuration
     uint256 private constant TIMELOCK = 7 days;
     uint256 private constant BPS_MAX = 10_000; // 100% in basis points
@@ -108,6 +113,7 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     bytes32 private constant _BANK_MANAGER_ROLE = keccak256("BANK_MANAGER_ROLE");
     bytes32 private constant _GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
     bytes32 private constant _SUPER_ASSET_FACTORY = keccak256("SUPER_ASSET_FACTORY");
+    bytes32 private constant _GAS_MANAGER_ROLE = keccak256("GAS_MANAGER_ROLE");
 
     // Common contract keys
     bytes32 public constant UP = keccak256("UP");
@@ -130,10 +136,10 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     /// @param bankManager Address that will have the BANK_MANAGER_ROLE for daily operations
     /// @param treasury_ Address of the treasury
     /// @param prover_ Address of the prover
-    constructor(address superGovernor, address governor, address bankManager, address treasury_, address prover_) {
+    constructor(address superGovernor, address governor, address bankManager, address gasManager, address treasury_, address prover_) {
         if (
             superGovernor == address(0) || treasury_ == address(0) || governor == address(0)
-                || bankManager == address(0) || prover_ == address(0)
+                || bankManager == address(0) || prover_ == address(0) || gasManager == address(0)
         ) revert INVALID_ADDRESS();
 
         // Set up roles
@@ -141,6 +147,7 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
         _grantRole(_SUPER_GOVERNOR_ROLE, superGovernor);
         _grantRole(_GOVERNOR_ROLE, governor);
         _grantRole(_BANK_MANAGER_ROLE, bankManager);
+        _grantRole(_GAS_MANAGER_ROLE, gasManager);
         // Setup GUARDIAN_ROLE without assigning any address
         _setRoleAdmin(_GUARDIAN_ROLE, DEFAULT_ADMIN_ROLE);
 
@@ -148,6 +155,7 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
         _setRoleAdmin(_GOVERNOR_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(_SUPER_GOVERNOR_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(_BANK_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(_GAS_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
         // Initialize with default fees
         _feeValues[FeeType.REVENUE_SHARE] = 2000; // 20% revenue share
@@ -555,7 +563,7 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
                         UPKEEP COST MANAGEMENT
     //////////////////////////////////////////////////////////////*/
     /// @inheritdoc ISuperGovernor
-    function setGasInfo(address oracle, uint256 baseGasSingle, uint256 baseGasBatch, uint256 gasIncreasePerEntryBatch) external onlyRole(_SUPER_GOVERNOR_ROLE) {
+    function setGasInfo(address oracle, uint256 baseGasSingle, uint256 baseGasBatch, uint256 gasIncreasePerEntryBatch) external onlyRole(_GAS_MANAGER_ROLE) {
         if (oracle == address(0)) revert INVALID_ADDRESS();
         if (baseGasSingle == 0 || baseGasBatch == 0 || gasIncreasePerEntryBatch == 0) revert INVALID_GAS_INFO();
 
@@ -831,6 +839,11 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
     /// @inheritdoc ISuperGovernor
     function BANK_MANAGER_ROLE() external pure returns (bytes32) {
         return _BANK_MANAGER_ROLE;
+    }
+
+    /// @inheritdoc ISuperGovernor
+    function GAS_MANAGER_ROLE() external pure returns (bytes32) {
+        return _GAS_MANAGER_ROLE;
     }
 
     /// @inheritdoc ISuperGovernor
@@ -1135,8 +1148,8 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
         // Step 2: convert ETH to USD
         (uint256 ethToUsd,,,) = ISuperOracle(oracle).getQuoteFromProvider(
             ethAmount,
-            address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE), // ETH
-            address(840), // USD in SuperOracle https://eips.ethereum.org/EIPS/eip-7726
+            NATIVE_TOKEN,
+            USD_TOKEN,
             keccak256("AVERAGE_PROVIDER")
         );
 
@@ -1144,13 +1157,13 @@ contract SuperGovernor is ISuperGovernor, AccessControl {
         (uint256 upPerUsd,,,) = ISuperOracle(oracle).getQuoteFromProvider(
             1e18, // 1 UP token (18 decimals)
             upToken,
-            address(840), // USD in SuperOracle https://eips.ethereum.org/EIPS/eip-7726
+            USD_TOKEN,
             keccak256("AVERAGE_PROVIDER")
         );
 
         // Calculate required UP tokens
         // usdAmount / upPerUsd = required UP tokens
-        uint256 requiredUpTokens = (ethToUsd * 1e18) / upPerUsd;
+        uint256 requiredUpTokens = Math.mulDiv(ethToUsd, 1e18, upPerUsd, Math.Rounding.Ceil);
         return requiredUpTokens;
     }
 }

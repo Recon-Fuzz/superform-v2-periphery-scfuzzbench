@@ -68,12 +68,12 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
                 timestamp: args.timestamp
             })
         );
-        noncePerStrategy[args.strategy]++;
 
         // Emit event that PPS has been validated
         emit PPSValidated(
             args.strategy, args.pps, args.ppsStdev, args.validatorSet, args.totalValidators, args.timestamp, msg.sender
         );
+        
 
         // Forward the validated PPS update to the SuperVaultAggregator
         // The msg.sender is passed as updateAuthority for upkeep tracking
@@ -86,9 +86,12 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
             totalValidators: args.totalValidators,
             timestamp: args.timestamp,
             upkeepCost: 0 // This will be set by SuperVaultAggregator
-         });
+        });
 
         ISuperVaultAggregator(SUPER_GOVERNOR.getAddress(SUPER_VAULT_AGGREGATOR)).forwardPPS(msg.sender, forwardArgs);
+
+        //increment nonce for the strategy
+        noncePerStrategy[args.strategy]++;
     }
 
     /// @inheritdoc IECDSAPPSOracle
@@ -127,9 +130,71 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
         );
     }
 
+    
+
+    /// @notice Validates an array of proofs for a strategy's PPS update
+    /// @param params Validation parameters
+    /// @dev Reverts immediately if duplicate signers are found or quorum is not met
+    function validateProofs(IECDSAPPSOracle.ValidationParams memory params)
+        public
+        view
+    {
+        _validateProofs(params);
+    }
+
     /*//////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+    /// @notice Validates an array of proofs for a strategy's PPS update
+    /// @param params Validation parameters
+    /// @dev Reverts immediately if duplicate signers are found or quorum is not met
+    function _validateProofs(IECDSAPPSOracle.ValidationParams memory params) internal view {
+        // Check if this oracle is the active PPS Oracle
+        if (!SUPER_GOVERNOR.isActivePPSOracle(address(this))) revert NOT_ACTIVE_PPS_ORACLE();
+
+        // Create message hash with all parameters- If anyare incorrect, the message hash will be different and the
+        // derived signer address will be incorrect- resulting in a revert
+        bytes32 structHash = keccak256(
+            abi.encodePacked(
+                UPDATE_PPS_TYPEHASH,
+                params.strategy,
+                params.pps,
+                params.ppsStdev,
+                params.validatorSet,
+                params.totalValidators,
+                params.timestamp,
+                noncePerStrategy[params.strategy]
+            )
+        );
+        bytes32 digest = _hashTypedDataV4(structHash);
+        
+        uint256 proofsLength = params.proofs.length;
+        if (proofsLength == 0) revert ZERO_LENGTH_ARRAY();
+
+        address lastSigner;
+        // Process each proof
+        for (uint256 i; i < proofsLength; i++) {
+            // Recover the signer from the proof
+            address signer = ECDSA.recover(digest, params.proofs[i]);
+
+            // Verify the signer is a registered validator
+            if (!SUPER_GOVERNOR.isValidator(signer)) revert INVALID_VALIDATOR();
+
+            // Check for duplicates or improper ordering - signers must be in ascending order
+            if (signer <= lastSigner) revert INVALID_PROOF();
+            lastSigner = signer;
+        }
+
+        // Validate that validatorSet matches actual number of valid signatures
+        if (params.validatorSet != proofsLength) revert INVALID_VALIDATOR_SET();
+
+        // Validate that totalValidators matches actual total number of validators
+        if (params.totalValidators != SUPER_GOVERNOR.getValidators().length) revert INVALID_TOTAL_VALIDATORS();
+
+        // Ensure we have enough valid signatures to meet quorum
+        if (proofsLength < SUPER_GOVERNOR.getPPSOracleQuorum()) revert QUORUM_NOT_MET();
+    }
+
     /// @notice Processes batch strategies and returns valid entries
     /// @param args Batch update arguments
     /// @param strategiesLength Length of strategies array
@@ -205,8 +270,9 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
             emit NonceAlreadyUsed(_strategy, noncePerStrategy[_strategy]);
             return false;
         } 
-        
-        _validateProofs(
+
+         // Validate proofs and check quorum requirement
+        try IECDSAPPSOracle(address(this)).validateProofs(
             IECDSAPPSOracle.ValidationParams({
                 strategy: _strategy,
                 proofs: args.proofsArray[index],
@@ -216,17 +282,24 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
                 totalValidators: args.totalValidators[index],
                 timestamp: args.timestamps[index]
             })
-        );
-        
-        emit PPSValidated(
-            _strategy,
-            args.ppss[index],
-            args.ppsStdevs[index],
-            args.validatorSets[index],
-            args.totalValidators[index],
-            args.timestamps[index],
-            msg.sender
-        );
+        ) {
+            emit PPSValidated(
+                _strategy,
+                args.ppss[index],
+                args.ppsStdevs[index],
+                args.validatorSets[index],
+                args.totalValidators[index],
+                args.timestamps[index],
+                msg.sender
+            );
+            
+        } catch Error(string memory reason) {
+            emit ProofValidationFailed(_strategy, reason);
+            return false;
+        } catch (bytes memory lowLevelData) {
+            emit ProofValidationFailedLowLevel(_strategy, lowLevelData);
+            return false;
+        }
         
         noncePerStrategy[_strategy]++;
         return true;
@@ -264,57 +337,4 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
         }
     }
 
-
-    /// @notice Validates an array of proofs for a strategy's PPS update
-    /// @param params Validation parameters
-    /// @dev Reverts immediately if duplicate signers are found or quorum is not met
-    function _validateProofs(IECDSAPPSOracle.ValidationParams memory params)
-        internal
-        view
-    {
-        // Check if this oracle is the active PPS Oracle
-        if (!SUPER_GOVERNOR.isActivePPSOracle(address(this))) revert NOT_ACTIVE_PPS_ORACLE();
-
-        // Create message hash with all parameters- If anyare incorrect, the message hash will be different and the
-        // derived signer address will be incorrect- resulting in a revert
-        bytes32 structHash = keccak256(
-            abi.encodePacked(
-                UPDATE_PPS_TYPEHASH,
-                params.strategy,
-                params.pps,
-                params.ppsStdev,
-                params.validatorSet,
-                params.totalValidators,
-                params.timestamp,
-                noncePerStrategy[params.strategy]
-            )
-        );
-        bytes32 digest = _hashTypedDataV4(structHash);
-        
-        uint256 proofsLength = params.proofs.length;
-        if (proofsLength == 0) revert ZERO_LENGTH_ARRAY();
-
-        address lastSigner;
-        // Process each proof
-        for (uint256 i; i < proofsLength; i++) {
-            // Recover the signer from the proof
-            address signer = ECDSA.recover(digest, params.proofs[i]);
-
-            // Verify the signer is a registered validator
-            if (!SUPER_GOVERNOR.isValidator(signer)) revert INVALID_VALIDATOR();
-
-            // Check for duplicates or improper ordering - signers must be in ascending order
-            if (signer <= lastSigner) revert INVALID_PROOF();
-            lastSigner = signer;
-        }
-
-        // Validate that validatorSet matches actual number of valid signatures
-        if (params.validatorSet != proofsLength) revert INVALID_VALIDATOR_SET();
-
-        // Validate that totalValidators matches actual total number of validators
-        if (params.totalValidators != SUPER_GOVERNOR.getValidators().length) revert INVALID_TOTAL_VALIDATORS();
-
-        // Ensure we have enough valid signatures to meet quorum
-        if (proofsLength < SUPER_GOVERNOR.getPPSOracleQuorum()) revert QUORUM_NOT_MET();
-    }
 }

@@ -587,6 +587,9 @@ interface ISuperGovernor is IAccessControl {
     /// @notice The identifier of the role that grants access to bank management functions
     function BANK_MANAGER_ROLE() external view returns (bytes32);
 
+    /// @notice The identifier of the role that grants access to gas management functions
+    function GAS_MANAGER_ROLE() external view returns (bytes32);
+
     /// @notice The identifier of the role that grants access to guardian functions
     function GUARDIAN_ROLE() external view returns (bytes32);
 

@@ -66,6 +66,16 @@ interface IECDSAPPSOracle {
     /// @param nonce The nonce part of the flow
     event NonceAlreadyUsed(address indexed strategy, uint256 nonce);
 
+    /// @notice Emitted when proof validation failed
+    /// @param strategy Address of the strategy
+    /// @param reason Revert reason
+    event ProofValidationFailed(address indexed strategy, string reason);
+
+    /// @notice Emitted when proof validation failed
+    /// @param strategy Address of the strategy
+    /// @param data Revert encoded data
+    event ProofValidationFailedLowLevel(address indexed strategy, bytes data);
+
     /*//////////////////////////////////////////////////////////////
                             STRUCTS
     //////////////////////////////////////////////////////////////*/
@@ -140,6 +150,11 @@ interface IECDSAPPSOracle {
     /// @notice Returns the signature typehash
     /// @return The typehash
     function UPDATE_PPS_TYPEHASH() external view returns (bytes32);
+
+    /// @notice Validates an array of proofs for a strategy's PPS update
+    /// @param params Validation parameters
+    /// @dev Reverts immediately if duplicate signers are found or quorum is not met
+    function validateProofs(IECDSAPPSOracle.ValidationParams memory params) external view;
 
     /*//////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
