@@ -18,7 +18,7 @@
 | `superVault_cancelRedeem` | `pendingRedeemRequest` should be 0 after a user calls `cancelRedeem`  | ✅ |  |
 | `superVault_cancelRedeem` | `averageRequestPPS` should be 0 after a user calls `cancelRedeem`  | ✅ |  |
 | `superVault_cancelRedeem` | user shouldn't receive more than convertToAssets(pendingRedeemRequest) after cancelRedeem | ✅ |  |
-| `property_x` | `SuperVault::totalSupply` equals the sum of all user balances (solvency) |  |  |
+| `property_shareSolvency` | `SuperVault::totalSupply` == SUM(user balances) + balanceOf(escrow)  (solvency) | ✅ |  |
 | `property_x` | PPS == PRECISION when totalSupply == 0 |  |  |
 | `property_x` | balanceOf(escrow) >= SUM(controllers.pendingRedeemRequest) |  |  |
 | `property_x` | redemptions only burn the requested amount of shares (exact check) |  |  |

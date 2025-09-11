@@ -70,4 +70,13 @@ abstract contract Properties is BeforeAfter, Asserts {
             );
         }
     }
+
+    /// @dev `SuperVault::totalSupply` == SUM(user balances) + balanceOf(escrow)
+    function property_shareSolvency() public {
+        eq(
+            superVault.totalSupply(),
+            _after.summedTotalShares,
+            "vault shares are insolvent"
+        );
+    }
 }
