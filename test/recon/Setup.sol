@@ -108,6 +108,9 @@ abstract contract Setup is
     address erc5115YieldSource;
     address erc7540YieldSource;
 
+    // Ghosts
+    bool hasUpdatedPPS;
+
     /// === MODIFIERS === ///
     /// Prank admin and actor
 

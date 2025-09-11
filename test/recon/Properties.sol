@@ -48,4 +48,15 @@ abstract contract Properties is BeforeAfter, Asserts {
 
         eq(maxWithdrawAsShares, maxRedeem, "maxWithdrawAsShares != maxRedeem");
     }
+
+    /// @dev Property: PPS for a strategy should never be 0
+    function property_ppsNeverZero() public {
+        uint256 currentPPS = superVaultAggregator.getPPS(
+            address(superVaultStrategy)
+        );
+
+        if (hasUpdatedPPS) {
+            gt(currentPPS, 0, "currentPPS should never be 0");
+        }
+    }
 }

@@ -67,6 +67,8 @@ abstract contract OracleTargets is BaseTargetFunctions, Properties {
         IECDSAPPSOracle.UpdatePPSArgs memory args
     ) public asActor {
         ECDSAPPSOracle.updatePPS(args);
+
+        hasUpdatedPPS = true;
     }
 
     /// @dev Missing coverage over this for now while there's only one vault triad is okay
@@ -75,5 +77,7 @@ abstract contract OracleTargets is BaseTargetFunctions, Properties {
         IECDSAPPSOracle.BatchUpdatePPSArgs memory args
     ) public asActor {
         ECDSAPPSOracle.batchUpdatePPS(args);
+
+        hasUpdatedPPS = true;
     }
 }
