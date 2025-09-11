@@ -10,8 +10,6 @@ import { BoringERC20 } from "../vendor/BoringSolidity/BoringERC20.sol";
 // Superform
 import { ISuperOracle } from "../interfaces/oracles/ISuperOracle.sol";
 
-import "forge-std/console2.sol";
-
 /// @title SuperOracle
 /// @author Superform Labs
 /// @notice Oracle for Superform
@@ -320,12 +318,8 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
         returns (uint256 quoteAmount)
     {
         (, int256 answer,, uint256 updatedAt,) = AggregatorV3Interface(oracle).latestRoundData();
-        console2.log("answer ----", uint256(answer));
         // Validate data
         if (answer <= 0 || block.timestamp - updatedAt > feedMaxStaleness[oracle]) {
-            console2.log("updatedAt ----", updatedAt);
-            console2.log("block.timestamp - updatedAt ----", block.timestamp - updatedAt);
-            console2.log("feedMaxStaleness[oracle] ----", feedMaxStaleness[oracle]);
             if (revertOnError) revert ORACLE_UNTRUSTED_DATA();
             return 0;
         }
@@ -369,8 +363,6 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
         uint256 total;
         validQuotes = new uint256[](numberOfProviders);
 
-        console2.log(" numberOfProviders-----", numberOfProviders);
-
         // Loop through all active providers
         for (uint256 i; i < numberOfProviders; ++i) {
             bytes32 provider = activeProviders[i];
@@ -391,7 +383,6 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
 
             ETH -> EUR -> eOracle, because oracle address is 0
             */
-            console2.log(" providerOracle-----", providerOracle);
             if (providerOracle == address(0)) continue;
 
             // We have one more registered oracle for this base asset
@@ -401,8 +392,6 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
 
             uint256 quote_ = _getQuoteFromOracle(providerOracle, baseAmount, base, quote, false);
 
-            console2.log("quote_", quote_);
-            console2.log("providerOracle", providerOracle);
             /// @dev we don't revert on error, we just skip the oracle value
             if (quote_ > 0) {
                 total += quote_;

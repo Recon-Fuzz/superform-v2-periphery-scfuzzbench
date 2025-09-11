@@ -344,6 +344,9 @@ interface ISuperVaultAggregator {
     /// @notice Emitted when a manager does not have enough upkeep balance
     event InsufficientUpkeep(address indexed strategy, address indexed manager, uint256 balance, uint256 cost);
 
+    /// @notice Emitted when the provided timestamp is too large
+    event ProvidedTimestampExceedsBlockTimestamp(address indexed strategy, uint256 argsTimestamp, uint256 blockTimestamp);
+
     /*///////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/

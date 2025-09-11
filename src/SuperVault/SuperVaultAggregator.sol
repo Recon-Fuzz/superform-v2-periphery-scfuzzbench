@@ -241,7 +241,8 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
             for (uint256 i; i < strategiesLength; ++i) {
                 // Revert first when invalid timestamp is provided
                 if (args.timestamps[i] > block.timestamp) {
-                    revert INVALID_TIMESTAMP(i);
+                    emit ProvidedTimestampExceedsBlockTimestamp(args.strategies[i], args.timestamps[i], block.timestamp);
+                    continue;
                 }
  
                 // Skip invalid strategies without reverting
@@ -257,6 +258,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
                 // Check if the updateAuthority is in the authorized callers list
                 // These are manager-designated keepers that should be exempt from fees
                 // NOTE: Protected keepers cannot be added to this list (blocked in addAuthorizedCaller)
+                /// @dev: cannot underflow; it's checked above already and it skips the entry if that's the case
                 if (_strategyData[args.strategies[i]].authorizedCallers.contains(args.updateAuthorities[i])) {
                     continue;
                 }
@@ -289,6 +291,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
             uint256 upkeepCost;
             if (paymentsEnabled) {
                 // check exemption due to staleness of a given strategy
+                /// @dev cannot underflow as it's already checked above, in the previous `for` loop
                 if (block.timestamp - args.timestamps[i] > _strategyData[args.strategies[i]].maxStaleness) {
                     upkeepCost = 0;
                     emit StaleUpdate(args.strategies[i], address(0), args.timestamps[i]);

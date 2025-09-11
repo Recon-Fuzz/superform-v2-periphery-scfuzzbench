@@ -824,7 +824,7 @@ interface ISuperGovernor is IAccessControl {
     /// @return The number of registered protected keepers
     function getProtectedKeepersCount() external view returns (uint256);
 
-    /// @notice Gets the gas info for a specific oracle
+    /// @notice Gets the gas info for a specific SuperVault PPS Oracle
     /// @param oracle_ The address of the oracle to get gas info for
     /// @return The gas info for the specified oracle
     function getGasInfo(address oracle_) external view returns (GasInfo memory);

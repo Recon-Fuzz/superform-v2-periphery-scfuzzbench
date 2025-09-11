@@ -289,7 +289,8 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
                 noncePerStrategy[params.strategy]
             )
         );
-
+        bytes32 digest = _hashTypedDataV4(structHash);
+        
         uint256 proofsLength = params.proofs.length;
         if (proofsLength == 0) revert ZERO_LENGTH_ARRAY();
 
@@ -297,7 +298,7 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
         // Process each proof
         for (uint256 i; i < proofsLength; i++) {
             // Recover the signer from the proof
-            address signer = ECDSA.recover(_hashTypedDataV4(structHash), params.proofs[i]);
+            address signer = ECDSA.recover(digest, params.proofs[i]);
 
             // Verify the signer is a registered validator
             if (!SUPER_GOVERNOR.isValidator(signer)) revert INVALID_VALIDATOR();
