@@ -5,6 +5,7 @@ import {BaseTargetFunctions} from "@chimera/BaseTargetFunctions.sol";
 
 import {vm} from "@chimera/Hevm.sol";
 import {Panic} from "@recon/Panic.sol";
+import {MockERC20} from "@recon/MockERC20.sol";
 
 import "src/SuperVault/SuperVaultStrategy.sol";
 
@@ -121,6 +122,7 @@ abstract contract SuperVaultStrategyTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: redemptions only burn the requested amount of shares (exact check)
+    /// @dev Property: accumulatorShares decreases by the exact amounts requested when fulfilling redemptions
     function superVaultStrategy_fulfillRedeemRequests(
         ISuperVaultStrategy.FulfillArgs memory args
     ) public updateGhostsWithOpType(OpType.FULFILL) {
@@ -128,7 +130,14 @@ abstract contract SuperVaultStrategyTargets is BaseTargetFunctions, Properties {
         uint256 pendingRedeemBefore = _requestedSharesForControllers(
             controllers
         );
+        (
+            uint256 sumAccumulatorSharesBefore,
+            uint256 sumAccumulatorCostBasisBefore
+        ) = _sumSuperVaultValsForControllers(controllers);
         uint256 totalSharesBefore = superVault.totalSupply();
+        uint256 assetBalanceBefore = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
 
         vm.prank(_getActor());
         superVaultStrategy.fulfillRedeemRequests(args);
@@ -136,12 +145,30 @@ abstract contract SuperVaultStrategyTargets is BaseTargetFunctions, Properties {
         uint256 pendingRedeemAfter = _requestedSharesForControllers(
             controllers
         );
+        (
+            uint256 sumAccumulatorSharesAfter,
+            uint256 sumAccumulatorCostBasisAfter
+        ) = _sumSuperVaultValsForControllers(controllers);
         uint256 totalSharesAfter = superVault.totalSupply();
+        uint256 assetBalanceAfter = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
 
         eq(
             pendingRedeemBefore - pendingRedeemAfter,
             totalSharesBefore - totalSharesAfter,
             "redemptions only burn the requested amount of shares"
+        );
+        eq(
+            sumAccumulatorSharesBefore - sumAccumulatorSharesAfter,
+            totalSharesBefore - totalSharesAfter,
+            "accumulatorShares decreases by the exact amounts requested when fulfilling redemptions"
+        );
+        // asset balance should increase
+        eq(
+            assetBalanceAfter - assetBalanceBefore,
+            sumAccumulatorCostBasisBefore - sumAccumulatorCostBasisAfter,
+            "accumulatorShares decreases by the exact amounts requested when fulfilling redemptions"
         );
     }
 
@@ -251,5 +278,23 @@ abstract contract SuperVaultStrategyTargets is BaseTargetFunctions, Properties {
         }
 
         return totalRequested;
+    }
+
+    // Helpers
+    function _sumSuperVaultValsForControllers(
+        address[] memory controllers
+    )
+        internal
+        view
+        returns (uint256 sumAccumulatorShares, uint256 sumAccumulatorCostBasis)
+    {
+        for (uint256 i; i < controllers.length; i++) {
+            sumAccumulatorShares += superVaultStrategy
+                .getSuperVaultState(controllers[i])
+                .accumulatorShares;
+            sumAccumulatorCostBasis += superVaultStrategy
+                .getSuperVaultState(controllers[i])
+                .accumulatorCostBasis;
+        }
     }
 }

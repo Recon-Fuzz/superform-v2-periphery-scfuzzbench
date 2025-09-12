@@ -25,7 +25,8 @@
 | `property_avgWithdrawPriceSanity` | If user's maxWithdraw == 0 then getAverageWithdrawPrice for the user is also == 0 | ✅ |  |
 | `property_accumulatorSharesSolvency` | SUM(accumulatorShares) doesn't change on `SuperVault` share transfers | ✅ |  |
 | `property_accumulatorCostBasisSolvency` | SUM(accumulatorCostBasis) doesn't change on `SuperVault` share transfers | ✅ |  |
-| `property_x` | accumulatorShares and accumulatorCostBasis decrease by the exact amounts requested when fulfilling redemptions |  |  |
+| `property_x` | `accumulatorShares` decreases by the exact amounts requested when fulfilling redemptions | ✅ |  |
+| `property_x` | `accumulatorCostBasis` decrease by the exact amounts requested when fulfilling redemptions | ✅ |  |
 | `property_x` | user can't claim more assets than requested in redemption |  |  |
 | `property_x` | PPS updates with a difference that exceeds maxPPSSlippage must revert |  |  |
 | `property_x` | `requestRedeem()` should never alters the supply of SuperVault tokens (calculated by summing user share balances) |  |  |
