@@ -6,6 +6,7 @@ import { IOracle } from "../vendor/awesome-oracles/IOracle.sol";
 import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 import { BoringERC20 } from "../vendor/BoringSolidity/BoringERC20.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Superform
 import { ISuperOracle } from "../interfaces/oracles/ISuperOracle.sol";
@@ -328,8 +329,8 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
         uint8 quoteDecimals = IERC20(quote).safeDecimals();
 
         // Calculate quote amount with proper decimal scaling
-        quoteAmount =
-            (baseAmount * uint256(answer) * (10 ** quoteDecimals)) / ((10 ** baseDecimals) * (10 ** feedDecimals));
+        quoteAmount = Math.mulDiv(baseAmount, uint256(answer), 10 ** feedDecimals);
+        quoteAmount = Math.mulDiv(quoteAmount, 10 ** quoteDecimals, 10 ** baseDecimals);
     }
 
     function _getAverageQuote(
