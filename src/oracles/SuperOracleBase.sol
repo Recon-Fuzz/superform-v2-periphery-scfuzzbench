@@ -414,7 +414,7 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
                 diff = mean - values[i];
             }
 
-            uint256 squaredDiff = diff * diff;
+            uint256 squaredDiff = Math.mulDiv(diff, diff, 1);
             sumSquaredDiff += squaredDiff;
         }
 
