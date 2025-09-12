@@ -177,6 +177,12 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         for (uint256 i; i < secondaryLen; ++i) {
             _strategyData[strategy].secondaryManagers.add(params.secondaryManagers[i]);
         }
+        if (
+            _strategyData[strategy].secondaryManagers.length() >=
+            MAX_SECONDARY_MANAGERS
+        ) {
+            revert TOO_MANY_SECONDARY_MANAGERS();
+        }
 
         // Set default threshold values
         _strategyData[strategy].dispersionThreshold = type(uint256).max; // Default: max (disabled)
@@ -492,7 +498,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
 
         // Enforce a cap on secondary managers to prevent governance DoS on changePrimaryManager
         if (
-            _strategyData[strategy].secondaryManagers.length() >
+            _strategyData[strategy].secondaryManagers.length() >=
             MAX_SECONDARY_MANAGERS
         ) {
             revert TOO_MANY_SECONDARY_MANAGERS();
@@ -638,7 +644,12 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         _strategyData[strategy].secondaryManagers.remove(newManager);
 
         // Make the old primary manager a secondary manager
-        _strategyData[strategy].secondaryManagers.add(oldManager);
+        if (
+            _strategyData[strategy].secondaryManagers.length() <
+            MAX_SECONDARY_MANAGERS
+        ) {
+            _strategyData[strategy].secondaryManagers.add(oldManager);
+        }
 
         // Set the new primary manager
         _strategyData[strategy].mainManager = newManager;
