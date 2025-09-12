@@ -211,6 +211,12 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         // Check if the update is exempt from paying upkeep
         bool isExempt = _isExemptFromUpkeep(args.strategy, updateAuthority, args.timestamp);
 
+        // Only compute upkeep cost if payments are enabled and the update is chargeable
+        uint256 upkeepCost = 0;
+        if (SUPER_GOVERNOR.isUpkeepPaymentsEnabled() && !isExempt) {
+            upkeepCost = SUPER_GOVERNOR.getUpkeepCostPerUpdate(msg.sender);
+        }
+
         // Create a new ForwardPPSArgs struct with updated isExempt and upkeepCost
         _forwardPPS(
             ForwardPPSArgs({
@@ -221,7 +227,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
                 validatorSet: args.validatorSet,
                 totalValidators: args.totalValidators,
                 timestamp: args.timestamp,
-                upkeepCost: SUPER_GOVERNOR.getUpkeepCostPerUpdate(msg.sender)
+                upkeepCost: upkeepCost
             })
         );
     }
