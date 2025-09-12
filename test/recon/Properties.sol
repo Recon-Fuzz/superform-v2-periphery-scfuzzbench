@@ -80,18 +80,6 @@ abstract contract Properties is BeforeAfter, Asserts {
         );
     }
 
-    /// @dev Property: PPS == PRECISION when totalSupply == 0
-    // NOTE: will most likely fail if all shares are burned because price would be set by oracle
-    function property_PPSWithNoSupply() public {
-        if (superVault.totalSupply() == 0) {
-            eq(
-                superVault.PRECISION(),
-                superVaultAggregator.getPPS(address(superVaultStrategy)),
-                "PPS != PRECISION when totalSupply == 0"
-            );
-        }
-    }
-
     /// @dev Property: balanceOf(escrow) >= SUM(controllers.pendingRedeemRequest)
     function property_escrowBalance() public {
         address[] memory actors = _getActors();
