@@ -63,11 +63,6 @@ interface IECDSAPPSOracle {
         address indexed sender
     );
 
-    /// @notice Emitted when a batch update has an item which nonce was already used
-    /// @param strategy Address of the strategy
-    /// @param nonce The nonce part of the flow
-    event NonceAlreadyUsed(address indexed strategy, uint256 nonce);
-
     /// @notice Emitted when proof validation failed
     /// @param strategy Address of the strategy
     /// @param reason Revert reason

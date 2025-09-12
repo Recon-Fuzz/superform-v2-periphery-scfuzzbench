@@ -2284,7 +2284,6 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         return (vault1SharesOut, vault2SharesOut);
     }
 
-
     /**
      * @notice Overrides the super ledger setup to have fee = 0
      */

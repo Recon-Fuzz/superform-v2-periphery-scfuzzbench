@@ -269,10 +269,6 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
         uint256 index
     ) internal returns (bool isValid) {
         address _strategy = args.strategies[index];
-        if (noncePerStrategy[_strategy] > 0) {
-            emit NonceAlreadyUsed(_strategy, noncePerStrategy[_strategy]);
-            return false;
-        } 
 
          // Validate proofs and check quorum requirement
         try IECDSAPPSOracle(address(this)).validateProofs(
@@ -295,7 +291,6 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
                 args.timestamps[index],
                 msg.sender
             );
-            
         } catch Error(string memory reason) {
             emit ProofValidationFailed(_strategy, reason);
             return false;
