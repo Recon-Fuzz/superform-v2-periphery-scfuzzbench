@@ -78,14 +78,14 @@ abstract contract Properties is BeforeAfter, Asserts {
         address[] memory actors = _getActors();
 
         uint256 escrowBalance = superVault.balanceOf(address(superVaultEscrow));
-        uint256 pendingAtorShares;
+        uint256 pendingActorShares;
         for (uint256 i; i < actors.length; i++) {
-            pendingAtorShares += superVault.pendingRedeemRequest(0, actors[i]);
+            pendingActorShares += superVault.pendingRedeemRequest(0, actors[i]);
         }
 
         gte(
             escrowBalance,
-            pendingAtorShares,
+            pendingActorShares,
             "balanceOf(escrow) < SUM(controllers.pendingRedeemRequest)"
         );
     }

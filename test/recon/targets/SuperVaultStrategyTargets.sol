@@ -120,10 +120,29 @@ abstract contract SuperVaultStrategyTargets is BaseTargetFunctions, Properties {
         superVaultStrategy.executeVaultFeeConfigUpdate();
     }
 
+    /// @dev Property: redemptions only burn the requested amount of shares (exact check)
     function superVaultStrategy_fulfillRedeemRequests(
         ISuperVaultStrategy.FulfillArgs memory args
-    ) public updateGhostsWithOpType(OpType.FULFILL) asActor {
+    ) public updateGhostsWithOpType(OpType.FULFILL) {
+        address[] memory controllers = args.controllers;
+        uint256 pendingRedeemBefore = _requestedSharesForControllers(
+            controllers
+        );
+        uint256 totalSharesBefore = superVault.totalSupply();
+
+        vm.prank(_getActor());
         superVaultStrategy.fulfillRedeemRequests(args);
+
+        uint256 pendingRedeemAfter = _requestedSharesForControllers(
+            controllers
+        );
+        uint256 totalSharesAfter = superVault.totalSupply();
+
+        eq(
+            pendingRedeemBefore - pendingRedeemAfter,
+            totalSharesBefore - totalSharesAfter,
+            "redemptions only burn the requested amount of shares"
+        );
     }
 
     function superVaultStrategy_handleOperations4626Deposit(
@@ -216,5 +235,21 @@ abstract contract SuperVaultStrategyTargets is BaseTargetFunctions, Properties {
         ISuperVaultStrategy.SuperVaultState memory state
     ) public asActor {
         superVaultStrategy.updateSuperVaultState(controller, state);
+    }
+
+    /// Helpers
+
+    function _requestedSharesForControllers(
+        address[] memory controllers
+    ) internal returns (uint256) {
+        uint256 totalRequested;
+        for (uint256 i; i < controllers.length; i++) {
+            totalRequested += superVault.pendingRedeemRequest(
+                0,
+                controllers[i]
+            );
+        }
+
+        return totalRequested;
     }
 }
