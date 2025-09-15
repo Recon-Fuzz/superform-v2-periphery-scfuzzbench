@@ -77,20 +77,53 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         );
     }
 
+    /// @dev Property: accumulatorShares is always accurately updated
     function superVault_deposit(
         uint256 assets
     ) public updateGhostsWithOpType(OpType.ADD) asActor {
+        uint256 shares = superVault.convertToShares(assets);
+
+        uint256 accumulatorSharesBefore = superVaultStrategy
+            .getSuperVaultState(_getActor())
+            .accumulatorShares;
+
         superVault.deposit(assets, _getActor());
+
+        uint256 accumulatorSharesAfter = superVaultStrategy
+            .getSuperVaultState(_getActor())
+            .accumulatorShares;
+
+        eq(
+            accumulatorSharesAfter - accumulatorSharesBefore,
+            shares,
+            "accumulatorShares is always accurately updated"
+        );
     }
 
     function superVault_invalidateNonce(bytes32 nonce) public asActor {
         superVault.invalidateNonce(nonce);
     }
 
+    /// @dev Property: accumulatorShares is always accurately updated
     function superVault_mint(
         uint256 shares
-    ) public updateGhostsWithOpType(OpType.ADD) asActor {
+    ) public updateGhostsWithOpType(OpType.ADD) {
+        uint256 accumulatorSharesBefore = superVaultStrategy
+            .getSuperVaultState(_getActor())
+            .accumulatorShares;
+
+        vm.prank(_getActor());
         superVault.mint(shares, _getActor());
+
+        uint256 accumulatorSharesAfter = superVaultStrategy
+            .getSuperVaultState(_getActor())
+            .accumulatorShares;
+
+        eq(
+            accumulatorSharesAfter - accumulatorSharesBefore,
+            shares,
+            "accumulatorShares is always accurately updated"
+        );
     }
 
     function superVault_redeem(

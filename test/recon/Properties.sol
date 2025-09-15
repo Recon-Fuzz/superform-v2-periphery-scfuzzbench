@@ -196,4 +196,18 @@ abstract contract Properties is BeforeAfter, Asserts {
             );
         }
     }
+
+    function property_totalAssets() public {
+        uint256 totalShares = _sumTotalShares();
+        uint256 pps = superVaultAggregator.getPPS(address(superVaultStrategy));
+        uint256 implicitTotalAssets = (totalShares * pps) /
+            superVault.PRECISION();
+
+        uint256 vaultTotalAssets = superVault.totalAssets();
+        eq(
+            implicitTotalAssets,
+            vaultTotalAssets,
+            "totalShares * pps != totalAssets"
+        );
+    }
 }

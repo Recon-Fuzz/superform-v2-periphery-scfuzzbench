@@ -33,10 +33,9 @@
 | `property_assetBacking` | if `totalSupply()` > 0, then `totalAssets()` > 0  | ✅ |  |
 | `property_x` | users shouldn't get a favorable exchange rate on loss on withdrawal in a yield vault |  |  |
 | `property_x` | user shouldn't be able to frontrun an oracle update to get a favorable exchange when there's a loss (TODO: determine how to test this) |  |  |
-| `property_x` | totalSupply * PPS == totalAssets |  |  |
-| `property_x` | user should always be able to redeem the assets they're entitled to |  |  |
-| `property_x` | `accumulatorShares` is always accurately updated (inductive) |  |  |
-| `property_x` | `accumulatorCostBasis` is always accurately updated (inductive) |  |  |
+| `property_totalAssets` | SUM(shares) * PPS == totalAssets | ✅ |  |
+| `superVault_mint`, `superVault_deposit` | `accumulatorShares` is always accurately increased | ✅ |  |
+| `property_x` | `accumulatorCostBasis` is always accurately accurately increased |  |  |
 | `property_x` | `_update` shouldn't change the `accumulatorShares` and `accumulatorCostBasis` |  |  |
 | `property_x` | `_update` should never revert |  |  |
 | `property_x` | `previewDeposit` returns the correct amounts compared to executing a deposit |  |  |
