@@ -115,7 +115,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
 
         governor.setAddress(governor.UP(), upToken);
         governor.setAddress(governor.SUPER_ORACLE(), address(superOracle));
-        governor.setGasInfo(address(oracleECDSA), 30_000, 50_000, 10_000);
+        governor.setGasInfo(address(oracleECDSA), 50_000, 10_000);
 
         vm.stopPrank();
 
@@ -153,15 +153,37 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
             new uint256[](0)
         );
 
+        // Call batchUpdatePPS with a single entry
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 2;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(svStrategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 2,
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -178,32 +200,56 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
             new uint256[](0)
         );
 
+        // First call should succeed
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 2;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(svStrategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 2,
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
 
-        vm.expectRevert(IECDSAPPSOracle.INVALID_VALIDATOR.selector);
+        // Second call with same proofs should emit ProofValidationFailedLowLevel event
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.INVALID_VALIDATOR.selector));
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(svStrategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 2,
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
-
 
     function test_UpdatePPS_InvalidValidatorReverts() public {
         // Create valid proofs but with a non-validator
@@ -236,18 +282,41 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
             proofs[i] = abi.encodePacked(r, s, v);
         }
 
-        // Call should revert because one signer is not a validator
+        // Call should emit ProofValidationFailedLowLevel event because one signer is not a validator
         vm.prank(user);
-        vm.expectRevert(IECDSAPPSOracle.INVALID_VALIDATOR.selector);
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.INVALID_VALIDATOR.selector));
+        
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 2;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(svStrategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 2,
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -258,7 +327,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         signerKeys[0] = validator1PrivateKey;
 
         bytes[] memory proofs = _createValidProofs(
-            address(strategy),
+            address(svStrategy),
             PPS,
             PPS_STDEV,
             1, // validatorSet - only 1 validator signing
@@ -267,18 +336,41 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
             signerKeys
         );
 
-        // Call should revert because quorum is not met (we set quorum to 2 in setUp)
+        // Call should emit ProofValidationFailedLowLevel event because quorum is not met (we set quorum to 2 in setUp)
         vm.prank(user);
-        vm.expectRevert(IECDSAPPSOracle.QUORUM_NOT_MET.selector);
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.QUORUM_NOT_MET.selector));
+        
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 1;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(strategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 1, // Only 1 validator signed
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -290,13 +382,13 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         bytes32 structHash = keccak256(
             abi.encodePacked(
                 oracleECDSA.UPDATE_PPS_TYPEHASH(),
-                address(strategy),
+                address(svStrategy),
                 PPS,
                 PPS_STDEV,
                 uint256(2),
                 uint256(3),
                 block.timestamp,
-                oracleECDSA.noncePerStrategy(address(strategy))
+                oracleECDSA.noncePerStrategy(address(svStrategy))
             )
         );
         bytes32 domainSeparator = oracleECDSA.domainSeparator();
@@ -307,18 +399,41 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         proofs[0] = abi.encodePacked(r, s, v);
         proofs[1] = abi.encodePacked(r, s, v); // Same signature again
 
-        // Call should revert because of duplicate signers
+        // Call should emit ProofValidationFailedLowLevel event because of duplicate signers
         vm.prank(user);
-        vm.expectRevert(IECDSAPPSOracle.INVALID_PROOF.selector);
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.INVALID_PROOF.selector));
+        
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 2;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(strategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 2,
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -362,18 +477,41 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
             proofs[i] = abi.encodePacked(r, s, v);
         }
 
-        // Call should revert because signers are not in ascending order
+        // Call should emit ProofValidationFailedLowLevel event because signers are not in ascending order
         vm.prank(user);
-        vm.expectRevert(IECDSAPPSOracle.INVALID_PROOF.selector);
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.INVALID_PROOF.selector));
+        
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 2;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(svStrategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 2,
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -406,16 +544,39 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
             proofs[i] = abi.encodePacked(r, s, v);
         }
 
-        vm.expectRevert(IECDSAPPSOracle.INVALID_VALIDATOR_SET.selector);
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.INVALID_VALIDATOR_SET.selector));
+        
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 1;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(svStrategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 1, // Mismatch: 2 proofs but claiming only 1 validator
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -429,7 +590,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
             3, // Claim 3 validators signed
             3, // totalValidators
             block.timestamp,
-            new uint256[](0) // Will use default 2 validators (validator1, validator2)
+            new uint256[](0)
         );
 
         // Remove one proof to create mismatch
@@ -437,16 +598,39 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         shorterProofs[0] = proofs[0];
         shorterProofs[1] = proofs[1];
 
-        vm.expectRevert(IECDSAPPSOracle.INVALID_VALIDATOR_SET.selector);
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.INVALID_VALIDATOR_SET.selector));
+        
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = shorterProofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 3;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(svStrategy),
-                proofs: shorterProofs, // Only 2 proofs
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 3, // But claiming 3 validators signed
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -463,16 +647,39 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
             new uint256[](0)
         );
 
-        vm.expectRevert(IECDSAPPSOracle.INVALID_TOTAL_VALIDATORS.selector);
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.INVALID_TOTAL_VALIDATORS.selector));
+        
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 2;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 5;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(svStrategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 2,
-                totalValidators: 5, // Incorrect: claiming 5 total validators but only 3 are registered
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -481,18 +688,41 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         // Create empty proofs array
         bytes[] memory proofs = new bytes[](0);
 
-        // Call should revert because proofs array is empty
+        // Call should emit ProofValidationFailedLowLevel event because proofs array is empty
         vm.prank(user);
-        vm.expectRevert(IECDSAPPSOracle.ZERO_LENGTH_ARRAY.selector);
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.ZERO_LENGTH_ARRAY.selector));
+        
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 0;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(strategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 0,
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -510,7 +740,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
 
         // Create valid proofs
         bytes[] memory proofs = _createValidProofs(
-            address(strategy),
+            address(svStrategy),
             PPS,
             PPS_STDEV,
             2, // validatorSet
@@ -519,18 +749,41 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
             new uint256[](0)
         );
 
-        // Call should revert because this oracle is not the active one
+        // Call should emit ProofValidationFailedLowLevel event because this oracle is not the active one
         vm.prank(user);
-        vm.expectRevert(IECDSAPPSOracle.NOT_ACTIVE_PPS_ORACLE.selector);
+        vm.expectEmit(true, false, false, false);
+        emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.NOT_ACTIVE_PPS_ORACLE.selector));
+        
+        address[] memory strategies = new address[](1);
+        strategies[0] = address(svStrategy);
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = PPS;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = PPS_STDEV;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = 2;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = 3;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = block.timestamp;
+        
         oracleECDSA.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: address(strategy),
-                proofs: proofs,
-                pps: PPS,
-                ppsStdev: PPS_STDEV,
-                validatorSet: 2,
-                totalValidators: 3,
-                timestamp: block.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
     }
@@ -610,7 +863,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
 
         // Call batchUpdatePPS
         vm.prank(user);
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: data.strategies,
                 proofsArray: data.proofsArray,
@@ -639,7 +892,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         // Call should revert because arrays are empty
         vm.prank(user);
         vm.expectRevert(IECDSAPPSOracle.ZERO_LENGTH_ARRAY.selector);
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -701,7 +954,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         // Call should revert because proofsArray length doesn't match strategies length
         vm.prank(user);
         vm.expectRevert(IECDSAPPSOracle.ARRAY_LENGTH_MISMATCH.selector);
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: data.strategies,
                 proofsArray: data.proofsArray,
@@ -777,7 +1030,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
 
         // Call should not revert but emit validation failure event
         vm.prank(user);
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: data.strategies,
                 proofsArray: data.proofsArray,

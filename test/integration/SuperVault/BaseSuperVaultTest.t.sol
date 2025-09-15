@@ -249,7 +249,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         maxStaleness[2] = 1 days;
         superOracle.setFeedMaxStalenessBatch(feeds, maxStaleness);
 
-        superGovernor.setGasInfo(address(ecdsappsOracle), 30_000, 50_000, 10_000);
+        superGovernor.setGasInfo(address(ecdsappsOracle), 50_000, 10_000);
 
         // Centrifuge setup
         rootManager = 0x0C1fDfd6a1331a875EA013F3897fc8a76ada5DfC;
@@ -1377,6 +1377,7 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         bytes[] memory argsForProofs = new bytes[](2);
         argsForProofs[0] = ISuperHookInspector(fulfillHooksAddresses[0]).inspect(fulfillHooksData[0]);
         argsForProofs[1] = ISuperHookInspector(fulfillHooksAddresses[1]).inspect(fulfillHooksData[1]);
+
         bytes32[][] memory proofs = _getMerkleProofsForHooks(fulfillHooksAddresses, argsForProofs);
         vm.startPrank(MANAGER);
         if (revertSelector != bytes4(0)) {
@@ -1499,6 +1500,8 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
             redeemShares,
             false
         );
+
+        console2.log("__requestRedeemFrom7540Underlying ------ redeemShares", redeemShares);
 
         uint256[] memory expectedAssetsOrSharesOut = new uint256[](1);
         expectedAssetsOrSharesOut[0] = 0;
@@ -2196,16 +2199,37 @@ contract BaseSuperVaultTest is MerkleReader, BaseTest {
         vars.proofs = new bytes[](1);
         vars.proofs[0] = vars.signature;
 
-        // Call updatePPS on the ECDSAPPSOracle with the new parameters
+        // Call batchUpdatePPS on the ECDSAPPSOracle with a single entry
+        address[] memory strategies = new address[](1);
+        strategies[0] = strategyAddr;
+        
+        bytes[][] memory proofsArray = new bytes[][](1);
+        proofsArray[0] = vars.proofs;
+        
+        uint256[] memory ppss = new uint256[](1);
+        ppss[0] = vars.pps;
+        
+        uint256[] memory ppsStdevs = new uint256[](1);
+        ppsStdevs[0] = vars.ppsStdev;
+        
+        uint256[] memory validatorSets = new uint256[](1);
+        validatorSets[0] = vars.validatorSet;
+        
+        uint256[] memory totalValidators = new uint256[](1);
+        totalValidators[0] = vars.totalValidators;
+        
+        uint256[] memory timestamps = new uint256[](1);
+        timestamps[0] = vars.timestamp;
+
         ecdsappsOracle.updatePPS(
-            IECDSAPPSOracle.UpdatePPSArgs({
-                strategy: strategyAddr,
-                proofs: vars.proofs,
-                pps: vars.pps,
-                ppsStdev: vars.ppsStdev,
-                validatorSet: vars.validatorSet,
-                totalValidators: vars.totalValidators,
-                timestamp: vars.timestamp
+            IECDSAPPSOracle.BatchUpdatePPSArgs({
+                strategies: strategies,
+                proofsArray: proofsArray,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidators,
+                timestamps: timestamps
             })
         );
 

@@ -445,11 +445,6 @@ interface ISuperVaultAggregator {
     /*//////////////////////////////////////////////////////////////
                           PPS UPDATE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    /// @notice Forwards a validated PPS update from a trusted oracle
-    /// @param updateAuthority Address that initiated the update (for upkeep tracking for single updates)
-    /// @param args Struct containing all PPS update parameters
-    function forwardPPS(address updateAuthority, ForwardPPSArgs calldata args) external;
-
     /// @notice Arguments for batch forwarding PPS updates
     /// @param strategies Array of strategy addresses
     /// @param ppss Array of price-per-share values
@@ -469,7 +464,7 @@ interface ISuperVaultAggregator {
 
     /// @notice Batch forwards validated PPS updates to multiple strategies
     /// @param args Struct containing all batch PPS update parameters
-    function batchForwardPPS(BatchForwardPPSArgs calldata args) external;
+    function forwardPPS(BatchForwardPPSArgs calldata args) external;
 
     /*//////////////////////////////////////////////////////////////
                         UPKEEP MANAGEMENT

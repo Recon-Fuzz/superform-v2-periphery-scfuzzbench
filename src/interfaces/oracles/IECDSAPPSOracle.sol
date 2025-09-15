@@ -100,24 +100,6 @@ interface IECDSAPPSOracle {
         uint256 timestamp;
     }
 
-    /// @notice Arguments for updating PPS for a single strategy
-    /// @param strategy Address of the strategy
-    /// @param proofs Array of cryptographic proofs of the PPS value from different validators
-    /// @param pps Price-per-share value (mean)
-    /// @param ppsStdev Standard deviation of the price-per-share
-    /// @param validatorSet Number of validators who calculated this PPS
-    /// @param totalValidators Total number of validators in the network
-    /// @param timestamp The time and therefore the blockchain(s) state(s) (plural important) this PPS refers to
-    struct UpdatePPSArgs {
-        address strategy;
-        bytes[] proofs;
-        uint256 pps;
-        uint256 ppsStdev;
-        uint256 validatorSet;
-        uint256 totalValidators;
-        uint256 timestamp;
-    }
-
     /// @notice Arguments for batch updating PPS for multiple strategies
     /// @param strategies Array of strategy addresses
     /// @param proofsArray Array of arrays of cryptographic proofs (one array of proofs per strategy)
@@ -160,12 +142,7 @@ interface IECDSAPPSOracle {
     /*//////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice Updates the PPS for a single strategy
-    /// @param args Struct containing all parameters for PPS update
-    function updatePPS(UpdatePPSArgs calldata args) external;
-
     /// @notice Updates the PPS for multiple strategies in a batch
     /// @param args Struct containing all parameters for batch PPS update
-    function batchUpdatePPS(BatchUpdatePPSArgs calldata args) external;
+    function updatePPS(BatchUpdatePPSArgs calldata args) external;
 }
