@@ -22,7 +22,7 @@ abstract contract Properties is BeforeAfter, Asserts {
     function property_naivePPSDoesntChangeOnAddOrRemove() public {
         if (
             (_currentOp == OpType.ADD || _currentOp == OpType.REMOVE) &&
-            _before.summedTotalShares == 0 // if no shares existed before the naively calculated price is 0 so causes a false positive
+            _before.naivePPS != 0 // price starts as zero when no shares minted
         ) {
             eq(
                 _before.naivePPS,
