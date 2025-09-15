@@ -6,6 +6,7 @@ import { IOracle } from "../vendor/awesome-oracles/IOracle.sol";
 import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
 import { IERC20 } from "forge-std/interfaces/IERC20.sol";
 import { BoringERC20 } from "../vendor/BoringSolidity/BoringERC20.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Superform
 import { ISuperOracle } from "../interfaces/oracles/ISuperOracle.sol";
@@ -340,9 +341,9 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
             uint8 baseDecimals = IERC20(base).safeDecimals();
             uint8 quoteDecimals = IERC20(quote).safeDecimals();
 
-            quoteAmount =
-                (baseAmount * uint256(answer) * (10 ** quoteDecimals)) /
-                ((10 ** baseDecimals) * (10 ** feedDecimals));
+            // Calculate quote amount with proper decimal scaling
+            quoteAmount = Math.mulDiv(baseAmount, uint256(answer), 10 ** feedDecimals);
+            quoteAmount = Math.mulDiv(quoteAmount, 10 ** quoteDecimals, 10 ** baseDecimals);
         } catch {
             if (revertOnError) revert ORACLE_DECIMALS_CALL_FAIL(oracle);
             return 0;
@@ -393,6 +394,7 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
             }
 
             uint256 quote_ = _getQuoteFromOracle(providerOracle, baseAmount, base, quote, false);
+
             /// @dev we don't revert on error, we just skip the oracle value
             if (quote_ > 0) {
                 total += quote_;
@@ -434,7 +436,7 @@ abstract contract SuperOracleBase is ISuperOracle, IOracle {
                 diff = mean - values[i];
             }
 
-            uint256 squaredDiff = diff * diff;
+            uint256 squaredDiff = Math.mulDiv(diff, diff, 1);
             sumSquaredDiff += squaredDiff;
         }
 
