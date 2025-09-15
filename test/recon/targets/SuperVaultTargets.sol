@@ -34,7 +34,10 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     /// @dev Property: pendingRedeemRequest should be 0 after a user calls cancelRedeem
     /// @dev Property: averageRequestPPS should be 0 after a user calls cancelRedeem
     /// @dev Property: user shouldn't receive more than convertToAssets(pendingRedeemRequest) after cancelRedeem
-    function superVault_cancelRedeem() public {
+    function superVault_cancelRedeem()
+        public
+        updateGhostsWithOpType(OpType.CANCEL)
+    {
         uint256 pendingRedeemRequestsBefore = superVault.pendingRedeemRequest(
             0,
             _getActor()

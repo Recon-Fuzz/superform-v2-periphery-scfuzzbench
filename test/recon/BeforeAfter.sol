@@ -11,7 +11,8 @@ enum OpType {
     REMOVE,
     FULFILL,
     REQUEST,
-    TRANSFER
+    TRANSFER,
+    CANCEL
 }
 
 // ghost variables for tracking state variable values before and after function calls
@@ -76,6 +77,7 @@ abstract contract BeforeAfter is Setup {
 
     // Helpers
 
+    /// @dev total shares in the system is the sum of shares in the escrow and held by all users
     function _sumTotalShares() internal returns (uint256) {
         address[] memory actors = _getActors();
         uint256 totalShares;

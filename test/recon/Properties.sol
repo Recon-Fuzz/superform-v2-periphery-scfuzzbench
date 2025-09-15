@@ -53,7 +53,7 @@ abstract contract Properties is BeforeAfter, Asserts {
         eq(maxWithdrawAsShares, maxRedeem, "maxWithdrawAsShares != maxRedeem");
     }
 
-    /// @dev requestRedeem should never reduce SuperVault shares
+    /// @dev Property: requestRedeem should never reduce SuperVault shares
     function property_totalSharesDontDecreaseOnRedemptionRequest() public {
         if (_currentOp == OpType.REQUEST) {
             eq(
@@ -64,7 +64,7 @@ abstract contract Properties is BeforeAfter, Asserts {
         }
     }
 
-    /// @dev `SuperVault::totalSupply` == SUM(user balances) + balanceOf(escrow)
+    /// @dev Property: `SuperVault::totalSupply` == SUM(user balances) + balanceOf(escrow)
     function property_shareSolvency() public {
         eq(
             superVault.totalSupply(),
@@ -171,6 +171,17 @@ abstract contract Properties is BeforeAfter, Asserts {
                 fulfilled,
                 claimable,
                 "user cannot claim more assets than requested in redemption"
+            );
+        }
+    }
+
+    /// @dev Property: cancelRedeem should never alter the supply of SuperVault tokens
+    function property_cancelDoesntChangeTotalSupply() public {
+        if (_currentOp == OpType.CANCEL) {
+            eq(
+                _before.summedTotalShares,
+                _after.summedTotalShares,
+                "cancelRedeem should never alter the supply of SuperVault tokens"
             );
         }
     }
