@@ -200,43 +200,6 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
                           PPS UPDATE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     /// @inheritdoc ISuperVaultAggregator
-    function forwardPPS(
-        address updateAuthority,
-        ForwardPPSArgs calldata args
-    )
-        external
-        onlyPPSOracle
-        validStrategy(args.strategy)
-    {
-        if (args.timestamp > block.timestamp) {
-            revert TIMESTAMP_EXCEEDS_BLOCK();
-        }
-
-        // Check if the update is exempt from paying upkeep
-        bool isExempt = _isExemptFromUpkeep(args.strategy, updateAuthority, args.timestamp);
-
-        // Only compute upkeep cost if payments are enabled and the update is chargeable
-        uint256 upkeepCost = 0;
-        if (!isExempt) {
-            upkeepCost = SUPER_GOVERNOR.getUpkeepCostPerUpdate(msg.sender);
-        }
-
-        // Create a new ForwardPPSArgs struct with updated isExempt and upkeepCost
-        _forwardPPS(
-            ForwardPPSArgs({
-                strategy: args.strategy,
-                isExempt: isExempt,
-                pps: args.pps,
-                ppsStdev: args.ppsStdev,
-                validatorSet: args.validatorSet,
-                totalValidators: args.totalValidators,
-                timestamp: args.timestamp,
-                upkeepCost: upkeepCost
-            })
-        );
-    }
-
-    /// @inheritdoc ISuperVaultAggregator
     function batchForwardPPS(BatchForwardPPSArgs calldata args) external onlyPPSOracle {
         uint256 strategiesLength = args.strategies.length;
         if (strategiesLength > MAX_STRATEGIES) revert MAX_STRATEGIES_EXCEEDED();

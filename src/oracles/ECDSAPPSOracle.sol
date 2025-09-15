@@ -55,46 +55,6 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
                          PPS UPDATE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     /// @inheritdoc IECDSAPPSOracle
-    function updatePPS(UpdatePPSArgs calldata args) external {
-        // Validate proofs and check quorum requirement
-        _validateProofs(
-            IECDSAPPSOracle.ValidationParams({
-                strategy: args.strategy,
-                proofs: args.proofs,
-                pps: args.pps,
-                ppsStdev: args.ppsStdev,
-                validatorSet: args.validatorSet,
-                totalValidators: args.totalValidators,
-                timestamp: args.timestamp
-            })
-        );
-
-        // Emit event that PPS has been validated
-        emit PPSValidated(
-            args.strategy, args.pps, args.ppsStdev, args.validatorSet, args.totalValidators, args.timestamp, msg.sender
-        );
-        
-
-        // Forward the validated PPS update to the SuperVaultAggregator
-        // The msg.sender is passed as updateAuthority for upkeep tracking
-        ISuperVaultAggregator.ForwardPPSArgs memory forwardArgs = ISuperVaultAggregator.ForwardPPSArgs({
-            strategy: args.strategy,
-            isExempt: false, // This will be determined by SuperVaultAggregator
-            pps: args.pps,
-            ppsStdev: args.ppsStdev,
-            validatorSet: args.validatorSet,
-            totalValidators: args.totalValidators,
-            timestamp: args.timestamp,
-            upkeepCost: 0 // This will be set by SuperVaultAggregator
-        });
-
-        ISuperVaultAggregator(SUPER_GOVERNOR.getAddress(SUPER_VAULT_AGGREGATOR)).forwardPPS(msg.sender, forwardArgs);
-
-        //increment nonce for the strategy
-        noncePerStrategy[args.strategy]++;
-    }
-
-    /// @inheritdoc IECDSAPPSOracle
     function batchUpdatePPS(BatchUpdatePPSArgs calldata args) external {
         uint256 strategiesLength = args.strategies.length;
         
