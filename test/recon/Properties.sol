@@ -107,11 +107,13 @@ abstract contract Properties is BeforeAfter, Asserts {
         );
         uint256 maxDeposit = superVault.maxDeposit(_getActor());
 
-        eq(
-            maxDeposit,
-            0,
-            "actor has nonzero maxDeposit when strategy is paused"
-        );
+        if (paused) {
+            eq(
+                maxDeposit,
+                0,
+                "actor has nonzero maxDeposit when strategy is paused"
+            );
+        }
     }
 
     /// @dev Property: If user's maxWithdraw == 0 then getAverageWithdrawPrice for the user is also == 0
