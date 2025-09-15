@@ -97,7 +97,9 @@ abstract contract Properties is BeforeAfter, Asserts {
         );
         uint256 maxMint = superVault.maxMint(_getActor());
 
-        eq(maxMint, 0, "actor has nonzero maxMint when strategy is paused");
+        if (paused) {
+            eq(maxMint, 0, "actor has nonzero maxMint when strategy is paused");
+        }
     }
 
     /// @dev Property: maxDeposit should be 0 when strategy is paused
