@@ -178,14 +178,25 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         superVault.setOperator(operator, approved);
     }
 
+    /// @dev Propery: _update should never revert
+    // NOTE: _update only gets called on transfer of Vault shares
     function superVault_transfer(
         uint256 entropy,
         uint256 value
     ) public updateGhostsWithOpType(OpType.TRANSFER) asActor {
         address to = _getRandomActor(entropy);
-        superVault.transfer(to, value);
+        try superVault.transfer(to, value) {} catch (bytes memory err) {
+            bool expectedError;
+            expectedError = checkError(
+                err,
+                "ERC20InsufficientBalance(address,uint256,uint256)"
+            );
+            t(expectedError, "_update should never revert in transfer");
+        }
     }
 
+    /// @dev Propery: _update should never revert
+    // NOTE: _update only gets called on transfer of Vault shares
     function superVault_transferFrom(
         uint256 entropyFrom,
         uint256 entropyTo,
@@ -193,7 +204,22 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     ) public updateGhostsWithOpType(OpType.TRANSFER) asActor {
         address from = _getRandomActor(entropyFrom);
         address to = _getRandomActor(entropyTo);
-        superVault.transferFrom(from, to, value);
+
+        try superVault.transferFrom(from, to, value) {} catch (
+            bytes memory err
+        ) {
+            bool expectedError;
+            expectedError =
+                checkError(
+                    err,
+                    "ERC20InsufficientBalance(address,uint256,uint256)"
+                ) ||
+                checkError(
+                    err,
+                    "ERC20InsufficientAllowance(address,uint256,uint256)"
+                );
+            t(expectedError, "_update should never revert in transferFrom");
+        }
     }
 
     /// @dev removed because signature components not fuzzable

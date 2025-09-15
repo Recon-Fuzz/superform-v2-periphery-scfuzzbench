@@ -36,8 +36,7 @@
 | `property_totalAssets` | SUM(shares) * PPS == totalAssets | ✅ |  |
 | `superVault_mint`, `superVault_deposit` | `accumulatorShares` is always accurately increased | ✅ |  |
 | `superVault_mint`, `superVault_deposit` | `accumulatorCostBasis` is always accurately accurately increased | ✅ |  |
-| `property_x` | `_update` shouldn't change the `accumulatorShares` and `accumulatorCostBasis` |  |  |
-| `property_x` | `_update` should never revert |  |  |
+| `superVault_transfer`, `superVault_transferFrom` | `_update` should never revert | ✅ |  |
 | `property_x` | `previewDeposit` returns the correct amounts compared to executing a deposit |  |  |
 | `property_x` | `previewRedeem` returns the correct amounts compared to executing a redemption |  |  |
 | `property_x` | `previewMint` and `previewDeposit` equivalence |  |  |
