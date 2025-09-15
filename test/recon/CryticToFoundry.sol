@@ -2763,4 +2763,25 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
 
     //     doomsday_mintRedeemSymmetrical(626386102211729);
     // }
+
+    // forge test --match-test test_superVaultStrategy_fulfillRedeemRequests_clamped_0 -vvv
+    // TODO: create an optimization test for this, looks like there's an inconsistency that might allow a user to redeem the same shares more than once
+    function test_superVaultStrategy_fulfillRedeemRequests_clamped_0() public {
+        superVaultStrategy_manageYieldSource_clamped(YieldSourceType(0));
+        superVault_mint(2);
+        uint256[] memory hookTypeInts = new uint256[](1);
+        hookTypeInts[0] = 0;
+        uint256[] memory amountsToInvest = new uint256[](1);
+        amountsToInvest[0] = 97923320596094294801741071335978558490853670156049;
+        bool[] memory usePrevHookAmounts = new bool[](1);
+        usePrevHookAmounts[0] = false;
+
+        superVaultStrategy_executeHooks_clamped(
+            hookTypeInts,
+            amountsToInvest,
+            usePrevHookAmounts
+        );
+        superVault_requestRedeem(2);
+        superVaultStrategy_fulfillRedeemRequests_clamped(1);
+    }
 }
