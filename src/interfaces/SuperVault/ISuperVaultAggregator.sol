@@ -347,6 +347,15 @@ interface ISuperVaultAggregator {
     /// @notice Emitted when the provided timestamp is too large
     event ProvidedTimestampExceedsBlockTimestamp(address indexed strategy, uint256 argsTimestamp, uint256 blockTimestamp);
 
+    /// @notice Emitted when a strategy is unknown
+    event UnknownStrategy(address indexed strategy);
+
+    /// @notice Emitted when a strategy is managed by Superform
+    event SuperformManager(address indexed strategy, address indexed manager);
+
+    /// @notice Emitted when the caller is authorized
+    event AuthorizedCaller(address indexed strategy, address indexed caller);
+
     /*///////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -418,6 +427,8 @@ interface ISuperVaultAggregator {
     error TOO_MANY_SECONDARY_MANAGERS();
     /// @notice Thrown when the number of strategies exceeds the maximum allowed
     error MAX_STRATEGIES_EXCEEDED();
+    /// @notice Thrown when provided timestamp is too large
+    error TIMESTAMP_EXCEEDS_BLOCK();
 
     /*//////////////////////////////////////////////////////////////
                             VAULT CREATION

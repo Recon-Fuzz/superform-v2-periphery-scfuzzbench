@@ -718,6 +718,9 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         vm.expectEmit(true, false, false, false);
         emit ISuperVaultAggregator.PPSUpdated(strategy, 1e18, 0, 1, 1, newerTimestamp);
 
+        // Measure gas
+        uint256 gasBefore = gasleft();
+
         superVaultAggregator.forwardPPS(
             user,
             ISuperVaultAggregator.ForwardPPSArgs({
@@ -731,6 +734,11 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
                 upkeepCost: 0
             })
         );
+
+        uint256 gasAfter = gasleft();
+        uint256 gasUsed = gasBefore - gasAfter;
+
+        console2.log("forwardPPS gas used:", gasUsed);
 
         // Verify timestamp was updated
         assertEq(superVaultAggregator.getLastUpdateTimestamp(strategy), newerTimestamp);
@@ -2446,6 +2454,63 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
                 timestamps: timestamps,
                 updateAuthorities: updateAuthorities
             })
+        );
+    }
+
+    /// @notice Tests batchForwardPPS with array size 1
+    function test_BatchForwardPPS_ArraySize1() public {
+        // Set up as PPS Oracle
+        vm.prank(sGovernor);
+        superGovernor.setActivePPSOracle(address(this));
+
+        // Wait for minimum interval to pass
+        vm.warp(block.timestamp + 10);
+
+        // Prepare arrays with size 1
+        address[] memory strategies = new address[](1);
+        uint256[] memory ppss = new uint256[](1);
+        uint256[] memory ppsStdevs = new uint256[](1);
+        uint256[] memory validatorSets = new uint256[](1);
+        uint256[] memory totalValidatorsArray = new uint256[](1);
+        uint256[] memory timestamps = new uint256[](1);
+        address[] memory updateAuthorities = new address[](1);
+
+        strategies[0] = strategy;
+        ppss[0] = 1e18 + 1e15;
+        ppsStdevs[0] = 0;
+        validatorSets[0] = 1;
+        totalValidatorsArray[0] = 1;
+        timestamps[0] = superVaultAggregator.getLastUpdateTimestamp(strategy) + 20;
+        updateAuthorities[0] = user;
+
+        // Advance time to ensure update is valid
+        vm.warp(block.timestamp + 25);
+
+        // Measure gas
+        uint256 gasBefore = gasleft();
+        
+        superVaultAggregator.batchForwardPPS(
+            ISuperVaultAggregator.BatchForwardPPSArgs({
+                strategies: strategies,
+                ppss: ppss,
+                ppsStdevs: ppsStdevs,
+                validatorSets: validatorSets,
+                totalValidators: totalValidatorsArray,
+                timestamps: timestamps,
+                updateAuthorities: updateAuthorities
+            })
+        );
+        
+        uint256 gasAfter = gasleft();
+        uint256 gasUsed = gasBefore - gasAfter;
+
+        console2.log("batchForwardPPS (size 1) gas used:", gasUsed);
+
+        // Verify update was successful
+        assertEq(
+            superVaultAggregator.getLastUpdateTimestamp(strategy), 
+            timestamps[0],
+            "Timestamp not updated correctly"
         );
     }
 }

@@ -208,12 +208,16 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         onlyPPSOracle
         validStrategy(args.strategy)
     {
+        if (args.timestamp > block.timestamp) {
+            revert TIMESTAMP_EXCEEDS_BLOCK();
+        }
+
         // Check if the update is exempt from paying upkeep
         bool isExempt = _isExemptFromUpkeep(args.strategy, updateAuthority, args.timestamp);
 
         // Only compute upkeep cost if payments are enabled and the update is chargeable
         uint256 upkeepCost = 0;
-        if (SUPER_GOVERNOR.isUpkeepPaymentsEnabled() && !isExempt) {
+        if (!isExempt) {
             upkeepCost = SUPER_GOVERNOR.getUpkeepCostPerUpdate(msg.sender);
         }
 
@@ -250,27 +254,31 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
         uint256 chargeableCount;
         if (paymentsEnabled) {
             for (uint256 i; i < strategiesLength; ++i) {
-                // Revert first when invalid timestamp is provided
+                // Skip invalid strategies without reverting
+                if (!_superVaultStrategies.contains(args.strategies[i])) {
+                    emit UnknownStrategy(args.strategies[i]);
+                    continue;
+                }
+
+                // Skip when invalid timestamp is provided
                 if (args.timestamps[i] > block.timestamp) {
                     emit ProvidedTimestampExceedsBlockTimestamp(args.strategies[i], args.timestamps[i], block.timestamp);
                     continue;
                 }
  
-                // Skip invalid strategies without reverting
-                if (!_superVaultStrategies.contains(args.strategies[i]))
-                    continue;
-
                 // Skip Superform manager
                 address manager = _strategyData[args.strategies[i]].mainManager;
                 if (SUPER_GOVERNOR.isSuperformManager(manager)) {
+                    emit SuperformManager(args.strategies[i], manager);
                     continue;
                 }
 
-                // Check if the updateAuthority is in the authorized callers list
+                // Skip if updateAuthority is in the authorized callers list
                 // These are manager-designated keepers that should be exempt from fees
                 // NOTE: Protected keepers cannot be added to this list (blocked in addAuthorizedCaller)
                 /// @dev: cannot underflow; it's checked above already and it skips the entry if that's the case
                 if (_strategyData[args.strategies[i]].authorizedCallers.contains(args.updateAuthorities[i])) {
+                    emit AuthorizedCaller(args.strategies[i], args.updateAuthorities[i]);
                     continue;
                 }
 

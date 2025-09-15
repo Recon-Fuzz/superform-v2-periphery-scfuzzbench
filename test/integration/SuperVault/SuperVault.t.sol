@@ -6953,8 +6953,8 @@ contract SuperVaultTest is BaseSuperVaultTest {
         UpdatePPSVars memory vars;
 
         // Get the current timestamp for the signature
-        vars.timestamp = block.timestamp + 1; // Ensure timestamp is greater than last update
-
+        vars.timestamp = block.timestamp; // // Use current timestamp to avoid TIMESTAMP_EXCEEDS_BLOCK revert
+        
         // Set the additional parameters: ppsStdev=0, validatorSet=1, totalValidators=1
         vars.ppsStdev = 0;
         vars.validatorSet = 1;
