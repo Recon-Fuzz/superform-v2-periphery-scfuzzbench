@@ -713,7 +713,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         // Batch update should revert due to non-monotonic timestamp in strategy2
         vm.expectEmit(true, true, true, true);
         emit ISuperVaultAggregator.TimestampNotMonotonic();
-        superVaultAggregator.batchForwardPPS(
+        superVaultAggregator.forwardPPS(
             ISuperVaultAggregator.BatchForwardPPSArgs({
                 strategies: strategies,
                 ppss: ppss,
@@ -788,7 +788,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         vm.warp(block.timestamp + 10);
 
         // Batch update should succeed
-        superVaultAggregator.batchForwardPPS(
+        superVaultAggregator.forwardPPS(
             ISuperVaultAggregator.BatchForwardPPSArgs({
                 strategies: strategies,
                 ppss: ppss,
@@ -879,7 +879,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
             // Measure gas for batchForwardPPS call
             uint256 gasBefore = gasleft();
             
-            superVaultAggregator.batchForwardPPS(
+            superVaultAggregator.forwardPPS(
                 ISuperVaultAggregator.BatchForwardPPSArgs({
                     strategies: strategies,
                     ppss: ppss,
@@ -1008,7 +1008,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         emit ISuperVaultAggregator.StaleUpdate(strategy2, address(0), timestamps[1]);
 
         // Batch update should succeed but strategy2 should have upkeepCost = 0 due to staleness
-        superVaultAggregator.batchForwardPPS(
+        superVaultAggregator.forwardPPS(
             ISuperVaultAggregator.BatchForwardPPSArgs({
                 strategies: strategies,
                 ppss: ppss,
@@ -2197,7 +2197,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         vm.warp(vars.baseTimestamp + 350);
 
         // Execute batch update
-        superVaultAggregator.batchForwardPPS(
+        superVaultAggregator.forwardPPS(
             ISuperVaultAggregator.BatchForwardPPSArgs({
                 strategies: vars.strategies,
                 ppss: vars.ppss,
@@ -2274,7 +2274,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
 
         // Batch update should revert with MAX_STRATEGIES_EXCEEDED
         vm.expectRevert(ISuperVaultAggregator.MAX_STRATEGIES_EXCEEDED.selector);
-        superVaultAggregator.batchForwardPPS(
+        superVaultAggregator.forwardPPS(
             ISuperVaultAggregator.BatchForwardPPSArgs({
                 strategies: strategies,
                 ppss: ppss,
@@ -2317,7 +2317,7 @@ contract SuperVaultAggregatorTest is PeripheryHelpers {
         // Measure gas
         uint256 gasBefore = gasleft();
         
-        superVaultAggregator.batchForwardPPS(
+        superVaultAggregator.forwardPPS(
             ISuperVaultAggregator.BatchForwardPPSArgs({
                 strategies: strategies,
                 ppss: ppss,

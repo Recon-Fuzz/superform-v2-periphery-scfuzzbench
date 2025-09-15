@@ -144,5 +144,5 @@ interface IECDSAPPSOracle {
     //////////////////////////////////////////////////////////////*/
     /// @notice Updates the PPS for multiple strategies in a batch
     /// @param args Struct containing all parameters for batch PPS update
-    function batchUpdatePPS(BatchUpdatePPSArgs calldata args) external;
+    function updatePPS(BatchUpdatePPSArgs calldata args) external;
 }

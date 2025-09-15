@@ -152,7 +152,7 @@
         - Emit events for off-chain indexing
   */ 
   function forwardPPS(address updateAuthority, address strategy, uint256 pps, uint256 timestamp) external;
-  function batchForwardPPS(address[] calldata strategies, uint256[] calldata pps, uint256[] calldata timestamps) external;
+  function forwardPPS(address[] calldata strategies, uint256[] calldata pps, uint256[] calldata timestamps) external;
   
   function depositUpkeep(address strategist, uint256 amount) external;
   function withdrawUpkeep(address strategist, uint256 amount) external;
@@ -207,7 +207,7 @@
   */
 
   function updatePPS(address strategy, bytes calldata proof, uint256 pps, uint256 timestamp) external;
-  function batchUpdatePPS(address[] calldata strategies, bytes[] calldata proofs, uint256[] calldata ppss, uint256[] calldata timestamps) external;
+  function updatePPS(address[] calldata strategies, bytes[] calldata proofs, uint256[] calldata ppss, uint256[] calldata timestamps) external;
   ```
 
 - **Notes:**

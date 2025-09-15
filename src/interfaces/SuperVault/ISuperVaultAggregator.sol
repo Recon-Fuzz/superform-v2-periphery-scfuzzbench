@@ -464,7 +464,7 @@ interface ISuperVaultAggregator {
 
     /// @notice Batch forwards validated PPS updates to multiple strategies
     /// @param args Struct containing all batch PPS update parameters
-    function batchForwardPPS(BatchForwardPPSArgs calldata args) external;
+    function forwardPPS(BatchForwardPPSArgs calldata args) external;
 
     /*//////////////////////////////////////////////////////////////
                         UPKEEP MANAGEMENT

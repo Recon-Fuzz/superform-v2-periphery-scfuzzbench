@@ -7007,7 +7007,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = vars.timestamp;
 
-        ecdsappsOracle.batchUpdatePPS(
+        ecdsappsOracle.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -7084,7 +7084,7 @@ contract SuperVaultTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = vars.timestamp;
 
-        ecdsappsOracle.batchUpdatePPS(
+        ecdsappsOracle.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,

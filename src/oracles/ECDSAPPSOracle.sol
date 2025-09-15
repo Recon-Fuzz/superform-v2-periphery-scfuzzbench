@@ -55,7 +55,7 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
                          PPS UPDATE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     /// @inheritdoc IECDSAPPSOracle
-    function batchUpdatePPS(BatchUpdatePPSArgs calldata args) external {
+    function updatePPS(BatchUpdatePPSArgs calldata args) external {
         uint256 strategiesLength = args.strategies.length;
         
         if (strategiesLength == 0) revert ZERO_LENGTH_ARRAY();
@@ -271,7 +271,7 @@ contract ECDSAPPSOracle is IECDSAPPSOracle, EIP712 {
     ) internal {
         // Only forward if there are valid entries
         if (validStrategies.length > 0) {
-            try ISuperVaultAggregator(SUPER_GOVERNOR.getAddress(SUPER_VAULT_AGGREGATOR)).batchForwardPPS(
+            try ISuperVaultAggregator(SUPER_GOVERNOR.getAddress(SUPER_VAULT_AGGREGATOR)).forwardPPS(
                 ISuperVaultAggregator.BatchForwardPPSArgs({
                     strategies: validStrategies,
                     ppss: validPpss,

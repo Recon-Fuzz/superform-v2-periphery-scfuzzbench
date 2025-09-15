@@ -1,6 +1,6 @@
 # Gas usage
 
-### Analysis for `SuperVaultAggregator.batchForwardPPS`
+### Analysis for `SuperVaultAggregator.forwardPPS`
         /**
             Array Size | Gas Used 
             4 | ~47206 | ~11801 

@@ -200,7 +200,7 @@ contract SuperVaultAggregator is ISuperVaultAggregator {
                           PPS UPDATE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     /// @inheritdoc ISuperVaultAggregator
-    function batchForwardPPS(BatchForwardPPSArgs calldata args) external onlyPPSOracle {
+    function forwardPPS(BatchForwardPPSArgs calldata args) external onlyPPSOracle {
         uint256 strategiesLength = args.strategies.length;
         if (strategiesLength > MAX_STRATEGIES) revert MAX_STRATEGIES_EXCEEDED();
 

@@ -175,7 +175,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
 
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -222,7 +222,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
 
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -238,7 +238,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         vm.expectEmit(true, false, false, false);
         emit IECDSAPPSOracle.ProofValidationFailedLowLevel(address(svStrategy), abi.encodeWithSelector(IECDSAPPSOracle.INVALID_VALIDATOR.selector));
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -308,7 +308,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -362,7 +362,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -425,7 +425,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -503,7 +503,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -568,7 +568,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -622,7 +622,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -671,7 +671,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -714,7 +714,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -775,7 +775,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         uint256[] memory timestamps = new uint256[](1);
         timestamps[0] = block.timestamp;
         
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -863,7 +863,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
 
         // Call batchUpdatePPS
         vm.prank(user);
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: data.strategies,
                 proofsArray: data.proofsArray,
@@ -892,7 +892,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         // Call should revert because arrays are empty
         vm.prank(user);
         vm.expectRevert(IECDSAPPSOracle.ZERO_LENGTH_ARRAY.selector);
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: strategies,
                 proofsArray: proofsArray,
@@ -954,7 +954,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
         // Call should revert because proofsArray length doesn't match strategies length
         vm.prank(user);
         vm.expectRevert(IECDSAPPSOracle.ARRAY_LENGTH_MISMATCH.selector);
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: data.strategies,
                 proofsArray: data.proofsArray,
@@ -1030,7 +1030,7 @@ contract ECDSAPPSOracleTest is BaseSuperVaultTest {
 
         // Call should not revert but emit validation failure event
         vm.prank(user);
-        oracleECDSA.batchUpdatePPS(
+        oracleECDSA.updatePPS(
             IECDSAPPSOracle.BatchUpdatePPSArgs({
                 strategies: data.strategies,
                 proofsArray: data.proofsArray,
