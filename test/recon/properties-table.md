@@ -30,7 +30,7 @@
 | `property_cannotClaimMoreThanRequested` | user cannot claim more assets than requested in redemption | ✅ |  |
 | `property_x` | PPS updates with a difference that exceeds maxPPSSlippage must revert |  |  |
 | `property_cancelDoesntChangeTotalSupply` | `cancelRedeem()` should never alter the supply of SuperVault tokens (calculated by summing user share balances) | ✅ |  |
-| `property_x` | if `totalAssets()` > 0, then `totalSupply()` > 0 |  |  |
+| `property_assetBacking` | if `totalSupply()` > 0, then `totalAssets()` > 0  | ✅ |  |
 | `property_x` | users shouldn't get a favorable exchange rate on loss on withdrawal in a yield vault |  |  |
 | `property_x` | user shouldn't be able to frontrun an oracle update to get a favorable exchange when there's a loss (TODO: determine how to test this) |  |  |
 | `property_x` | totalSupply * PPS == totalAssets |  |  |

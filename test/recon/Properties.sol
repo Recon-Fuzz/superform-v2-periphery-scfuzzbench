@@ -185,4 +185,15 @@ abstract contract Properties is BeforeAfter, Asserts {
             );
         }
     }
+
+    /// @dev Property: if totalSupply > 0, then totalAssets > 0
+    function property_assetBacking() public {
+        if (superVault.totalSupply() > 0) {
+            gt(
+                _after.summedTotalAssets,
+                0,
+                "if totalSupply > 0, then totalAssets > 0"
+            );
+        }
+    }
 }

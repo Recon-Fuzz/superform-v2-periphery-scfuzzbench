@@ -25,6 +25,7 @@ abstract contract BeforeAfter is Setup {
         uint256 summedTotalShares;
         uint256 summedAccumulatorShares;
         uint256 summedAccumulatorCostBasis;
+        uint256 summedTotalAssets;
     }
 
     Vars internal _before;
@@ -54,6 +55,7 @@ abstract contract BeforeAfter is Setup {
         _before.summedTotalShares = _sumTotalShares();
         _before.pendingUserAssets[_getActor()] = _getPendingAsAssets();
         _before.claimableUserAssets[_getActor()] = _getClaimableAsAssets();
+        _before.summedTotalAssets = _sumVaultAssets();
 
         _before.oraclePPS = superVaultAggregator.getPPS(
             address(superVaultStrategy)
@@ -69,6 +71,7 @@ abstract contract BeforeAfter is Setup {
         _after.summedTotalShares = _sumTotalShares();
         _after.pendingUserAssets[_getActor()] = _getPendingAsAssets();
         _after.claimableUserAssets[_getActor()] = _getClaimableAsAssets();
+        _after.summedTotalAssets = _sumVaultAssets();
 
         _after.oraclePPS = superVaultAggregator.getPPS(
             address(superVaultStrategy)
@@ -94,9 +97,6 @@ abstract contract BeforeAfter is Setup {
     /// @dev inspired by the share price calculation from BaseSuperVaultTest::_updateSuperVaultPPS
     /// @return naivePPS The calculated price per share (scaled by 1e18)
     function _calculateNaivePPS() internal view returns (uint256 naivePPS) {
-        // Get the underlying asset
-        address asset = superVault.asset();
-
         // Get total supply of SuperVault shares
         uint256 totalSupply = superVault.totalSupply();
 
@@ -106,8 +106,20 @@ abstract contract BeforeAfter is Setup {
         }
 
         // Calculate total assets across all locations
-        uint256 totalAssets;
+        uint256 totalAssets = _sumVaultAssets();
 
+        // Calculate naive PPS: (totalAssets * PRECISION) / totalSupply
+        // Using 1e18 as precision to match the system's PPS_DECIMALS
+        naivePPS = (totalAssets * superVault.PRECISION()) / totalSupply;
+
+        return naivePPS;
+    }
+
+    function _sumVaultAssets() public returns (uint256) {
+        // Get the underlying asset
+        address asset = superVault.asset();
+
+        uint256 totalAssets;
         // 1. Assets held directly in SuperVaultStrategy
         totalAssets += IERC20(asset).balanceOf(address(superVaultStrategy));
 
@@ -120,11 +132,7 @@ abstract contract BeforeAfter is Setup {
             }
         }
 
-        // Calculate naive PPS: (totalAssets * PRECISION) / totalSupply
-        // Using 1e18 as precision to match the system's PPS_DECIMALS
-        naivePPS = (totalAssets * superVault.PRECISION()) / totalSupply;
-
-        return naivePPS;
+        return totalAssets;
     }
 
     function _sumSuperVaultValues()
