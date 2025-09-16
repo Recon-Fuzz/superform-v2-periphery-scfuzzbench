@@ -225,4 +225,46 @@ abstract contract Properties is BeforeAfter, Asserts {
             );
         }
     }
+
+    /// Optimization Tests
+
+    /// @dev Optimize the difference between the amount of assets in the system and claimable assets
+    function optimize_maxDustAccumulation() public view returns (int256) {
+        address[] memory actors = _getActors();
+
+        int256 summedClaimableRedemptionsAsAssets;
+        for (uint256 i; i < actors.length; i++) {
+            uint256 claimableRedemptions = superVault.claimableRedeemRequest(
+                0,
+                actors[i]
+            );
+            summedClaimableRedemptionsAsAssets += superVault.convertToAssets(
+                claimableRedemptions
+            );
+        }
+
+        uint256 totalAssets = _sumVaultAssets();
+
+        return totalAssets - summedClaimableRedemptionsAsAssets;
+    }
+
+    /// @dev Optimize the difference between the amount of claimable assets and assets in the system
+    function optimize_maxClaimableDifference() public view returns (int256) {
+        address[] memory actors = _getActors();
+
+        int256 summedClaimableRedemptionsAsAssets;
+        for (uint256 i; i < actors.length; i++) {
+            uint256 claimableRedemptions = superVault.claimableRedeemRequest(
+                0,
+                actors[i]
+            );
+            summedClaimableRedemptionsAsAssets += superVault.convertToAssets(
+                claimableRedemptions
+            );
+        }
+
+        uint256 totalAssets = _sumVaultAssets();
+
+        return summedClaimableRedemptionsAsAssets - totalAssets;
+    }
 }
