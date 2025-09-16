@@ -232,7 +232,7 @@ abstract contract Properties is BeforeAfter, Asserts {
     function optimize_maxDustAccumulation() public view returns (int256) {
         address[] memory actors = _getActors();
 
-        int256 summedClaimableRedemptionsAsAssets;
+        uint256 summedClaimableRedemptionsAsAssets;
         for (uint256 i; i < actors.length; i++) {
             uint256 claimableRedemptions = superVault.claimableRedeemRequest(
                 0,
@@ -245,14 +245,14 @@ abstract contract Properties is BeforeAfter, Asserts {
 
         uint256 totalAssets = _sumVaultAssets();
 
-        return totalAssets - summedClaimableRedemptionsAsAssets;
+        return int256(totalAssets) - int256(summedClaimableRedemptionsAsAssets);
     }
 
     /// @dev Optimize the difference between the amount of claimable assets and assets in the system
     function optimize_maxClaimableDifference() public view returns (int256) {
         address[] memory actors = _getActors();
 
-        int256 summedClaimableRedemptionsAsAssets;
+        uint256 summedClaimableRedemptionsAsAssets;
         for (uint256 i; i < actors.length; i++) {
             uint256 claimableRedemptions = superVault.claimableRedeemRequest(
                 0,
@@ -265,6 +265,6 @@ abstract contract Properties is BeforeAfter, Asserts {
 
         uint256 totalAssets = _sumVaultAssets();
 
-        return summedClaimableRedemptionsAsAssets - totalAssets;
+        return int256(summedClaimableRedemptionsAsAssets) - int256(totalAssets);
     }
 }

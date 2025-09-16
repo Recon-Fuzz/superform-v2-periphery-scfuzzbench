@@ -122,7 +122,7 @@ abstract contract BeforeAfter is Setup {
         return naivePPS;
     }
 
-    function _sumVaultAssets() public returns (uint256) {
+    function _sumVaultAssets() public view returns (uint256) {
         // Get the underlying asset
         address asset = superVault.asset();
 
