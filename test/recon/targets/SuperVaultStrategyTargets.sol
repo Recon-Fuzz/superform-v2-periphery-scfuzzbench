@@ -43,15 +43,24 @@ abstract contract SuperVaultStrategyTargets is BaseTargetFunctions, Properties {
     }
 
     function superVaultStrategy_fulfillRedeemRequests_clamped(
-        uint256 redeemAmount
+        uint256 redeemAmount,
+        uint256 entropy
     ) public {
         // Clamp the redeem amount to a reasonable range (1 to 100 ether)
         if (redeemAmount == 0) redeemAmount = 1e18;
         if (redeemAmount > 100e18) redeemAmount = 100e18;
 
-        // Create a realistic controller address
+        // Use a random actor (not the current actor) as the controller
         address[] memory controllers = new address[](1);
-        controllers[0] = _getActor();
+        address randomController = _getRandomActor(entropy);
+        
+        // Ensure we don't use the current actor
+        while (randomController == _getActor()) {
+            entropy = uint256(keccak256(abi.encode(entropy)));
+            randomController = _getRandomActor(entropy);
+        }
+        
+        controllers[0] = randomController;
 
         // Determine yield source type from currently active yield source
         YieldSourceType activeYieldSourceType = _getYieldSourceTypeFromAddress(

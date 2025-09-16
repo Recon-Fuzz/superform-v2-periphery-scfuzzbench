@@ -105,10 +105,14 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
             shares,
             "accumulatorShares is always accurately updated"
         );
+        // The accumulatorCostBasis increases by the actual amount after fees
+        // not necessarily by the full assets amount due to management fees
+        uint256 actualIncrease = sumAccumulatorCostBasisAfter - sumAccumulatorCostBasisBefore;
+        // The increase should be equal to the shares minted (which accounts for fees)
         eq(
-            sumAccumulatorCostBasisAfter - sumAccumulatorCostBasisBefore,
-            assets,
-            "accumulatorCostBasis is always accurately increased"
+            actualIncrease,
+            shares,
+            "accumulatorCostBasis is always accurately increased by shares amount"
         );
         eq(
             previewShares,

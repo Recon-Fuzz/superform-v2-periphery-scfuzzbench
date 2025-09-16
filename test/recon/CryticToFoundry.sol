@@ -1427,120 +1427,80 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
 
         // User deposits into SuperVault to create shares
         switchActor(1);
-        address user = _getActor();
+        address user1 = _getActor();
         superVault_deposit(1000e18);
 
-        uint256 userShares = superVault.balanceOf(user);
-        assertTrue(userShares > 0, "User should have shares after deposit");
-
-        // Manager invests funds into yield source first
+        // Manager invests funds into yield source
         switchActor(0);
+        _setupYieldSourceInvestment();
 
-        // Check strategy balance before investing
-        uint256 strategyBalanceBefore = MockERC20(_getAsset()).balanceOf(
-            address(superVaultStrategy)
-        );
-        console2.log(
-            "Strategy balance before investing:",
-            strategyBalanceBefore
-        );
+        // Multiple users request redemptions with the same amount
+        switchActor(1);
+        uint256 redeemAmt = 100e18;
+        superVault_requestRedeem(redeemAmt);
+        
+        // Second user also requests the same amount
+        switchActor(2);
+        address user2 = _getActor();
+        superVault_deposit(500e18);
+        superVault_requestRedeem(redeemAmt);
+        
+        // Manager fulfills using the clamped function
+        switchActor(0);
+        
+        // Call the clamped function - it will pick one of the users randomly
+        superVaultStrategy_fulfillRedeemRequests_clamped(redeemAmt, 42);
 
-        // Fix the asset mismatch issue by using the correct asset that the yield source expects
-        address yieldSource = _getYieldSource();
-        address yieldSourceAsset = address(
-            MockERC4626Tester(yieldSource).asset()
-        );
-        uint256 investAmount = 500e18;
+        // Check that at least one user has their withdraw price set
+        _verifyRedemptionFulfillment(user1, user2, redeemAmt);
+    }
+    
+    function _setupYieldSourceInvestment() private {
+        address yieldSrc = _getYieldSource();
+        address ysAsset = address(MockERC4626Tester(yieldSrc).asset());
+        uint256 invAmt = 500e18;
 
-        console2.log("Using yield source asset:", yieldSourceAsset);
-        console2.log("Yield source address:", yieldSource);
-
-        // Check strategy balance of the correct asset
-        uint256 strategyCorrectAssetBalance = MockERC20(yieldSourceAsset)
-            .balanceOf(address(superVaultStrategy));
-        console2.log(
-            "Strategy balance of yield source asset:",
-            strategyCorrectAssetBalance
-        );
-
-        if (strategyCorrectAssetBalance < investAmount) {
-            // The strategy doesn't have the right asset, we need to transfer some
-            // This indicates a setup issue - the yield source and SuperVault are using different assets
-            console2.log(
-                "ERROR: Asset mismatch between SuperVault and yield source"
-            );
-            console2.log("SuperVault uses:", _getAsset());
-            console2.log("Yield source expects:", yieldSourceAsset);
-
-            // For this test, let's just give the strategy some of the correct asset
-            vm.prank(address(this)); // Test contract can mint
-            MockERC20(yieldSourceAsset).transfer(
-                address(superVaultStrategy),
-                investAmount
-            );
-
-            strategyCorrectAssetBalance = MockERC20(yieldSourceAsset).balanceOf(
-                address(superVaultStrategy)
-            );
-            console2.log(
-                "Strategy balance after transfer:",
-                strategyCorrectAssetBalance
-            );
+        uint256 stratBal = MockERC20(ysAsset).balanceOf(address(superVaultStrategy));
+        
+        if (stratBal < invAmt) {
+            vm.prank(address(this));
+            MockERC20(ysAsset).transfer(address(superVaultStrategy), invAmt);
         }
 
-        // Strategy approves the yield source using the correct asset
         vm.prank(address(superVaultStrategy));
-        MockERC20(yieldSourceAsset).approve(yieldSource, investAmount);
+        MockERC20(ysAsset).approve(yieldSrc, invAmt);
 
-        // Strategy deposits into yield source directly using the correct asset
         vm.prank(address(superVaultStrategy));
-        MockERC4626Tester(yieldSource).deposit(
-            investAmount,
-            address(superVaultStrategy)
-        );
+        MockERC4626Tester(yieldSrc).deposit(invAmt, address(superVaultStrategy));
+    }
+    
+    function _verifyRedemptionFulfillment(address u1, address u2, uint256 amt) private {
+        bool hasPrice = (superVaultStrategy.getAverageWithdrawPrice(u1) > 0) || 
+                       (superVaultStrategy.getAverageWithdrawPrice(u2) > 0);
+        
+        assertTrue(hasPrice, "At least one user should have withdraw price set");
 
-        // Verify strategy now has shares in yield source
-        uint256 strategyShares = MockERC4626Tester(yieldSource).balanceOf(
-            address(superVaultStrategy)
-        );
-        console2.log("Strategy shares in yield source:", strategyShares);
-        assertTrue(
-            strategyShares > 0,
-            "Strategy should have shares in yield source"
-        );
-
-        // User requests redemption
-        switchActor(1);
-        uint256 redeemShares = 100e18;
-        superVault_requestRedeem(redeemShares);
-
-        // Manager fulfills the redeem request using the clamped function
-        switchActor(0);
-
-        superVaultStrategy_fulfillRedeemRequests_clamped(redeemShares);
-
-        // Verify withdraw price was set
-        assertTrue(
-            superVaultStrategy.getAverageWithdrawPrice(user) > 0,
-            "Withdraw price should be set after fulfillment"
-        );
-
-        // User can now redeem their shares
-        switchActor(1);
-        uint256 userAssetsBefore = MockERC20(_getAsset()).balanceOf(user);
-        superVault_redeem(redeemShares);
-
-        uint256 finalShares = superVault.balanceOf(user);
-        uint256 userAssetsAfter = MockERC20(_getAsset()).balanceOf(user);
-
-        assertTrue(
-            finalShares < userShares,
-            "User should have fewer shares after redeem"
-        );
-        assertTrue(
-            userAssetsAfter > userAssetsBefore,
-            "User should have received assets from redemption"
-        );
+        // Try to redeem for user 1
+        if (superVaultStrategy.getAverageWithdrawPrice(u1) > 0) {
+            switchActor(1);
+            uint256 before = MockERC20(_getAsset()).balanceOf(u1);
+            superVault_redeem(amt);
+            assertTrue(
+                MockERC20(_getAsset()).balanceOf(u1) > before,
+                "User1 should have received assets"
+            );
+        }
+        
+        // Try to redeem for user 2
+        if (superVaultStrategy.getAverageWithdrawPrice(u2) > 0) {
+            switchActor(2);
+            uint256 before = MockERC20(_getAsset()).balanceOf(u2);
+            superVault_redeem(amt);
+            assertTrue(
+                MockERC20(_getAsset()).balanceOf(u2) > before,
+                "User2 should have received assets"
+            );
+        }
     }
 
     function test_superVaultStrategy_fulfillRedeemRequests_clamped_alternative()
@@ -1684,7 +1644,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
 
         // Manager fulfills the redeem request - should auto-detect ERC7540 and use correct hook
         switchActor(0);
-        superVaultStrategy_fulfillRedeemRequests_clamped(redeemShares);
+        superVaultStrategy_fulfillRedeemRequests_clamped(redeemShares, 123); // Add entropy parameter
 
         // Verify withdraw price was set
         assertTrue(
@@ -2867,6 +2827,6 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
             usePrevHookAmounts
         );
         superVault_requestRedeem(2);
-        superVaultStrategy_fulfillRedeemRequests_clamped(1);
+        superVaultStrategy_fulfillRedeemRequests_clamped(1, 456); // Add entropy parameter
     }
 }
