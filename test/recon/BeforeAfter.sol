@@ -103,7 +103,7 @@ abstract contract BeforeAfter is Setup {
     /// @notice Calculates the naive price per share by summing all assets across strategy and yield sources
     /// @dev inspired by the share price calculation from BaseSuperVaultTest::_updateSuperVaultPPS
     /// @return naivePPS The calculated price per share (scaled by 1e18)
-    function _calculateNaivePPS() internal view returns (uint256 naivePPS) {
+    function _calculateNaivePPS() internal returns (uint256 naivePPS) {
         // Get total supply of SuperVault shares
         uint256 totalSupply = superVault.totalSupply();
 
