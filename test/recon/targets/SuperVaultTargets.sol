@@ -144,7 +144,9 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         uint256 sumAccumulatorCostBasisBefore = superVaultStrategy
             .getSuperVaultState(_getActor())
             .accumulatorCostBasis;
-        uint256 assetsBefore = MockERC20(_getAsset()).balanceOf(_getActor());
+        uint256 assetsBefore = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
         uint256 previewMint = superVault.previewMint(shares);
 
         vm.prank(_getActor());
@@ -156,7 +158,9 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         uint256 sumAccumulatorCostBasisAfter = superVaultStrategy
             .getSuperVaultState(_getActor())
             .accumulatorCostBasis;
-        uint256 assetsAfter = MockERC20(_getAsset()).balanceOf(_getActor());
+        uint256 assetsAfter = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
 
         eq(
             accumulatorSharesAfter - accumulatorSharesBefore,
