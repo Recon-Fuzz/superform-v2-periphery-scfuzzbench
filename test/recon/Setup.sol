@@ -126,6 +126,7 @@ abstract contract Setup is
     // Canaries
     bool executeHooksClampedSuccess;
     bool executeHooksSuccess;
+    bool fulfillRedeemRequestsSuccess;
 
     /// === MODIFIERS === ///
     /// Prank admin and actor

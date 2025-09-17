@@ -366,4 +366,8 @@ abstract contract Properties is BeforeAfter, Asserts {
     function canary_executeHooks() public {
         t(!executeHooksSuccess, "executeHooksSuccess canary");
     }
+
+    function canary_fulfillRedeemRequests() public {
+        t(!fulfillRedeemRequestsSuccess, "fulfillRedeemRequests canary");
+    }
 }
