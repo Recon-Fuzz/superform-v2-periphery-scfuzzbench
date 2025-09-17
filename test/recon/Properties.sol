@@ -270,10 +270,10 @@ abstract contract Properties is BeforeAfter, Asserts {
 
     // Canaries
     function canary_executeHooksClamped() public {
-        t(!executeHooksClampedSuccess);
+        t(!executeHooksClampedSuccess, "executeHooksClampedSuccess canary");
     }
 
     function canary_executeHooks() public {
-        t(!executeHooksSuccess);
+        t(!executeHooksSuccess, "executeHooksSuccess canary");
     }
 }
