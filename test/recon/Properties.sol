@@ -268,6 +268,22 @@ abstract contract Properties is BeforeAfter, Asserts {
         return int256(summedClaimableRedemptionsAsAssets) - int256(totalAssets);
     }
 
+    function optimize_burnMoreThanRequestedInRedemption()
+        public
+        view
+        returns (int256)
+    {
+        return burnedMoreThanRequested;
+    }
+
+    function optimize_burnLessThanRequestedInRedemption()
+        public
+        view
+        returns (int256)
+    {
+        return burnedLessThanRequested;
+    }
+
     // Canaries
     function canary_executeHooksClamped() public {
         t(!executeHooksClampedSuccess, "executeHooksClampedSuccess canary");

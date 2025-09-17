@@ -116,6 +116,8 @@ abstract contract Setup is
 
     // Ghosts
     bool hasUpdatedPPS;
+    int256 burnedMoreThanRequested;
+    int256 burnedLessThanRequested;
 
     // Canaries
     bool executeHooksClampedSuccess;
