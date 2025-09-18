@@ -42,8 +42,8 @@
 | `doomsday_previewEquivalenceFromShares`, `doomsday_previewEquivalenceFromAssets` | `previewMint` and `previewDeposit` equivalence |  | ✅ |  |
 | `property_avgPPSDoesntDecrease` | When a user requests a redemption and the PPS is >= the user PPS, user `averageRequestPPS` must not decrease |  | ✅ |  |
 | `superVault_redeem` | Redeem should never revert due to underflow |  | ✅ |  |
-| `doomsday_allUsersCanRedeem` | All users should always be able to redeem unless the system is paused | most likely will break if vault experiences a loss; meant to catch issues related to insufficient redemption processing |  |  |
-| `property_x` | After all redemptions are processed, the sum of all claimable is <= balance available |  |  |  |
+| `doomsday_allUsersCanRedeem` | All users should always be able to redeem unless the system is paused | most likely will break if vault experiences a loss; meant to catch issues related to insufficient redemption processing | ✅ |  |
+| `property_sumOfClaimable` | After all redemptions are processed, the sum of all claimable is <= balance available |  | ✅ |  |
 | `property_x` | If the sum of assets in `SuperVaultStrategy` and yield strategies is 0, `maxWithdraw` should be 0 (doomsday) | Related to dust issue described [here](https://github.com/superform-xyz/v2-periphery/pull/43) |  |  |
 | `property_x` | When claiming redemption, it should never revert with `INVALID_REDEEM_CLAIM` (doomsday) | Related to second doomsday property outlined [here](https://github.com/Recon-Fuzz/superform-review/issues/20#issue-3405662380) |  |  |
 | `property_x` | Transfers of shares should transfer the exact amount of `accumulatorShares` to the recipient | Related to high risk issue outlined [here](https://github.com/Recon-Fuzz/superform-review/issues/20#issue-3405662380), potential to cause overflows? Might be useful to have an optimization test for the difference |  |  |

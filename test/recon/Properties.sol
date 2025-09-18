@@ -276,6 +276,31 @@ abstract contract Properties is BeforeAfter, Asserts {
         );
     }
 
+    /// @dev Property: After all redemptions are processed, the sum of all claimable is <= balance available
+    function property_sumOfClaimable() public {
+        address[] memory actors = _getActors();
+
+        uint256 sumPending;
+        uint256 sumClaimable;
+        for (uint256 i; i < actors.length; i++) {
+            sumPending += superVault.pendingRedeemRequest(0, actors[i]);
+            sumClaimable += superVault.maxWithdraw(actors[i]);
+        }
+
+        uint256 strategyBalance = MockERC20(_getAsset()).balanceOf(
+            address(superVaultStrategy)
+        );
+
+        // precondition: all pending has been fulfilled
+        if (sumPending == 0) {
+            lte(
+                sumClaimable,
+                strategyBalance,
+                "sum of all claimable is > balance available"
+            );
+        }
+    }
+
     /// Optimization Tests
 
     /// @dev Optimize the difference between the amount of assets in the system and claimable assets
