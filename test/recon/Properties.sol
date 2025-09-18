@@ -69,11 +69,8 @@ abstract contract Properties is BeforeAfter, Asserts {
 
     /// @dev Property: `SuperVault::totalSupply` == SUM(user balances) + balanceOf(escrow)
     function property_shareSolvency() public {
-        eq(
-            superVault.totalSupply(),
-            _after.summedTotalShares,
-            "vault shares are insolvent"
-        );
+        uint256 sumOfShares = _sumTotalShares();
+        eq(superVault.totalSupply(), sumOfShares, "vault shares are insolvent");
     }
 
     /// @dev Property: balanceOf(escrow) >= SUM(controllers.pendingRedeemRequest)
@@ -191,9 +188,11 @@ abstract contract Properties is BeforeAfter, Asserts {
 
     /// @dev Property: if totalSupply > 0, then totalAssets > 0
     function property_assetBacking() public {
+        uint256 summedTotalAssets = _sumVaultAssets();
+
         if (superVault.totalSupply() > 0) {
             gt(
-                _after.summedTotalAssets,
+                summedTotalAssets,
                 0,
                 "if totalSupply > 0, then totalAssets > 0"
             );
@@ -306,7 +305,9 @@ abstract contract Properties is BeforeAfter, Asserts {
 
     /// @dev Property: If the sum of assets in SuperVaultStrategy and yield strategies is 0, maxWithdraw should be 0
     function property_sumOfAssetsMaxWithdrawable() public {
-        if (_before.summedTotalAssets == 0) {
+        uint256 summedTotalAssets = _sumVaultAssets();
+
+        if (summedTotalAssets == 0) {
             uint256 maxWithdraw = superVault.maxWithdraw(_getActor());
             eq(
                 maxWithdraw,
