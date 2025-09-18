@@ -244,26 +244,14 @@ abstract contract Properties is BeforeAfter, Asserts {
 
     /// @dev Property: previewMint and previewDeposit equivalence (from shares)
     function property_previewEquivalenceFromShares(uint256 shares) public {
-        uint256 sharesAsAssets = superVault.convertToAssets(shares);
-        uint256 previewDepositShares = superVault.previewDeposit(
-            sharesAsAssets
-        );
-
         uint256 previewMintAssets = superVault.previewMint(shares);
-        uint256 previewMintShares = superVault.convertToShares(
+        uint256 previewDepositShares = superVault.previewDeposit(
             previewMintAssets
         );
 
-        // setting optimization values
-        if (previewMintShares > previewDepositShares) {
-            previewMintSharesGreater = int256(previewMintShares);
-        } else {
-            previewDepositSharesGreater = int256(previewDepositShares);
-        }
-
         eq(
+            shares,
             previewDepositShares,
-            previewMintShares,
             "previewMint and previewDeposit equivalence (from shares)"
         );
     }
@@ -271,24 +259,19 @@ abstract contract Properties is BeforeAfter, Asserts {
     /// @dev Property: previewMint and previewDeposit equivalence (from assets)
     function property_previewEquivalenceFromAssets(uint256 assets) public {
         uint256 previewDepositShares = superVault.previewDeposit(assets);
-        uint256 previewDepositAssets = superVault.convertToAssets(
-            previewDepositShares
+        uint256 previewMintAssets_under = superVault.previewMint(previewDepositShares);
+        uint256 previewMintAssets_over = superVault.previewMint(previewDepositShares + 1);
+
+        gte(
+            assets,
+            previewMintAssets_under,
+            "previewMint and previewDeposit equivalence under (from assets)"
         );
 
-        uint256 assetsAsShares = superVault.convertToShares(assets);
-        uint256 previewMintAssets = superVault.previewMint(assetsAsShares);
-
-        // setting optimization values
-        if (previewMintAssets > previewDepositAssets) {
-            previewMintSharesGreater = int256(previewMintAssets);
-        } else {
-            previewDepositSharesGreater = int256(previewDepositAssets);
-        }
-
-        eq(
-            previewDepositAssets,
-            previewMintAssets,
-            "previewMint and previewDeposit equivalence (from assets)"
+        lte(
+            assets,
+            previewMintAssets_over,
+            "previewMint and previewDeposit equivalence over (from assets)"
         );
     }
 
