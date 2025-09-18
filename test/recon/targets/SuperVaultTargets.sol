@@ -22,18 +22,16 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     }
 
     function superVault_redeem_clamped(uint256 shares) public {
-        uint256 claimable = superVault.claimableRedeemRequest(0, _getActor());
-        shares %= claimable;
+        uint256 claimableAssets = superVault.maxWithdraw(_getActor());
+        uint256 claimableShares = superVault.convertToShares(claimableAssets);
+
+        shares %= claimableShares;
 
         superVault_redeem(shares);
     }
 
     function superVault_withdraw_clamped(uint256 assets) public {
-        uint256 claimableShares = superVault.claimableRedeemRequest(
-            0,
-            _getActor()
-        );
-        uint256 claimableAssets = superVault.convertToAssets(claimableShares);
+        uint256 claimableAssets = superVault.maxWithdraw(_getActor());
         assets %= claimableAssets;
 
         superVault_withdraw(assets);
@@ -238,15 +236,27 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         uint256 value
     ) public updateGhostsWithOpType(OpType.TRANSFER) asActor {
         address to = _getRandomActor(entropy);
-        ISuperVaultStrategy.SuperVaultState memory stateSenderBefore = superVaultStrategy.getSuperVaultState(_getActor());
-        ISuperVaultStrategy.SuperVaultState memory stateRecipientBefore = superVaultStrategy.getSuperVaultState(to);
+        ISuperVaultStrategy.SuperVaultState
+            memory stateSenderBefore = superVaultStrategy.getSuperVaultState(
+                _getActor()
+            );
+        ISuperVaultStrategy.SuperVaultState
+            memory stateRecipientBefore = superVaultStrategy.getSuperVaultState(
+                to
+            );
 
         try superVault.transfer(to, value) {
-            ISuperVaultStrategy.SuperVaultState memory stateSenderAfter = superVaultStrategy.getSuperVaultState(_getActor());
-            ISuperVaultStrategy.SuperVaultState memory stateRecipientAfter = superVaultStrategy.getSuperVaultState(to);
+            ISuperVaultStrategy.SuperVaultState
+                memory stateSenderAfter = superVaultStrategy.getSuperVaultState(
+                    _getActor()
+                );
+            ISuperVaultStrategy.SuperVaultState
+                memory stateRecipientAfter = superVaultStrategy
+                    .getSuperVaultState(to);
 
             eq(
-                stateSenderBefore.accumulatorShares - stateSenderAfter.accumulatorShares,
+                stateSenderBefore.accumulatorShares -
+                    stateSenderAfter.accumulatorShares,
                 stateRecipientAfter.accumulatorShares -
                     stateRecipientBefore.accumulatorShares,
                 "recipient loses shares on transfer"
