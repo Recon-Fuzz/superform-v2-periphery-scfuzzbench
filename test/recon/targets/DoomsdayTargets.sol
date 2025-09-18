@@ -20,6 +20,26 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
         revert("stateless");
     }
 
+    /// @dev Property: previewDeposit and deposit equivalence
+    function doomsday_previewDepositEquivalence(uint256 assets) public stateless {
+        uint256 previewDepositShares = superVault.previewDeposit(assets);
+        
+        vm.prank(_getActor());
+        uint256 sharesActualDeposit = superVault.deposit(assets, _getActor());
+        
+        eq(previewDepositShares, sharesActualDeposit, "previewDeposit and deposit equivalence");
+    }
+
+    /// @dev Property: previewMint and mint equivalence
+    function doomsday_previewMintEquivalence(uint256 shares) public stateless {
+        uint256 previewMintAssets = superVault.previewMint(shares);
+
+        vm.prank(_getActor());
+        uint256 assetsActualMint = superVault.mint(shares, _getActor());
+
+        eq(previewMintAssets, assetsActualMint, "previewMint and mint equivalence");
+    }
+
     /// @dev Property: mint/redeem is symmetrical
     // function doomsday_mintRedeemSymmetrical(
     //     uint256 sharesToMint
