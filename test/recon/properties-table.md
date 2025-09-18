@@ -53,11 +53,14 @@
 | `property_x` | If maxWithdraw > 0, then `averageWithdrawPrice` > 0 |  |  |  |
 | `property_x` | If maxWithdraw == 0, then `averageWithdrawPrice` == 0 |  |  |  |
 
-
-
-
 ## SuperVaultAggregator 
 | Property | Description | Comments | Implemented | Tested |
 | --- | --- | --- | --- | --- |
 | `doomsday_primaryManagerAlwaysChangeable` | primary manager can always be replaced by governance via `changePrimaryManager` |  | ✅ | |
 
+
+## Todo 
+Property for checking accumulator ratios
+
+Can reduction be magnified to force other person to pay 100% fee?
+- compounding implicit rounding

@@ -207,6 +207,7 @@ abstract contract Setup is
 
         address[] memory assets = _getAssets();
         superGovernor.setAddress(superGovernor.UP(), assets[1]); // the second deployed token in the AssetManager is the UPToken
+        superGovernor.setAddress(superGovernor.SUPER_BANK(), address(this));
 
         // 8. Deploy Mocks and Oracles
 

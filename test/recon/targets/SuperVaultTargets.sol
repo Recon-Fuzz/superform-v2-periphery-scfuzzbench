@@ -21,6 +21,24 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         superVault_requestRedeem(shares);
     }
 
+    function superVault_redeem_clamped(uint256 shares) public {
+        uint256 claimable = superVault.claimableRedeemRequest(0, _getActor());
+        shares %= claimable;
+
+        superVault_redeem(shares);
+    }
+
+    function superVault_withdraw_clamped(uint256 assets) public {
+        uint256 claimableShares = superVault.claimableRedeemRequest(
+            0,
+            _getActor()
+        );
+        uint256 claimableAssets = superVault.convertToAssets(claimableShares);
+        assets %= claimableAssets;
+
+        superVault_withdraw(assets);
+    }
+
     /// AUTO GENERATED TARGET FUNCTIONS - WARNING: DO NOT DELETE OR MODIFY THIS LINE ///
 
     function superVault_approve(address spender, uint256 value) public asActor {
