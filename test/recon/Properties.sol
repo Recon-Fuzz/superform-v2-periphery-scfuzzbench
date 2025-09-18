@@ -301,6 +301,18 @@ abstract contract Properties is BeforeAfter, Asserts {
         }
     }
 
+    /// @dev Property: If the sum of assets in SuperVaultStrategy and yield strategies is 0, maxWithdraw should be 0
+    function property_sumOfAssetsMaxWithdrawable() public {
+        if (_before.summedTotalAssets == 0) {
+            uint256 maxWithdraw = superVault.maxWithdraw(_getActor());
+            eq(
+                maxWithdraw,
+                0,
+                "if sum of assets in SuperVaultStrategy and yield strategies is 0, maxWithdraw should be 0"
+            );
+        }
+    }
+
     /// Optimization Tests
 
     /// @dev Optimize the difference between the amount of assets in the system and claimable assets
