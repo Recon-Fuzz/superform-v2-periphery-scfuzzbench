@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Asserts} from "@chimera/Asserts.sol";
 import {MockERC20} from "@recon/MockERC20.sol";
+import {vm} from "@chimera/Hevm.sol";
 
 import {ISuperVaultStrategy} from "src/interfaces/SuperVault/ISuperVaultStrategy.sol";
 
@@ -303,7 +304,7 @@ abstract contract Properties is BeforeAfter, Asserts {
             sumClaimable += superVault.maxWithdraw(actors[i]);
         }
 
-        uint256 strategyBalance = MockERC20(_getAsset()).balanceOf(
+        uint256 strategyBalance = MockERC20(superVault.asset()).balanceOf(
             address(superVaultStrategy)
         );
 
@@ -394,6 +395,20 @@ abstract contract Properties is BeforeAfter, Asserts {
         }
     }
 
+    /// @dev Property: Claiming redemptions should never revert with INVALID_REDEEM_CLAIM
+    function property_redemptionsNeverReverts(uint256 shares) public {
+        vm.prank(_getActor());
+        try superVault.redeem(shares, _getActor(), _getActor()) {} catch (
+            bytes memory err
+        ) {
+            bool unexpectedError = checkError(err, "INVALID_REDEEM_CLAIM()");
+            t(
+                !unexpectedError,
+                "Claiming redemptions should never revert with INVALID_REDEEM_CLAIM"
+            );
+        }
+    }
+
     /// Optimization Tests
 
     /// @dev Optimize the difference between the amount of assets in the system and claimable assets
@@ -477,15 +492,19 @@ abstract contract Properties is BeforeAfter, Asserts {
     }
 
     // Canaries
-    function canary_executeHooksClamped() public {
-        t(!executeHooksClampedSuccess, "executeHooksClampedSuccess canary");
-    }
+    // function canary_executeHooksClamped() public {
+    //     t(!executeHooksClampedSuccess, "executeHooksClampedSuccess canary");
+    // }
 
-    function canary_executeHooks() public {
-        t(!executeHooksSuccess, "executeHooksSuccess canary");
-    }
+    // function canary_executeHooks() public {
+    //     t(!executeHooksSuccess, "executeHooksSuccess canary");
+    // }
 
-    function canary_fulfillRedeemRequests() public {
-        t(!fulfillRedeemRequestsSuccess, "fulfillRedeemRequests canary");
+    // function canary_fulfillRedeemRequests() public {
+    //     t(!fulfillRedeemRequestsSuccess, "fulfillRedeemRequests canary");
+    // }
+
+    function canary_deployedNewVault() public {
+        t(!hasDeployedNewVault, "deployed new vault canary");
     }
 }

@@ -128,6 +128,7 @@ abstract contract Setup is
     bool executeHooksClampedSuccess;
     bool executeHooksSuccess;
     bool fulfillRedeemRequestsSuccess;
+    bool hasDeployedNewVault;
 
     /// === MODIFIERS === ///
     /// Prank admin and actor
