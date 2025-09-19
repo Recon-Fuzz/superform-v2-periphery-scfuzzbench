@@ -98,7 +98,7 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     /// @dev Property: previewDeposit returns the correct amounts compared to executing a deposit
     function superVault_deposit(
         uint256 assets
-    ) public updateGhostsWithOpType(OpType.ADD) asActor {
+    ) public updateGhostsWithOpType(OpType.ADD) {
         uint256 accumulatorSharesBefore = superVaultStrategy
             .getSuperVaultState(_getActor())
             .accumulatorShares;
@@ -110,6 +110,7 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
             address(superVaultStrategy)
         );
 
+        vm.prank(_getActor()); /// @audit FIX: prank actor
         uint256 shares = superVault.deposit(assets, _getActor());
 
         uint256 accumulatorSharesAfter = superVaultStrategy
