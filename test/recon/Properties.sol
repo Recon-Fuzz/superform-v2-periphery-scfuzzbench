@@ -289,7 +289,7 @@ abstract contract Properties is BeforeAfter, Asserts {
             sumClaimable += superVault.maxWithdraw(actors[i]);
         }
 
-        uint256 strategyBalance = MockERC20(_getAsset()).balanceOf(
+        uint256 strategyBalance = MockERC20(superVault.asset()).balanceOf(
             address(superVaultStrategy)
         );
 
@@ -463,15 +463,15 @@ abstract contract Properties is BeforeAfter, Asserts {
     }
 
     // Canaries
-    function canary_executeHooksClamped() public {
-        t(!executeHooksClampedSuccess, "executeHooksClampedSuccess canary");
-    }
+    // function canary_executeHooksClamped() public {
+    //     t(!executeHooksClampedSuccess, "executeHooksClampedSuccess canary");
+    // }
 
-    function canary_executeHooks() public {
-        t(!executeHooksSuccess, "executeHooksSuccess canary");
-    }
+    // function canary_executeHooks() public {
+    //     t(!executeHooksSuccess, "executeHooksSuccess canary");
+    // }
 
-    function canary_fulfillRedeemRequests() public {
-        t(!fulfillRedeemRequestsSuccess, "fulfillRedeemRequests canary");
-    }
+    // function canary_fulfillRedeemRequests() public {
+    //     t(!fulfillRedeemRequestsSuccess, "fulfillRedeemRequests canary");
+    // }
 }
