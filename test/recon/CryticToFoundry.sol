@@ -3017,6 +3017,6 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         superVault_deposit(2);
 
         console2.log("summedTotalAssets: ", _before.summedTotalAssets);
-        property_naivePPSDoesntChangeOnAddOrRemove();
+        property_naivePPSDoesntChangeOnDepositOrMint();
     }
 }
