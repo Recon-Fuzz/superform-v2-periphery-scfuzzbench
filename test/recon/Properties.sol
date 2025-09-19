@@ -4,13 +4,14 @@ pragma solidity ^0.8.0;
 import {Asserts} from "@chimera/Asserts.sol";
 import {MockERC20} from "@recon/MockERC20.sol";
 import {vm} from "@chimera/Hevm.sol";
+import {ERC7540Properties} from "@properties-7540/ERC7540Properties.sol";
 
 import {ISuperVaultStrategy} from "src/interfaces/SuperVault/ISuperVaultStrategy.sol";
 
 import {OpType} from "test/recon/BeforeAfter.sol";
 import {BeforeAfter} from "./BeforeAfter.sol";
 
-abstract contract Properties is BeforeAfter, Asserts {
+abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     /// @dev Property: oracle PPS doesn't change on deposit/mint/redeem/withdraw
     function property_oraclePPSDoesntChangeOnAddOrRemove() public {
         if (_currentOp == OpType.ADD || _currentOp == OpType.REMOVE) {
@@ -492,5 +493,79 @@ abstract contract Properties is BeforeAfter, Asserts {
 
     function canary_deployedNewVault() public {
         t(!hasDeployedNewVault, "deployed new vault canary");
+    }
+
+    // ERC7540 Properties from erc7540-reusable-properties
+
+    /// @dev Property 7540-1: convertToAssets(totalSupply) == totalAssets unless price is 0.0
+    function crytic_erc7540_1() public {
+        actor = _getActor();
+        t(erc7540_1(address(superVault)), "ERC7540-1: convertToAssets(totalSupply) == totalAssets failed");
+    }
+
+    /// @dev Property 7540-2: convertToShares(totalAssets) == totalSupply unless price is 0.0
+    function crytic_erc7540_2() public {
+        actor = _getActor();
+        t(erc7540_2(address(superVault)), "ERC7540-2: convertToShares(totalAssets) == totalSupply failed");
+    }
+
+    /// @dev Property 7540-3: max* never reverts
+    function crytic_erc7540_3() public {
+        actor = _getActor();
+        t(erc7540_3(address(superVault)), "ERC7540-3: max* functions should never revert");
+    }
+
+    /// @dev Property 7540-4: claiming more than max always reverts
+    function crytic_erc7540_4_deposit(uint256 amt) public {
+        actor = _getActor();
+        t(erc7540_4_deposit(address(superVault), amt), "ERC7540-4: deposit with more than max should revert");
+    }
+
+    function crytic_erc7540_4_mint(uint256 amt) public {
+        actor = _getActor();
+        t(erc7540_4_mint(address(superVault), amt), "ERC7540-4: mint with more than max should revert");
+    }
+
+    function crytic_erc7540_4_withdraw(uint256 amt) public {
+        actor = _getActor();
+        t(erc7540_4_withdraw(address(superVault), amt), "ERC7540-4: withdraw with more than max should revert");
+    }
+
+    function crytic_erc7540_4_redeem(uint256 amt) public {
+        actor = _getActor();
+        t(erc7540_4_redeem(address(superVault), amt), "ERC7540-4: redeem with more than max should revert");
+    }
+
+    /// @dev Property 7540-5: requestRedeem reverts if the share balance is less than amount
+    function crytic_erc7540_5(uint256 shares) public {
+        actor = _getActor();
+        t(erc7540_5(address(superVault), address(superVault), shares), "ERC7540-5: requestRedeem should revert if insufficient share balance");
+    }
+
+    /// @dev Property 7540-6: preview* always reverts
+    function crytic_erc7540_6() public {
+        actor = _getActor();
+        t(erc7540_6(address(superVault)), "ERC7540-6: preview* functions should always revert");
+    }
+
+    /// @dev Property 7540-7: if max[method] > 0, then [method] (max) should not revert
+    function crytic_erc7540_7_deposit(uint256 amt) public {
+        actor = _getActor();
+        t(erc7540_7_deposit(address(superVault), amt), "ERC7540-7: deposit should not revert when amount <= max");
+    }
+
+    function crytic_erc7540_7_mint(uint256 amt) public {
+        actor = _getActor();
+        t(erc7540_7_mint(address(superVault), amt), "ERC7540-7: mint should not revert when amount <= max");
+    }
+
+    function crytic_erc7540_7_withdraw(uint256 amt) public {
+        actor = _getActor();
+        t(erc7540_7_withdraw(address(superVault), amt), "ERC7540-7: withdraw should not revert when amount <= max");
+    }
+
+    function crytic_erc7540_7_redeem(uint256 amt) public {
+        actor = _getActor();
+        t(erc7540_7_redeem(address(superVault), amt), "ERC7540-7: redeem should not revert when amount <= max");
     }
 }
