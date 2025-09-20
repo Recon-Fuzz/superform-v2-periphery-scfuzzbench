@@ -4,13 +4,14 @@ pragma solidity ^0.8.0;
 import {Asserts} from "@chimera/Asserts.sol";
 import {MockERC20} from "@recon/MockERC20.sol";
 import {vm} from "@chimera/Hevm.sol";
+import {ERC7540Properties} from "@properties-7540/ERC7540Properties.sol";
 
 import {ISuperVaultStrategy} from "src/interfaces/SuperVault/ISuperVaultStrategy.sol";
 
 import {OpType} from "test/recon/BeforeAfter.sol";
 import {BeforeAfter} from "./BeforeAfter.sol";
 
-abstract contract Properties is BeforeAfter, Asserts {
+abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     /// @dev Property: oracle PPS doesn't change on deposit/mint/redeem/withdraw
     function property_oraclePPSDoesntChangeOnAddOrRemove() public {
         if (_currentOp == OpType.ADD || _currentOp == OpType.REMOVE) {
@@ -22,16 +23,28 @@ abstract contract Properties is BeforeAfter, Asserts {
         }
     }
 
-    /// @dev Property: naive PPS doesn't change on deposit/mint/redeem/withdraw
-    function property_naivePPSDoesntChangeOnAddOrRemove() public {
+    /// @dev Property: naive PPS doesn't change on deposit/mint
+    function property_naivePPSDoesntChangeOnDepositOrMint() public {
         if (
-            (_currentOp == OpType.ADD || _currentOp == OpType.REMOVE) &&
-            _before.naivePPS != 0 // price starts as zero when no shares minted
+            (_currentOp == OpType.ADD) && _before.naivePPS != 0 // price starts as zero when no shares minted
         ) {
-            eq(
-                _before.naivePPS,
+            gte(
                 _after.naivePPS,
-                "deposit/withdrawal changes naive PPS"
+                _before.naivePPS,
+                "deposit/mint cannot decrease naive PPS"
+            );
+        }
+    }
+
+    /// @dev Property: naive PPS doesn't change on redeem/withdraw
+    function property_naivePPSDoesntChangeOnRedeemOrWithdraw() public {
+        if (
+            (_currentOp == OpType.REMOVE) && _before.naivePPS != 0 // price starts as zero when no shares minted
+        ) {
+            gte(
+                _after.naivePPS,
+                _before.naivePPS,
+                "redeem/withdraw cannot decrease naive PPS"
             );
         }
     }
@@ -231,26 +244,14 @@ abstract contract Properties is BeforeAfter, Asserts {
 
     /// @dev Property: previewMint and previewDeposit equivalence (from shares)
     function property_previewEquivalenceFromShares(uint256 shares) public {
-        uint256 sharesAsAssets = superVault.convertToAssets(shares);
-        uint256 previewDepositShares = superVault.previewDeposit(
-            sharesAsAssets
-        );
-
         uint256 previewMintAssets = superVault.previewMint(shares);
-        uint256 previewMintShares = superVault.convertToShares(
+        uint256 previewDepositShares = superVault.previewDeposit(
             previewMintAssets
         );
 
-        // setting optimization values
-        if (previewMintShares > previewDepositShares) {
-            previewMintSharesGreater = int256(previewMintShares);
-        } else {
-            previewDepositSharesGreater = int256(previewDepositShares);
-        }
-
         eq(
+            shares,
             previewDepositShares,
-            previewMintShares,
             "previewMint and previewDeposit equivalence (from shares)"
         );
     }
@@ -258,26 +259,53 @@ abstract contract Properties is BeforeAfter, Asserts {
     /// @dev Property: previewMint and previewDeposit equivalence (from assets)
     function property_previewEquivalenceFromAssets(uint256 assets) public {
         uint256 previewDepositShares = superVault.previewDeposit(assets);
-        uint256 previewDepositAssets = superVault.convertToAssets(
+        uint256 previewMintAssets_under = superVault.previewMint(
             previewDepositShares
         );
+        uint256 previewMintAssets_over = superVault.previewMint(
+            previewDepositShares + 1
+        );
 
-        uint256 assetsAsShares = superVault.convertToShares(assets);
-        uint256 previewMintAssets = superVault.previewMint(assetsAsShares);
+        gte(
+            assets,
+            previewMintAssets_under,
+            "previewMint and previewDeposit equivalence under (from assets)"
+        );
 
-        // setting optimization values
-        if (previewMintAssets > previewDepositAssets) {
-            previewMintSharesGreater = int256(previewMintAssets);
-        } else {
-            previewDepositSharesGreater = int256(previewDepositAssets);
-        }
-
-        eq(
-            previewDepositAssets,
-            previewMintAssets,
-            "previewMint and previewDeposit equivalence (from assets)"
+        lte(
+            assets,
+            previewMintAssets_over,
+            "previewMint and previewDeposit equivalence over (from assets)"
         );
     }
+
+    /// @dev Property: previewMint is higher than or equal to convertToAssets
+    function property_comparePreviewMintAndConvertToAssets(
+        uint256 shares
+    ) public {
+        uint256 previewMintAssets = superVault.previewMint(shares);
+        uint256 convertToAssets = superVault.convertToAssets(shares);
+        gte(
+            previewMintAssets,
+            convertToAssets,
+            "previewMint is higher than or equal to convertToAssets"
+        );
+    }
+
+    /// @dev Property: convertToShares is higher than or equal to previewDepositShares (equivalent without fees)
+    function property_comparePreviewDepositAndConvertToShares(
+        uint256 assets
+    ) public {
+        uint256 previewDepositShares = superVault.previewDeposit(assets);
+        uint256 convertToShares = superVault.convertToShares(assets);
+        gte(
+            convertToShares,
+            previewDepositShares,
+            "convertToShares is higher than or equal to previewDepositShares (equivalent without fees)"
+        );
+    }
+
+    // NOTE: Withdrawal properties are more nuanced, as we should ensure that no gain can be had and that losses are imputed to the controller receiving the assets
 
     /// @dev Property: After all redemptions are processed, the sum of all claimable is <= balance available
     function property_sumOfClaimable() public {
@@ -492,5 +520,118 @@ abstract contract Properties is BeforeAfter, Asserts {
 
     function canary_deployedNewVault() public {
         t(!hasDeployedNewVault, "deployed new vault canary");
+    }
+
+    // ERC7540 Properties from erc7540-reusable-properties
+
+    /// @dev Property 7540-1: convertToAssets(totalSupply) == totalAssets unless price is 0.0
+    function crytic_erc7540_1() public {
+        actor = _getActor();
+        t(
+            erc7540_1(address(superVault)),
+            "ERC7540-1: convertToAssets(totalSupply) == totalAssets failed"
+        );
+    }
+
+    /// @dev Property 7540-2: convertToShares(totalAssets) == totalSupply unless price is 0.0
+    function crytic_erc7540_2() public {
+        actor = _getActor();
+        t(
+            erc7540_2(address(superVault)),
+            "ERC7540-2: convertToShares(totalAssets) == totalSupply failed"
+        );
+    }
+
+    /// @dev Property 7540-3: max* never reverts
+    function crytic_erc7540_3() public {
+        actor = _getActor();
+        t(
+            erc7540_3(address(superVault)),
+            "ERC7540-3: max* functions should never revert"
+        );
+    }
+
+    /// @dev Property 7540-4: claiming more than max always reverts
+    function crytic_erc7540_4_deposit(uint256 amt) public {
+        actor = _getActor();
+        t(
+            erc7540_4_deposit(address(superVault), amt),
+            "ERC7540-4: deposit with more than max should revert"
+        );
+    }
+
+    function crytic_erc7540_4_mint(uint256 amt) public {
+        actor = _getActor();
+        t(
+            erc7540_4_mint(address(superVault), amt),
+            "ERC7540-4: mint with more than max should revert"
+        );
+    }
+
+    function crytic_erc7540_4_withdraw(uint256 amt) public {
+        actor = _getActor();
+        t(
+            erc7540_4_withdraw(address(superVault), amt),
+            "ERC7540-4: withdraw with more than max should revert"
+        );
+    }
+
+    function crytic_erc7540_4_redeem(uint256 amt) public {
+        actor = _getActor();
+        t(
+            erc7540_4_redeem(address(superVault), amt),
+            "ERC7540-4: redeem with more than max should revert"
+        );
+    }
+
+    /// @dev Property 7540-5: requestRedeem reverts if the share balance is less than amount
+    function crytic_erc7540_5(uint256 shares) public {
+        actor = _getActor();
+        t(
+            erc7540_5(address(superVault), address(superVault), shares),
+            "ERC7540-5: requestRedeem should revert if insufficient share balance"
+        );
+    }
+
+    /// @dev Property 7540-6: preview* always reverts
+    function crytic_erc7540_6() public {
+        actor = _getActor();
+        t(
+            erc7540_6(address(superVault)),
+            "ERC7540-6: preview* functions should always revert"
+        );
+    }
+
+    /// @dev Property 7540-7: if max[method] > 0, then [method] (max) should not revert
+    function crytic_erc7540_7_deposit(uint256 amt) public {
+        actor = _getActor();
+        t(
+            erc7540_7_deposit(address(superVault), amt),
+            "ERC7540-7: deposit should not revert when amount <= max"
+        );
+    }
+
+    function crytic_erc7540_7_mint(uint256 amt) public {
+        actor = _getActor();
+        t(
+            erc7540_7_mint(address(superVault), amt),
+            "ERC7540-7: mint should not revert when amount <= max"
+        );
+    }
+
+    function crytic_erc7540_7_withdraw(uint256 amt) public {
+        actor = _getActor();
+        t(
+            erc7540_7_withdraw(address(superVault), amt),
+            "ERC7540-7: withdraw should not revert when amount <= max"
+        );
+    }
+
+    function crytic_erc7540_7_redeem(uint256 amt) public {
+        actor = _getActor();
+        t(
+            erc7540_7_redeem(address(superVault), amt),
+            "ERC7540-7: redeem should not revert when amount <= max"
+        );
     }
 }
