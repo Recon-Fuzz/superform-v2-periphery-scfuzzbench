@@ -373,6 +373,34 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
         }
     }
 
+    /// Optimization Setters
+
+    function setpreviewAssetsGreater(uint256 shares) public {
+        uint256 previewMintAssets = superVault.previewMint(shares);
+        uint256 previewDepositAssets = superVault.previewDeposit(
+            previewMintAssets
+        );
+
+        if (previewMintAssets > previewDepositAssets) {
+            previewMintAssetsGreater = int256(previewMintAssets);
+        } else {
+            previewDepositAssetsGreater = int256(previewDepositAssets);
+        }
+    }
+
+    function setPreviewSharesGreater(uint256 assets) public {
+        uint256 previewDepositShares = superVault.previewDeposit(assets);
+        uint256 previewMintShares = superVault.previewMint(
+            previewDepositShares
+        );
+
+        if (previewDepositShares > previewMintShares) {
+            previewDepositSharesGreater = int256(previewDepositShares);
+        } else {
+            previewMintSharesGreater = int256(previewMintShares);
+        }
+    }
+
     /// Optimization Tests
 
     /// @dev Optimize the difference between the amount of assets in the system and claimable assets
@@ -456,17 +484,6 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     // Canaries
-    // function canary_executeHooksClamped() public {
-    //     t(!executeHooksClampedSuccess, "executeHooksClampedSuccess canary");
-    // }
-
-    // function canary_executeHooks() public {
-    //     t(!executeHooksSuccess, "executeHooksSuccess canary");
-    // }
-
-    // function canary_fulfillRedeemRequests() public {
-    //     t(!fulfillRedeemRequestsSuccess, "fulfillRedeemRequests canary");
-    // }
 
     function canary_deployedNewVault() public {
         t(!hasDeployedNewVault, "deployed new vault canary");

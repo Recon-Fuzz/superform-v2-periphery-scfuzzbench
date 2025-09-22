@@ -119,10 +119,10 @@ abstract contract Setup is
     bool hasUpdatedPPS;
     int256 burnedMoreThanRequested;
     int256 burnedLessThanRequested;
-    int256 previewMintSharesGreater;
-    int256 previewDepositSharesGreater;
-    int256 previewMintAssetsGreater;
-    int256 previewDepositAssetsGreater;
+    int256 previewMintSharesGreater; // setPreviewSharesGreater
+    int256 previewDepositSharesGreater; // setPreviewSharesGreater
+    int256 previewMintAssetsGreater; // setpreviewAssetsGreater
+    int256 previewDepositAssetsGreater; // setpreviewAssetsGreater
 
     // Canaries
     bool executeHooksClampedSuccess;
