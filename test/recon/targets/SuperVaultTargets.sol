@@ -61,7 +61,9 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         uint256 pendingRedeemRequestsAsAssets = superVault.convertToAssets(
             pendingRedeemRequestsBefore
         );
-        uint256 balanceBefore = MockERC20(superVault.asset()).balanceOf(_getActor());
+        uint256 balanceBefore = MockERC20(superVault.asset()).balanceOf(
+            _getActor()
+        );
 
         vm.prank(_getActor());
         superVault.cancelRedeem(_getActor());
@@ -73,7 +75,9 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         uint256 averageRequestPPS = superVaultStrategy
             .getSuperVaultState(_getActor())
             .averageRequestPPS;
-        uint256 balanceAfter = MockERC20(superVault.asset()).balanceOf(_getActor());
+        uint256 balanceAfter = MockERC20(superVault.asset()).balanceOf(
+            _getActor()
+        );
 
         // Checks
         eq(
@@ -235,7 +239,7 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     function superVault_transfer(
         uint256 entropy,
         uint256 value
-    ) public updateGhostsWithOpType(OpType.TRANSFER) asActor {
+    ) public updateGhostsWithOpType(OpType.TRANSFER) {
         address to = _getRandomActor(entropy);
         ISuperVaultStrategy.SuperVaultState
             memory stateSenderBefore = superVaultStrategy.getSuperVaultState(
@@ -246,6 +250,7 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
                 to
             );
 
+        vm.prank(_getActor());
         try superVault.transfer(to, value) {
             ISuperVaultStrategy.SuperVaultState
                 memory stateSenderAfter = superVaultStrategy.getSuperVaultState(
@@ -285,10 +290,11 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
         uint256 entropyFrom,
         uint256 entropyTo,
         uint256 value
-    ) public updateGhostsWithOpType(OpType.TRANSFER) asActor {
+    ) public updateGhostsWithOpType(OpType.TRANSFER) {
         address from = _getRandomActor(entropyFrom);
         address to = _getRandomActor(entropyTo);
 
+        vm.prank(_getActor());
         try superVault.transferFrom(from, to, value) {} catch (
             bytes memory err
         ) {
