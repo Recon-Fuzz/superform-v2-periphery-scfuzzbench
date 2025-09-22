@@ -13,14 +13,6 @@ import {YieldSourceType} from "test/recon/managers/YieldManager.sol";
 import {MockERC4626Tester} from "test/recon/mocks/MockERC4626Tester.sol";
 
 abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
-    /// Makes a handler have no side effects
-    /// The fuzzer will call this anyway, and because it reverts it will be removed from shrinking
-    /// Replace the "withGhosts" with "stateless" to make the code clean
-    modifier stateless() {
-        _;
-        revert("stateless");
-    }
-
     /// @dev Property: previewDeposit and deposit equivalence
     function doomsday_previewDepositEquivalence(
         uint256 assets

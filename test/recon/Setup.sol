@@ -143,6 +143,14 @@ abstract contract Setup is
         _;
     }
 
+    /// Makes a handler have no side effects
+    /// The fuzzer will call this anyway, and because it reverts it will be removed from shrinking
+    /// Replace the "withGhosts" with "stateless" to make the code clean
+    modifier stateless() {
+        _;
+        revert("stateless");
+    }
+
     /// === Setup === ///
     /// This contains all calls to be performed in the tester constructor, both for Echidna and Foundry
     function setup() internal virtual override {
