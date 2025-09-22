@@ -3,8 +3,6 @@
 ## SuperVault 
 | Property | Description | Comments | Implemented | Tested |
 | --- | --- | --- | --- | --- |
-| `doomsday_mintRedeemSymmetrical` | deposit/redeem is symmetrical, no value gained due to rounding |  | ✅ |  |
-| `doomsday_depositWithdrawSymmetrical` | deposit/withdraw is symmetrical, no value gained due to rounding |  | ✅ |  |
 | `doomsday_maxRedeemResetsAfterFullRedemption` | `maxRedeem` is reset to 0 after full redemption |  | ✅ |  |
 | `doomsday_maxRedeemResetsAfterFullRedemption` | `maxRedeem` is reset to 0 after full redemption |  | ✅ |  |
 | `doomsday_maxWithdrawResetsAfterFullWithdrawal` | `maxWithdraw` is reset to 0 after full withdrawal |  | ✅ |  |

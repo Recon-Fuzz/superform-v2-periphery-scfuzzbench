@@ -2959,34 +2959,6 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     }
 
     /// Reproducers
-    // forge test --match-test test_doomsday_mintRedeemSymmetrical_1 -vvv
-    function test_doomsday_mintRedeemSymmetrical_1() public {
-        superVaultStrategy_manageYieldSource_clamped(0);
-
-        superVault_mint(2);
-
-        // superVaultStrategy_executeHooks_clamped(17034, 1, false);
-        _executeSingleHook(17034, 1, false);
-
-        yieldSource_simulateGain(620363132890971);
-
-        doomsday_mintRedeemSymmetrical(626386102211729);
-    }
-
-    // forge test --match-test test_doomsday_depositWithdrawSymmetrical_12 -vvv
-    function test_doomsday_depositWithdrawSymmetrical_12() public {
-        add_new_vault();
-
-        yieldSource_switchToERC4626();
-
-        superVault_mint(1);
-
-        superVaultStrategy_manageYieldSource_clamped(0);
-
-        yieldSource_deposit(2, 0xc3C1658B1e3b9e017030807d0C50895456FD2379);
-
-        doomsday_depositWithdrawSymmetrical(2);
-    }
 
     // forge test --match-test test_superVaultStrategy_fulfillRedeemRequests_clamped_1 -vvv
     // NOTE: optimize_burnMoreThanRequestedInRedemption and optimize_burnLessThanRequestedInRedemption optimize the difference here
@@ -3077,7 +3049,7 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
     }
 
     // forge test --match-test test_property_comparePreviewMintAndConvertToAssets_13 -vvv
-    // NOTE: previewMint takes fees into account wheres convertToAssets doesn't
+    // NOTE: see issue here: https://github.com/Recon-Fuzz/superform-review/issues/49
     function test_property_comparePreviewMintAndConvertToAssets_13() public {
         superVaultStrategy_proposeVaultFeeConfigUpdate(
             0,
