@@ -424,23 +424,27 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Optimize the difference between the amount of claimable assets and assets in the system
-    function optimize_maxClaimableDifference() public view returns (int256) {
+    function optimize_moreClaimableThanHeldDifference()
+        public
+        view
+        returns (int256)
+    {
         address[] memory actors = _getActors();
 
         uint256 summedClaimableRedemptionsAsAssets;
         for (uint256 i; i < actors.length; i++) {
-            uint256 claimableRedemptions = superVault.claimableRedeemRequest(
-                0,
+            summedClaimableRedemptionsAsAssets += superVault.maxWithdraw(
                 actors[i]
-            );
-            summedClaimableRedemptionsAsAssets += superVault.convertToAssets(
-                claimableRedemptions
             );
         }
 
         uint256 totalAssets = _sumVaultAssets();
 
-        return int256(summedClaimableRedemptionsAsAssets) - int256(totalAssets);
+        if (summedClaimableRedemptionsAsAssets > totalAssets) {
+            return
+                int256(summedClaimableRedemptionsAsAssets) -
+                int256(totalAssets);
+        }
     }
 
     function optimize_burnMoreThanRequestedInRedemption()
