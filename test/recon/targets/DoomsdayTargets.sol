@@ -314,6 +314,8 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: all users can withdraw (solvency)
+    // NOTE: if withdrawing from a given strategy via fulfillRedeemRequests fails, it can be expected that one of the YieldSourceTargets would be called to switch the yield source
+    // this should allow fulfillments to eventually succeed so we don't need to sort through all yield sources that have currently been deposited into before fulfilling
     function doomsday_allUsersCanWithdraw() public stateless {
         address[] memory actors = _getActors();
         bool paused = superVaultAggregator.isStrategyPaused(
