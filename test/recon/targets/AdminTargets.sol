@@ -9,6 +9,7 @@ import {MockERC20} from "@recon/MockERC20.sol";
 
 // System dependencies
 import {ISuperVaultStrategy} from "src/interfaces/SuperVault/ISuperVaultStrategy.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 // Test dependencies
 import {YieldSourceType} from "test/recon/managers/YieldManager.sol";
@@ -367,6 +368,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
     /// @dev Property: redemptions only burn the requested amount of shares (exact check)
     /// @dev Property: accumulatorShares decreases by the exact amounts requested when fulfilling redemptions
     /// @dev Property: accumulatorCostBasis decrease by the exact amounts requested when fulfilling redemptions
+    /// @dev Property: superVaultStrategy does not incur loss on fulfillment
     function superVaultStrategy_fulfillRedeemRequests(
         ISuperVaultStrategy.FulfillArgs memory args
     ) public updateGhostsWithOpType(OpType.FULFILL) {
@@ -383,6 +385,12 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
             address(superVaultStrategy)
         );
 
+        uint256 summedExpectedAssets;
+        for (uint256 i; i < args.expectedAssetsOrSharesOut.length; i++) {
+            summedExpectedAssets += args.expectedAssetsOrSharesOut[i];
+        }
+
+        // no need to prank because called as admin address(this)
         superVaultStrategy.fulfillRedeemRequests(args);
 
         uint256 pendingRedeemAfter = _requestedSharesForControllers(
@@ -411,11 +419,11 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
                 int256(totalSharesAfter);
         }
 
-        // eq(
-        //     pendingRedeemBefore - pendingRedeemAfter,
-        //     totalSharesBefore - totalSharesAfter,
-        //     "redemptions only burn the requested amount of shares"
-        // );
+        eq(
+            pendingRedeemBefore - pendingRedeemAfter,
+            totalSharesBefore - totalSharesAfter,
+            "redemptions only burn the requested amount of shares"
+        );
         eq(
             sumAccumulatorSharesBefore - sumAccumulatorSharesAfter,
             totalSharesBefore - totalSharesAfter,
@@ -426,6 +434,11 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
             assetBalanceAfter - assetBalanceBefore,
             sumAccumulatorCostBasisBefore - sumAccumulatorCostBasisAfter,
             "accumulatorCostBasis decreases by the exact amounts requested when fulfilling redemptions"
+        );
+        gte(
+            assetBalanceAfter,
+            summedExpectedAssets,
+            "strategy incurs loss on fulfillment"
         );
     }
 

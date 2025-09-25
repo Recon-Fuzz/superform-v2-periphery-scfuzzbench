@@ -55,6 +55,7 @@
 | `property_comparePreviewMintAndConvertToAssets` | previewMint is >= convertToAssets |  | ✅ |  |
 | `property_comparePreviewDepositAndConvertToShares` | convertToShares is >= previewDepositShares (equivalent without fees) |  | ✅ |  |
 | `property_lossSocialization` | SUM(accumulatorCostBasis) <= balance of superVaultStrategy and deposited yield strategies |  | ✅ |  |
+| `superVaultStrategy_fulfillRedeemRequests` | superVaultStrategy does not incur loss on fulfillment | this should catch any issues related to loss on withdrawal from a yield strategy | ✅ |  |
 
 ## SuperVaultAggregator 
 | Property | Description | Comments | Implemented | Tested |
