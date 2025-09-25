@@ -9,6 +9,7 @@ import {AssetManager} from "@recon/AssetManager.sol";
 import {Utils} from "@recon/Utils.sol";
 import {MockERC20} from "@recon/MockERC20.sol";
 import {SymTest} from "halmos-cheatcodes/SymTest.sol";
+import {Test} from "forge-std/Test.sol";
 
 // ERC4626 Hooks
 import {Deposit4626VaultHook} from "lib/v2-core/src/hooks/vaults/4626/Deposit4626VaultHook.sol";
@@ -56,13 +57,13 @@ import {MockERC7540YieldSourceOracle} from "test/recon/mocks/MockERC7540YieldSou
 import {MockECDSAPPSOracle} from "test/recon/mocks/MockECDSAPPSOracle.sol";
 
 /// @custom:halmos --solver-timeout-assertion 0
+// BaseSetup,
 contract HalmosTester is
-    BaseSetup,
     ActorManager,
     AssetManager,
     YieldManager,
-    Utils,
-    SymTest
+    SymTest,
+    Test
 {
     // Configuration constants
     uint8 internal constant DECIMALS = 18;
@@ -158,7 +159,7 @@ contract HalmosTester is
 
     /// === Setup === ///
     /// This contains all calls to be performed in the tester constructor, both for Echidna and Foundry
-    function setup() internal virtual override {
+    function setUp() public virtual {
         // 1. Add additional actors
         _addActor(address(0x100)); // Actor 1
         _addActor(address(0x200)); // Actor 2
@@ -166,7 +167,6 @@ contract HalmosTester is
         // 2. Create assets using AssetManager
         _newAsset(DECIMALS); // Deploy token with 18 decimals
         _newAsset(DECIMALS); // UP token
-
         _switchAsset(0);
 
         // 3. Deploy all three types of yield sources using YieldManager
@@ -175,13 +175,11 @@ contract HalmosTester is
             _getAsset(),
             YieldSourceType.ERC4626
         );
-
         // Deploy ERC5115 yield source
         erc5115YieldSource = _newYieldSource(
             _getAsset(),
             YieldSourceType.ERC5115
         );
-
         // Deploy ERC7540 yield source
         erc7540YieldSource = _newYieldSource(
             _getAsset(),
@@ -190,7 +188,6 @@ contract HalmosTester is
 
         // Set ERC4626 as the default active yield source
         _switchYieldSource(0); // Switch to first yield source in the array (ERC4626)
-
         // 4. Deploy SuperGovernor first (required by other contracts)
         superGovernor = new SuperGovernor(
             address(this), // superGovernor role
@@ -205,7 +202,6 @@ contract HalmosTester is
         vaultImpl = new SuperVault(address(superGovernor));
         strategyImpl = new SuperVaultStrategy(address(superGovernor));
         escrowImpl = new SuperVaultEscrow();
-
         // 6. Deploy SuperVaultAggregator with implementation contracts
         superVaultAggregator = new UnsafeSuperVaultAggregator(
             address(superGovernor),
@@ -213,35 +209,28 @@ contract HalmosTester is
             address(strategyImpl),
             address(escrowImpl)
         );
-
         // 7. Register the SuperVaultAggregator and UpToken address with SuperGovernor
         superGovernor.setAddress(
             superGovernor.SUPER_VAULT_AGGREGATOR(),
             address(superVaultAggregator)
         );
-
         address[] memory assets = _getAssets();
         superGovernor.setAddress(superGovernor.UP(), assets[1]); // the second deployed token in the AssetManager is the UPToken
         superGovernor.setAddress(superGovernor.SUPER_BANK(), address(this));
-
         // 8. Deploy Mocks and Oracles
-
         // Deploy specific oracles for each yield source type
         erc4626YieldSourceOracle = new MockERC4626YieldSourceOracle();
         erc5115YieldSourceOracle = new MockERC5115YieldSourceOracle();
         erc7540YieldSourceOracle = new MockERC7540YieldSourceOracle();
         ECDSAPPSOracle = new MockECDSAPPSOracle();
-
         // ECDSAPPSOracle setup
         superGovernor.setActivePPSOracle(address(ECDSAPPSOracle));
         ECDSAPPSOracle.setSUPER_GOVERNORReturn(address(superVaultAggregator));
-
         // Set valid assets for all oracles
         asset = _getAsset();
         erc4626YieldSourceOracle.setValidAsset(asset, true);
         erc5115YieldSourceOracle.setValidAsset(asset, true);
         erc7540YieldSourceOracle.setValidAsset(asset, true);
-
         // 9. Create a vault trio using the aggregator
         ISuperVaultAggregator.VaultCreationParams
             memory params = ISuperVaultAggregator.VaultCreationParams({
@@ -258,31 +247,25 @@ contract HalmosTester is
                     recipient: address(this)
                 })
             });
-
         (
             address vaultAddr,
             address strategyAddr,
             address escrowAddr
         ) = superVaultAggregator.createVault(params);
-
         // 10. Store the deployed contracts
         superVault = SuperVault(vaultAddr);
         superVaultStrategy = SuperVaultStrategy(payable(strategyAddr));
         superVaultEscrow = SuperVaultEscrow(escrowAddr);
-
         /// 11. Deploy all hook contracts and helper
         merkleHelper = new MerkleTestHelper();
-
         // Deploy ERC4626 Hooks
         approveAndDeposit4626Hook = new ApproveAndDeposit4626VaultHook();
         deposit4626Hook = new Deposit4626VaultHook();
         redeem4626Hook = new Redeem4626VaultHook();
-
         // Deploy ERC5115 Hooks
         approveAndDeposit5115Hook = new ApproveAndDeposit5115VaultHook();
         deposit5115Hook = new Deposit5115VaultHook();
         redeem5115Hook = new Redeem5115VaultHook();
-
         // Deploy ERC7540 Hooks
         deposit7540Hook = new Deposit7540VaultHook();
         redeem7540Hook = new Redeem7540VaultHook();
@@ -294,22 +277,18 @@ contract HalmosTester is
         claimCancelDepositRequest7540Hook = new ClaimCancelDepositRequest7540Hook();
         claimCancelRedeemRequest7540Hook = new ClaimCancelRedeemRequest7540Hook();
         withdraw7540Hook = new Withdraw7540VaultHook();
-
         // Deploy Super Vault Hooks
         cancelRedeemHook = new CancelRedeemHook();
         superVaultWithdraw7540Hook = new SuperVaultWithdraw7540VaultHook();
-
         // Register all hooks with SuperGovernor
         // ERC4626 Hooks (deposit hooks are regular hooks, redeem hooks are fulfill request hooks)
         superGovernor.registerHook(address(approveAndDeposit4626Hook), false);
         superGovernor.registerHook(address(deposit4626Hook), false);
         superGovernor.registerHook(address(redeem4626Hook), true); // fulfill request hook
-
         // ERC5115 Hooks
         superGovernor.registerHook(address(approveAndDeposit5115Hook), false);
         superGovernor.registerHook(address(deposit5115Hook), false);
         superGovernor.registerHook(address(redeem5115Hook), true); // fulfill request hook
-
         // ERC7540 Hooks (deposit/request hooks are regular hooks, redeem/withdraw hooks are fulfill request hooks)
         superGovernor.registerHook(address(deposit7540Hook), false);
         superGovernor.registerHook(address(redeem7540Hook), true); // fulfill request hook
@@ -333,11 +312,9 @@ contract HalmosTester is
             false
         );
         superGovernor.registerHook(address(withdraw7540Hook), true); // fulfill request hook
-
         // Super Vault Hooks
         superGovernor.registerHook(address(cancelRedeemHook), false);
         superGovernor.registerHook(address(superVaultWithdraw7540Hook), true); // fulfill request hook
-
         // 12. Set up approval array for contracts that need token access
         address[] memory approvalArray = new address[](6);
         approvalArray[0] = address(superVault);
@@ -359,6 +336,8 @@ contract HalmosTester is
         svm.enableSymbolicStorage(address(erc4626YieldSource));
         svm.enableSymbolicStorage(address(asset));
     }
+
+    function test_setup() public {}
 
     // Call SuperForm
     function _callSuperVaultStrategy(
@@ -414,10 +393,8 @@ contract HalmosTester is
 
     function check_strategySolvency(uint256 byteSize) public {
         vm.assume(byteSize <= 64); // Use a smaller fixed byte size
-
         // using 3 as array size prevent issues with symbolic values
         _callSuperVaultStrategy(3, byteSize);
-
         address[] memory actors = _getActors();
         uint256 summedMaxWithdraw;
         for (uint256 i; i < actors.length; i++) {
@@ -426,7 +403,6 @@ contract HalmosTester is
         uint256 strategyAssetBalance = MockERC20(superVault.asset()).balanceOf(
             address(superVaultStrategy)
         );
-
         assert(strategyAssetBalance >= summedMaxWithdraw);
     }
 
