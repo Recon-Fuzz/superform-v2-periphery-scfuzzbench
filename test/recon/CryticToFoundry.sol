@@ -3138,15 +3138,38 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         superVaultStrategy_fulfillRedeemRequests_clamped(1);
     }
 
-    // forge test --match-test test_doomsday_previewEquivalenceFromAssets_0 -vvv
     // NOTE: optimization tests in optimize_previewMintAssetsGreater and optimize_previewDepositAssetsGreater
-    function test_doomsday_previewEquivalenceFromAssets_0() public {
+    // forge test --match-test test_property_previewEquivalenceFromAssets_1 -vvv
+    function test_property_previewEquivalenceFromAssets_1() public {
+        superVaultStrategy_proposeVaultFeeConfigUpdate(
+            0,
+            10000,
+            0x00000000000000000000000000000000DeaDBeef
+        );
+
+        vm.warp(block.timestamp + 577107);
+
+        vm.roll(block.number + 1);
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 27732);
+        // setting fees to 100%
+        superVaultStrategy_executeVaultFeeConfigUpdate();
+
+        // previewMint explicitly returns 0 with 100% fees
         property_previewEquivalenceFromAssets(1);
     }
 
-    // forge test --match-test test_doomsday_previewEquivalenceFromShares_3 -vvv
     // NOTE: optimization tests in optimize_previewMintSharesGreater and optimize_previewDepositSharesGreater
-    function test_doomsday_previewEquivalenceFromShares_3() public {
+    // forge test --match-test test_property_previewEquivalenceFromShares_1 -vvv
+    function test_property_previewEquivalenceFromShares_1() public {
+        vm.warp(block.timestamp + 5);
+
+        vm.roll(block.number + 1);
+
+        ECDSAPPSOracle_updatePPS_clamped(1);
+
+        console2.log("precision: ", superVault.PRECISION());
         property_previewEquivalenceFromShares(1);
     }
 
