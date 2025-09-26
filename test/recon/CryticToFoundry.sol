@@ -3241,8 +3241,8 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         property_comparePreviewMintAndConvertToAssets(1);
     }
 
-    // force vault loss socialization
-    function test_force_socialization() public {
+    // force vault loss on withdrawal
+    function test_forceLossOnWithdrawal() public {
         // register yield source
         superVaultStrategy_manageYieldSource_clamped(0);
 
@@ -3266,15 +3266,144 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         // force a loss on the yield source
         // Set a 10% loss on withdrawal (10% of withdrawn amount will be lost)
         yieldSource_setLossOnWithdraw(1000); // 1000 basis points = 10%
-        
+
         // Now call the doomsday function which should demonstrate the vulnerability
         // where the user will receive less than they deposited due to the loss on withdrawal
         uint256 sharesToMint = 5e18; // Mint some shares for the test
-        
-        // This will fail its internal assertion because the assertion in doomsday_mintRedeemSymmetrical 
+
+        // This will fail its internal assertion because the assertion in doomsday_mintRedeemSymmetrical
         // expects balanceAfter >= balanceBefore, but due to the loss on withdrawal,
         // the user will receive less assets than they initially put in
         doomsday_mintRedeemSymmetrical(sharesToMint);
+    }
+
+    function test_superVaultStrategy_fulfillRedeemRequestsLossOnWithdraw()
+        public
+    {
+        // Setup yield source
+        superVaultStrategy_manageYieldSource_clamped(
+            uint256(YieldSourceType.ERC4626)
+        );
+
+        // User deposits into SuperVault to create shares
+        switchActor(1);
+        address user1 = _getActor();
+        superVault_deposit(1000e18);
+
+        // Manager invests funds into yield source using executeHooks
+        switchActor(0);
+
+        // First, invest deposits into the yield source
+        // Use the clamped function to execute hooks
+        uint256[] memory hookTypeInts = new uint256[](1);
+        hookTypeInts[0] = 0; // ApproveAndDeposit4626 is the first enum value (index 0)
+
+        uint256[] memory amountsToInvest = new uint256[](1);
+        amountsToInvest[0] = 500e18; // Amount to deposit
+
+        bool[] memory usePrevHookAmounts = new bool[](1);
+        usePrevHookAmounts[0] = false;
+
+        superVaultStrategy_executeHooks_clamped(
+            hookTypeInts,
+            amountsToInvest,
+            usePrevHookAmounts
+        );
+
+        // Multiple users request redemptions with the same amount
+        switchActor(1);
+        uint256 redeemAmt = 100e18;
+        superVault_requestRedeem(redeemAmt);
+
+        // Second user also requests the same amount
+        switchActor(2);
+        address user2 = _getActor();
+        superVault_deposit(500e18);
+        superVault_requestRedeem(redeemAmt);
+
+        // Get yield source reference and calculate implied PPS before
+        MockERC4626Tester vault = MockERC4626Tester(_getYieldSource());
+        uint256 impliedPPSBefore = vault.totalSupply() > 0
+            ? (vault.totalAssets() * 1e18) / vault.totalSupply()
+            : 1e18;
+
+        console2.log("Yield Source PPS Before: %e", impliedPPSBefore);
+
+        // Calculate expected assets to be received based on current PPS
+        uint256 expectedAssets = vault.previewRedeem(redeemAmt);
+        console2.log("Expected assets from yield source: %e", expectedAssets);
+
+        // Track strategy's asset balance before fulfillment
+        uint256 strategyAssetBalanceBefore = MockERC20(superVault.asset())
+            .balanceOf(address(superVaultStrategy));
+        console2.log(
+            "Strategy asset balance before: %e",
+            strategyAssetBalanceBefore
+        );
+
+        // Set loss on withdraw to demonstrate the property violation
+        yieldSource_setLossOnWithdraw(1000); // 10% loss on withdraw
+
+        // Execute fulfillRedeemRequests
+        superVaultStrategy_fulfillRedeemRequests_clamped(redeemAmt);
+
+        // Track strategy's asset balance after fulfillment
+        uint256 strategyAssetBalanceAfter = MockERC20(superVault.asset())
+            .balanceOf(address(superVaultStrategy));
+        uint256 actualAssetsReceived = strategyAssetBalanceAfter -
+            strategyAssetBalanceBefore;
+
+        console2.log(
+            "Strategy asset balance after: %e",
+            strategyAssetBalanceAfter
+        );
+        console2.log(
+            "Actual assets received by strategy: %e",
+            actualAssetsReceived
+        );
+
+        // Calculate expected assets after applying lossOnWithdraw
+        uint256 lossAmount = (expectedAssets * 1000) / 10000; // 10% loss
+        uint256 expectedAssetsAfterLoss = expectedAssets - lossAmount;
+        console2.log(
+            "Expected assets after 10%% loss: %e",
+            expectedAssetsAfterLoss
+        );
+
+        // Calculate implied price per share after
+        uint256 impliedPPSAfter = vault.totalSupply() > 0
+            ? (vault.totalAssets() * 1e18) / vault.totalSupply()
+            : 1e18;
+
+        console2.log("Yield Source PPS After: %e", impliedPPSAfter);
+
+        // Property 1: The implied price per share of the yield source should not change
+        assertEq(
+            impliedPPSAfter,
+            impliedPPSBefore,
+            "Yield source implied PPS should not change after fulfillRedeemRequests"
+        );
+
+        // Property 2: The assets actually received should match the expected assets (without loss)
+        // This will fail when there is a nonzero lossOnWithdraw
+        assertEq(
+            actualAssetsReceived,
+            expectedAssets,
+            "SuperVaultStrategy should receive full expected assets (property violation when lossOnWithdraw > 0)"
+        );
+    }
+
+    // forge test --match-test test_superVaultStrategy_fulfillRedeemRequests_clamped_0 -vvv
+    function test_superVaultStrategy_fulfillRedeemRequests_clamped_0() public {
+        superVaultStrategy_manageYieldSource_clamped(0);
+
+        yieldSource_mint(1, 0xc3C1658B1e3b9e017030807d0C50895456FD2379);
+
+        superVault_deposit(4);
+
+        superVault_requestRedeem_clamped(2);
+
+        superVaultStrategy_fulfillRedeemRequests_clamped(1);
     }
 
     /// Optimization tests
