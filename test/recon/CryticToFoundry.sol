@@ -3406,6 +3406,31 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         superVaultStrategy_fulfillRedeemRequests_clamped(1);
     }
 
+    // forge test --match-test test_doomsday_mintRedeemSymmetrical_4 -vvv
+    // NOTE: requires admin hasn't called executeHooks to deposit into strategy yet but still fulfills
+    function test_doomsday_mintRedeemSymmetrical_4() public {
+        superVaultStrategy_manageYieldSource_clamped(0);
+
+        switchActor(1);
+        yieldSource_mint(5, 0xc3C1658B1e3b9e017030807d0C50895456FD2379);
+
+        doomsday_mintRedeemSymmetrical(1);
+    }
+
+    // forge test --match-test test_doomsday_depositWithdrawSymmetrical_5 -vvv
+    function test_doomsday_depositWithdrawSymmetrical_5() public {
+        superVaultStrategy_manageYieldSource_clamped(0);
+
+        yieldSource_mint(1, 0xc3C1658B1e3b9e017030807d0C50895456FD2379);
+
+        switchActor(1);
+
+        (
+            uint256 balanceAfter,
+            uint256 balanceBefore
+        ) = doomsday_depositWithdrawSymmetrical(2);
+    }
+
     /// Optimization tests
     // forge test --match-test test_optimize_maxDustAccumulation_1 -vvv
     function test_optimize_maxDustAccumulation_1() public {

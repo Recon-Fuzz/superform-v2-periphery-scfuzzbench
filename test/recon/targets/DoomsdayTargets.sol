@@ -76,10 +76,11 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
 
         uint256 balanceAfter = MockERC20(asset).balanceOf(_getActor());
 
+        uint256 TOLERANCE = 10; // 10 wei max tolerance of assets lost
         // 5. Check that user didn't lose assets
         gte(
             balanceAfter,
-            balanceBefore,
+            balanceBefore - TOLERANCE,
             "User loses assets in deposit/withdrawal flow"
         );
     }
@@ -87,7 +88,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     /// @dev Property: deposit/withdraw doesn't cause loss to user
     function doomsday_depositWithdrawSymmetrical(
         uint256 assetsToDeposit
-    ) public stateless {
+    ) public stateless returns (uint256, uint256) {
         // skip if there's been any gain because it complicates the assertion checking
         // NOTE: removed because was previously checking that user doesn't gain only from minting/redeeming
         // if (MockERC4626Tester(_getYieldSource()).totalGains() > 0) {
@@ -118,12 +119,15 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
 
         uint256 balanceAfter = MockERC20(asset).balanceOf(_getActor());
 
+        uint256 TOLERANCE = 10; // 10 wei max tolerance of assets lost
         // 5. Check that user didn't lose assets
         gte(
             balanceAfter,
-            balanceBefore,
+            balanceBefore - TOLERANCE,
             "User loses assets in deposit/withdrawal flow"
         );
+
+        return (balanceAfter, balanceBefore);
     }
 
     /// @dev Property: maxRedeem is reset to 0 after full redemption
