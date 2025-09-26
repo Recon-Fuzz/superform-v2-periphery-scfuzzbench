@@ -83,9 +83,9 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
 
             // Clamp to the strategy's asset balance (not SuperVault's balance)
             uint256 clampedAmount = amountsToInvest[i] %
-                MockERC20(superVault.asset()).balanceOf(
+                (MockERC20(superVault.asset()).balanceOf(
                     address(superVaultStrategy)
-                );
+                ) + 1);
 
             // Get the hook address and calldata
             (
@@ -331,7 +331,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         hookCalldata[0] = redeemHookCalldata;
 
         uint256[] memory expectedAssetsOrSharesOut = new uint256[](1);
-        expectedAssetsOrSharesOut[0] = actualRedeemAmount; // Expect amount matching the actual redeem
+        expectedAssetsOrSharesOut[0] = 1; // @audit Allow max losse amount matching the actual redeem
 
         bytes32[][] memory globalProofs = new bytes32[][](1);
         globalProofs[0] = new bytes32[](0); // Empty proof for UnsafeSuperVaultAggregator
@@ -421,7 +421,7 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
             totalSharesBefore - totalSharesAfter,
             "accumulatorShares decreases by the exact amounts requested when fulfilling redemptions"
         );
-        // asset balance should increase
+        // asset balance should increase | // TODO: Uncomment this to allow losses in processing. TODO: Why is this here?
         eq(
             assetBalanceAfter - assetBalanceBefore,
             sumAccumulatorCostBasisBefore - sumAccumulatorCostBasisAfter,
