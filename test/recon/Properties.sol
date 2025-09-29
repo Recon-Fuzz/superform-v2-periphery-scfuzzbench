@@ -597,35 +597,36 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
         return burnedLessThanRequested;
     }
 
-    function optimize_previewMintSharesGreater() public view returns (int256) {
-        return previewMintSharesGreater;
-    }
+    // function optimize_previewMintSharesGreater() public view returns (int256) {
+    //     return previewMintSharesGreater;
+    // }
 
-    function optimize_previewDepositSharesGreater()
-        public
-        view
-        returns (int256)
-    {
-        return previewDepositSharesGreater;
-    }
+    // function optimize_previewDepositSharesGreater()
+    //     public
+    //     view
+    //     returns (int256)
+    // {
+    //     return previewDepositSharesGreater;
+    // }
 
-    function optimize_previewMintAssetsGreater() public view returns (int256) {
-        return previewMintAssetsGreater;
-    }
+    // function optimize_previewMintAssetsGreater() public view returns (int256) {
+    //     return previewMintAssetsGreater;
+    // }
 
-    function optimize_previewDepositAssetsGreater()
-        public
-        view
-        returns (int256)
-    {
-        return previewDepositAssetsGreater;
-    }
+    // function optimize_previewDepositAssetsGreater()
+    //     public
+    //     view
+    //     returns (int256)
+    // {
+    //     return previewDepositAssetsGreater;
+    // }
 
     function optimize_assetBackingDifference() public view returns (int256) {
         uint256 summedTotalAssets = _sumStrategyAssets();
+        uint256 totalSupply = superVault.totalSupply();
 
-        if (summedTotalAssets == 0) {
-            return int256(superVault.totalSupply());
+        if (summedTotalAssets == 0 && totalSupply > 0) {
+            return int256(totalSupply);
         }
     }
 
