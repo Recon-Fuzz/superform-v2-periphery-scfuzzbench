@@ -619,6 +619,14 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
         return previewDepositAssetsGreater;
     }
 
+    function optimize_assetBackingDifference() public view returns (int256) {
+        uint256 summedTotalAssets = _sumStrategyAssets();
+
+        if (summedTotalAssets == 0) {
+            return int256(superVault.totalSupply());
+        }
+    }
+
     // Canaries
 
     // function canary_deployedNewVault() public {

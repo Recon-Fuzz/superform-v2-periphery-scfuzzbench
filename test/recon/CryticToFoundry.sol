@@ -486,6 +486,39 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         doomsday_mintRedeemSymmetrical(1);
     }
 
+    // forge test --match-test test_property_assetBacking_10 -vvv
+    function test_property_assetBacking_10() public {
+        yieldSource_mint(1, 0xc3C1658B1e3b9e017030807d0C50895456FD2379);
+
+        superVaultStrategy_manageYieldSource_clamped(0);
+
+        yieldSource_mint(1, 0xc3C1658B1e3b9e017030807d0C50895456FD2379);
+
+        superVault_deposit(4);
+
+        superVault_deposit(4);
+
+        superVault_requestRedeem_clamped(5);
+
+        vm.warp(block.timestamp + 5);
+
+        vm.roll(block.number + 1);
+
+        ECDSAPPSOracle_updatePPS_clamped(
+            115792089237316195423570985008687907853269984665640564039457584007913129639931
+        );
+
+        yieldSource_simulateGain(100000003);
+
+        superVaultStrategy_fulfillRedeemRequests_clamped(4);
+
+        superVault_withdraw(87234118);
+
+        // have 2 unbacked shares
+        console2.log("totalSupply: ", superVault.totalSupply());
+        property_assetBacking();
+    }
+
     /// Optimization tests
     // forge test --match-test test_optimize_maxDustAccumulation_1 -vvv
     function test_optimize_maxDustAccumulation_1() public {
