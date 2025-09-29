@@ -184,19 +184,19 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
         vm.prank(_getActor());
         try
             superVault.redeem(maxRedeemBeforeClaim, _getActor(), _getActor())
+
+            // 6. Check maxRedeem is reset to 0 after full redemption
+            uint256 maxRedeemAfterClaim = superVault.maxRedeem(_getActor());
+            eq(
+                maxRedeemAfterClaim,
+                0,
+                "maxRedeem should be reset to 0 after full redemption"
+            );
         {} catch {
             if (maxRedeemBeforeClaim > 0) {
                 t(false, "redeeming maxRedeem should not revert");
             }
         }
-
-        // 6. Check maxRedeem is reset to 0 after full redemption
-        uint256 maxRedeemAfterClaim = superVault.maxRedeem(_getActor());
-        eq(
-            maxRedeemAfterClaim,
-            0,
-            "maxRedeem should be reset to 0 after full redemption"
-        );
     }
 
     /// @dev Property: maxWithdraw is reset to 0 after full withdrawal
@@ -226,17 +226,17 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
         vm.prank(_getActor());
         try
             superVault.withdraw(maxWithdrawBefore, _getActor(), _getActor())
-        {} catch {
+        {
+            // 6. Check maxWithdraw is reset to 0 after full withdrawal
+            uint256 maxWithdrawAfter = superVault.maxWithdraw(_getActor());
+            eq(
+                maxWithdrawAfter,
+                0,
+                "maxWithdraw should be reset to 0 after full withdrawal"
+            );
+        } catch {
             t(false, "withdraw of maxWithdraw should not revert");
         }
-
-        // 6. Check maxWithdraw is reset to 0 after full withdrawal
-        uint256 maxWithdrawAfter = superVault.maxWithdraw(_getActor());
-        eq(
-            maxWithdrawAfter,
-            0,
-            "maxWithdraw should be reset to 0 after full withdrawal"
-        );
     }
 
     /// @dev Property: fulfillRedeemRequests doesn't redeem more than requested for multiple actors
