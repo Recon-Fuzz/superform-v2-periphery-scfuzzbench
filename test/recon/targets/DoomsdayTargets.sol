@@ -5,7 +5,6 @@ import {BaseTargetFunctions} from "@chimera/BaseTargetFunctions.sol";
 import {vm} from "@chimera/Hevm.sol";
 import {Panic} from "@recon/Panic.sol";
 import {MockERC20} from "@recon/MockERC20.sol";
-import {console2} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {BeforeAfter} from "../BeforeAfter.sol";
