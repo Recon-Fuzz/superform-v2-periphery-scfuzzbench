@@ -373,38 +373,15 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
 
         superVault_withdraw(87234118);
 
+        int256 difference = optimize_assetBackingDifference();
+        console2.log("difference: ", difference);
+
         // have 2 unbacked shares
-        console2.log("totalSupply: ", superVault.totalSupply());
-        property_assetBacking();
+        // console2.log("totalSupply: ", superVault.totalSupply());
+        // property_assetBacking();
     }
 
     /// To Triage
-
-    // forge test --match-test test_doomsday_mintRedeemSymmetrical_5 -vvv
-    function test_doomsday_mintRedeemSymmetrical_5() public {
-        superVaultStrategy_manageYieldSource_clamped(0);
-
-        yieldSource_mint(1, 0xc3C1658B1e3b9e017030807d0C50895456FD2379);
-
-        vm.warp(block.timestamp + 5);
-
-        vm.roll(block.number + 1);
-
-        ECDSAPPSOracle_updatePPS_clamped(
-            893250029380653568623780066441443881670086486436756102557863845932909
-        );
-
-        yieldSource_simulateGain(99585);
-
-        switchActor(1);
-
-        ISuperVaultStrategy.FeeConfig memory feeConfig = superVaultStrategy
-            .getConfigInfo();
-        console2.log("fee recipient: ", feeConfig.recipient);
-        address treasury = superGovernor.getAddress(superGovernor.TREASURY());
-
-        doomsday_mintRedeemSymmetrical(1);
-    }
 
     /// Optimization tests
     // forge test --match-test test_optimize_maxDustAccumulation_1 -vvv

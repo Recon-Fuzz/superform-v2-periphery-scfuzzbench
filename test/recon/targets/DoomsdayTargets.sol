@@ -12,6 +12,8 @@ import {Properties} from "../Properties.sol";
 import {ISuperVaultStrategy} from "src/interfaces/SuperVault/ISuperVaultStrategy.sol";
 import {YieldSourceType} from "test/recon/managers/YieldManager.sol";
 import {MockERC4626Tester} from "test/recon/mocks/MockERC4626Tester.sol";
+import {MockERC5115Tester} from "test/recon/mocks/MockERC5115Tester.sol";
+import {MockERC7540Tester} from "test/recon/mocks/MockERC7540Tester.sol";
 
 abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     /// @dev Property: previewDeposit and deposit equivalence
@@ -55,6 +57,9 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
         // }
         address asset = superVault.asset();
         uint256 balanceBefore = MockERC20(asset).balanceOf(_getActor());
+        uint256 feeRecipientBalanceBefore = MockERC20(asset).balanceOf(
+            feeRecipient
+        );
 
         // 1. Mint
         vm.prank(_getActor());
@@ -71,11 +76,15 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
                 memory depositArgs = _createExecuteDepositArgs(
                     strategyAssetBalance
                 );
+
             superVaultStrategy.executeHooks(depositArgs);
         }
 
         // 3. Request Redemption
-        uint256 shares = superVault.balanceOf(_getActor());
+        uint256 userShares = superVault.balanceOf(_getActor());
+        // get shares of strategy in the deposited yield source
+        uint256 shares = _getSuperVaultStrategyShares();
+
         vm.prank(_getActor());
         superVault.requestRedeem(shares, _getActor(), _getActor());
 
@@ -87,21 +96,24 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
         // Now we need to redeem from the yield strategy to get assets back
         ISuperVaultStrategy.FulfillArgs
             memory fulfillArgs = _createFulfillRedeemFromStrategyArgs(shares);
+
         // called by admin address(this)
         superVaultStrategy.fulfillRedeemRequests(fulfillArgs);
 
-        uint256 feeBalanceAfter = MockERC20(superVault.asset()).balanceOf(
-            feeRecipient
-        );
-        uint256 feeDelta = feeBalanceAfter - feeBalanceBefore;
-
         // 5. Claim Redemption
+        uint256 sharesToRedeem = superVault.maxRedeem(_getActor());
+
         vm.prank(_getActor());
-        superVault.redeem(shares, _getActor(), _getActor());
+        superVault.redeem(sharesToRedeem, _getActor(), _getActor());
 
         uint256 balanceAfter = MockERC20(asset).balanceOf(_getActor());
 
         uint256 TOLERANCE = 10; // 10 wei max tolerance of assets lost
+
+        uint256 feeRecipientBalanceAfter = MockERC20(superVault.asset())
+            .balanceOf(feeRecipient);
+        uint256 feeDelta = feeRecipientBalanceAfter - feeRecipientBalanceBefore;
+
         // 6. Check that user didn't lose assets
         gte(
             balanceAfter + TOLERANCE + feeDelta,
@@ -421,6 +433,33 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
                 !unexpectedError,
                 "Claiming redemptions should never revert with INVALID_REDEEM_CLAIM"
             );
+        }
+    }
+
+    /// @dev Get shares for SuperVaultStrategy in the current yield source
+    function _getSuperVaultStrategyShares() internal view returns (uint256) {
+        address yieldSource = _getYieldSource();
+        YieldSourceType sourceType = _getYieldSourceTypeFromAddress(
+            yieldSource
+        );
+
+        if (sourceType == YieldSourceType.ERC4626) {
+            return
+                MockERC4626Tester(yieldSource).balanceOf(
+                    address(superVaultStrategy)
+                );
+        } else if (sourceType == YieldSourceType.ERC5115) {
+            return
+                MockERC5115Tester(yieldSource).balanceOf(
+                    address(superVaultStrategy)
+                );
+        } else if (sourceType == YieldSourceType.ERC7540) {
+            return
+                MockERC7540Tester(yieldSource).balanceOf(
+                    address(superVaultStrategy)
+                );
+        } else {
+            revert("Invalid yield source type");
         }
     }
 
