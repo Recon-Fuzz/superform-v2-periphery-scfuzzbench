@@ -34,3 +34,4 @@ The following properties would be good candidates for live monitoring to ensure 
 - `property_superVaultStrategySolvency`
 - `crytic_erc7540_7_withdraw`
 - `crytic_erc7540_7_redeem`
+- `property_assetBacking` 
