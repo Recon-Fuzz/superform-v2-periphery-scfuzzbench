@@ -728,11 +728,34 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
         );
     }
 
+    // NOTE: this implements the check from ERC7540Properties directly because SuperVault logic implementation allows amt to be nonzero but round down to 0 when assets passed into redeem are calculated
     function crytic_erc7540_7_redeem(uint256 amt) public stateless {
         actor = _getActor();
-        t(
-            erc7540_7_redeem(address(superVault), amt),
-            "ERC7540-7: redeem should not revert when amount <= max"
+
+        uint256 maxRedeem = superVault.maxRedeem(actor);
+        amt = between(amt, 0, maxRedeem);
+
+        if (amt == 0) {
+            return; // Skip
+        }
+
+        uint256 averageWithdrawPrice = superVaultStrategy
+            .getAverageWithdrawPrice(actor);
+
+        // calculates assets in the same way as redeem to confirm that a nonzero amount is being requested
+        uint256 assets = amt.mulDiv(
+            averageWithdrawPrice,
+            superVault.PRECISION(),
+            Math.Rounding.Floor
         );
+
+        try superVault.redeem(amt, actor, actor) {} catch {
+            if (amt > 0 && assets > 0) {
+                t(
+                    false,
+                    "ERC7540-7: redeem should not revert when amount <= max"
+                );
+            }
+        }
     }
 }
