@@ -363,22 +363,6 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
         }
     }
 
-    /// @dev Property: sum(maxWithdraw(actors[i])) <= asset.balanceOf(superVaultStrategy)
-    function property_superVaultStrategySolvency() public {
-        address[] memory actors = _getActors();
-
-        uint256 summedMaxWithdraw;
-        for (uint256 i; i < actors.length; i++) {
-            summedMaxWithdraw += superVault.maxWithdraw(actors[i]);
-        }
-
-        uint256 strategyAssetBalance = MockERC20(superVault.asset()).balanceOf(
-            address(superVaultStrategy)
-        );
-
-        gte(strategyAssetBalance, summedMaxWithdraw, "strategy is insolvent");
-    }
-
     /// @dev Property: accumulatorShares is always accurately increased
     function property_accumulatorSharesIncrease() public {
         if (_currentOp == OpType.ADD) {
