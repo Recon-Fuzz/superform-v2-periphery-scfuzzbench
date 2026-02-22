@@ -1,5 +1,5 @@
 testMode: "assertion"
-prefix: "optimize_"
+prefix: "echidna_"
 coverage: true
 corpusDir: "corpus/echidna"
 balanceAddr: 0x1043561a8829300000
