@@ -33,9 +33,9 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     string constant ASSERTION_UPDATE_SHOULD_NOT_REVERT_TRANSFER_FROM =
         "!!! _update should never revert in transferFrom";
     string constant ASSERTION_CANARY_ASSERTION_FAILURE =
-        "!!! CANARY_ASSERTION_FAILURE";
+        "!!! canary assertion";
     string constant INVARIANT_CANARY_GLOBAL_INVARIANT_FAILURE =
-        "CANARY_GLOBAL_INVARIANT_FAILURE";
+        "Canary invariant";
 
     /// @dev Property: oracle PPS doesn't change on deposit/mint/redeem/withdraw
     function property_oraclePPSDoesntChangeOnAddOrRemove() public {
@@ -644,7 +644,7 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Canary global invariant expected to fail immediately.
-    function invariant_canary_global_invariant_failure() public returns (bool) {
+    function invariant_canary() public returns (bool) {
         t(false, INVARIANT_CANARY_GLOBAL_INVARIANT_FAILURE);
         return false;
     }
