@@ -32,7 +32,7 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
         "!!! _update should never revert in transfer";
     string constant ASSERTION_UPDATE_SHOULD_NOT_REVERT_TRANSFER_FROM =
         "!!! _update should never revert in transferFrom";
-    string constant ASSERTION_CANARY_ASSERTION_FAILURE =
+    string constant ASSERTION_CANARY =
         "!!! canary assertion";
     string constant INVARIANT_CANARY_GLOBAL_INVARIANT_FAILURE =
         "Canary invariant";
@@ -639,7 +639,7 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
 
     /// @dev Canary assertion helper. A failing input is expected to be discovered during fuzzing.
     function assert_canary(uint256 entropy) public {
-        t(entropy > 0, ASSERTION_CANARY_ASSERTION_FAILURE);
+        t(entropy > 0, ASSERTION_CANARY);
     }
 
     /// @dev Canary global invariant expected to fail immediately.

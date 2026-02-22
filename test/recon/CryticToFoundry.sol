@@ -189,8 +189,8 @@ contract CryticToFoundry is Test, TargetFunctions, FoundryAsserts {
         view
     {
         assertTrue(
-            !assertionFailures[ASSERTION_CANARY_ASSERTION_FAILURE],
-            ASSERTION_CANARY_ASSERTION_FAILURE
+            !assertionFailures[ASSERTION_CANARY],
+            ASSERTION_CANARY
         );
     }
 
