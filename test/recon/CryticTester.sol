@@ -11,10 +11,4 @@ contract CryticTester is TargetFunctions, CryticAsserts {
     constructor() payable {
         setup();
     }
-
-    /// @dev Keep assertion-canary name aligned with Foundry wrapper for parser consistency.
-    function invariant_assertion_failure_CANARY() public returns (bool) {
-        assert_canary(0);
-        return false;
-    }
 }
