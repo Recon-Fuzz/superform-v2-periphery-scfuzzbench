@@ -369,8 +369,16 @@ abstract contract AdminTargets is BaseTargetFunctions, Properties {
         executeHooksSuccess = true;
     }
 
-    /// @dev Property: superVaultStrategy does not incur loss on fulfillment
+    /// @dev Action: fulfill pending redeem requests.
     function superVaultStrategy_fulfillRedeemRequests(
+        ISuperVaultStrategy.FulfillArgs memory args
+    ) public updateGhostsWithOpType(OpType.FULFILL) {
+        // no need to prank because called as admin address(this)
+        superVaultStrategy.fulfillRedeemRequests(args);
+    }
+
+    /// @dev Property: superVaultStrategy does not incur loss on fulfillment.
+    function superVaultStrategy_fulfillRedeemRequests_ASSERTION_STRATEGY_NO_LOSS_ON_FULFILLMENT(
         ISuperVaultStrategy.FulfillArgs memory args
     ) public updateGhostsWithOpType(OpType.FULFILL) {
         uint256 summedExpectedAssets;

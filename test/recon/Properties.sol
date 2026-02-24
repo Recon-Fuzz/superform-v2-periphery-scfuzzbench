@@ -299,7 +299,9 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Property: previewMint and previewDeposit equivalence (from shares)
-    function global_previewEquivalenceFromShares(uint256 shares) public {
+    function global_previewEquivalenceFromShares_ASSERTION_GLOBAL_PREVIEW_EQUIVALENCE_FROM_SHARES(
+        uint256 shares
+    ) public {
         uint256 previewMintAssets = superVault.previewMint(shares);
         uint256 previewDepositShares = superVault.previewDeposit(
             previewMintAssets
@@ -316,13 +318,12 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Property: previewMint and previewDeposit equivalence (from assets)
-    function global_previewEquivalenceFromAssets(uint256 assets) public {
+    function global_previewEquivalenceFromAssets_ASSERTION_GLOBAL_PREVIEW_EQUIVALENCE_UNDER_FROM_ASSETS(
+        uint256 assets
+    ) public {
         uint256 previewDepositShares = superVault.previewDeposit(assets);
         uint256 previewMintAssets_under = superVault.previewMint(
             previewDepositShares
-        );
-        uint256 previewMintAssets_over = superVault.previewMint(
-            previewDepositShares + 1
         );
         uint256 price = superVaultStrategy.getStoredPPS();
 
@@ -332,7 +333,20 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
                 previewMintAssets_under,
                 ASSERTION_GLOBAL_PREVIEW_EQUIVALENCE_UNDER_FROM_ASSETS
             );
+        }
+    }
 
+    /// @dev Property: previewMint and previewDeposit equivalence (from assets)
+    function global_previewEquivalenceFromAssets_ASSERTION_GLOBAL_PREVIEW_EQUIVALENCE_OVER_FROM_ASSETS(
+        uint256 assets
+    ) public {
+        uint256 previewDepositShares = superVault.previewDeposit(assets);
+        uint256 previewMintAssets_over = superVault.previewMint(
+            previewDepositShares + 1
+        );
+        uint256 price = superVaultStrategy.getStoredPPS();
+
+        if (price > 0) {
             lte(
                 assets,
                 previewMintAssets_over,
@@ -342,7 +356,7 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Property: previewMint is >= convertToAssets
-    function global_comparePreviewMintAndConvertToAssets(
+    function global_comparePreviewMintAndConvertToAssets_ASSERTION_GLOBAL_PREVIEW_MINT_GTE_CONVERT_TO_ASSETS(
         uint256 shares
     ) public {
         uint256 previewMintAssets = superVault.previewMint(shares);
@@ -355,7 +369,7 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Property: convertToShares is >= previewDepositShares (equivalent without fees)
-    function global_comparePreviewDepositAndConvertToShares(
+    function global_comparePreviewDepositAndConvertToShares_ASSERTION_GLOBAL_CONVERT_TO_SHARES_GTE_PREVIEW_DEPOSIT(
         uint256 assets
     ) public {
         uint256 previewDepositShares = superVault.previewDeposit(assets);
@@ -692,7 +706,7 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     // Canaries
 
     /// @dev Canary assertion helper. A failing input is expected to be discovered during fuzzing.
-    function assert_canary(uint256 entropy) public {
+    function assert_canary_ASSERTION_CANARY(uint256 entropy) public {
         t(entropy > 0, ASSERTION_CANARY);
     }
 
@@ -732,7 +746,9 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Property 7540-4: claiming more than max always reverts
-    function global_erc7540_4_deposit(uint256 amt) public stateless {
+    function global_erc7540_4_deposit_ASSERTION_ERC7540_4_DEPOSIT(
+        uint256 amt
+    ) public stateless {
         actor = _getActor();
         t(
             erc7540_4_deposit(address(superVault), amt),
@@ -740,7 +756,9 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
         );
     }
 
-    function global_erc7540_4_mint(uint256 amt) public stateless {
+    function global_erc7540_4_mint_ASSERTION_ERC7540_4_MINT(
+        uint256 amt
+    ) public stateless {
         actor = _getActor();
         t(
             erc7540_4_mint(address(superVault), amt),
@@ -748,7 +766,9 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
         );
     }
 
-    function global_erc7540_4_withdraw(uint256 amt) public stateless {
+    function global_erc7540_4_withdraw_ASSERTION_ERC7540_4_WITHDRAW(
+        uint256 amt
+    ) public stateless {
         actor = _getActor();
         t(
             erc7540_4_withdraw(address(superVault), amt),
@@ -756,7 +776,9 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
         );
     }
 
-    function global_erc7540_4_redeem(uint256 amt) public stateless {
+    function global_erc7540_4_redeem_ASSERTION_ERC7540_4_REDEEM(
+        uint256 amt
+    ) public stateless {
         actor = _getActor();
         t(
             erc7540_4_redeem(address(superVault), amt),
@@ -765,7 +787,9 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Property 7540-5: requestRedeem reverts if the share balance is less than amount
-    function global_erc7540_5(uint256 shares) public stateless {
+    function global_erc7540_5_ASSERTION_ERC7540_5(
+        uint256 shares
+    ) public stateless {
         actor = _getActor();
         t(
             erc7540_5(address(superVault), address(superVault), shares),
@@ -802,7 +826,9 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     //     );
     // }
 
-    function global_erc7540_7_withdraw(uint256 amt) public stateless {
+    function global_erc7540_7_withdraw_ASSERTION_ERC7540_7_WITHDRAW(
+        uint256 amt
+    ) public stateless {
         actor = _getActor();
         t(
             erc7540_7_withdraw(address(superVault), amt),
@@ -811,7 +837,9 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     // NOTE: this implements the check from ERC7540Properties directly because SuperVault logic implementation allows amt to be nonzero but round down to 0 when assets passed into redeem are calculated
-    function global_erc7540_7_redeem(uint256 amt) public stateless {
+    function global_erc7540_7_redeem_ASSERTION_ERC7540_7_REDEEM(
+        uint256 amt
+    ) public stateless {
         actor = _getActor();
 
         uint256 maxRedeem = superVault.maxRedeem(actor);
