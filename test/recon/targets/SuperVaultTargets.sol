@@ -50,7 +50,7 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     /// @dev Property: pendingRedeemRequest should be 0 after a user calls cancelRedeem
     /// @dev Property: averageRequestPPS should be 0 after a user calls cancelRedeem
     /// @dev Property: user shouldn't receive more than convertToAssets(pendingRedeemRequest) after cancelRedeem
-    function superVault_cancelRedeem()
+    function superVault_cancelRedeem_ASSERTION_CANCEL_REDEEM_PENDING_REQUEST_ZERO()
         public
         updateGhostsWithOpType(OpType.CANCEL)
     {
@@ -98,7 +98,7 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: previewDeposit returns the correct amounts compared to executing a deposit
-    function superVault_deposit(
+    function superVault_deposit_ASSERTION_PREVIEW_DEPOSIT_MATCHES_EXECUTION(
         uint256 assets
     ) public updateGhostsWithOpType(OpType.ADD) {
         uint256 previewShares = superVault.previewDeposit(assets);
@@ -114,7 +114,7 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: previewMint returns the correct amounts compared to executing a mint
-    function superVault_mint(
+    function superVault_mint_ASSERTION_PREVIEW_MINT_MATCHES_EXECUTION(
         uint256 shares
     ) public updateGhostsWithOpType(OpType.ADD) {
         uint256 previewMint = superVault.previewMint(shares);
@@ -163,7 +163,7 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
     /// @dev Property: Transfers of shares should transfer the exact amount of accumulatorShares to the recipient
     /// @dev Property: Transfers of shares should transfer the exact amount of accumulatorCostBasis to the recipient
     // NOTE: _update only gets called on transfer of Vault shares
-    function superVault_transfer(
+    function superVault_transfer_ASSERTION_TRANSFER_SHARES_CONSERVED(
         uint256 entropy,
         uint256 value
     ) public updateGhostsWithOpType(OpType.TRANSFER) {
@@ -213,7 +213,7 @@ abstract contract SuperVaultTargets is BaseTargetFunctions, Properties {
 
     /// @dev Propery: _update should never revert
     // NOTE: _update only gets called on transfer of Vault shares
-    function superVault_transferFrom(
+    function superVault_transferFrom_ASSERTION_UPDATE_SHOULD_NOT_REVERT_TRANSFER_FROM(
         uint256 entropyFrom,
         uint256 entropyTo,
         uint256 value

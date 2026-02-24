@@ -17,7 +17,7 @@ import {MockERC7540Tester} from "test/recon/mocks/MockERC7540Tester.sol";
 
 abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     /// @dev Property: previewDeposit and deposit equivalence
-    function doomsday_previewDepositEquivalence(
+    function doomsday_previewDepositEquivalence_ASSERTION_PREVIEW_DEPOSIT_EQUIVALENCE(
         uint256 assets
     ) public stateless {
         uint256 previewDepositShares = superVault.previewDeposit(assets);
@@ -33,7 +33,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: previewMint and mint equivalence
-    function doomsday_previewMintEquivalence(uint256 shares) public stateless {
+    function doomsday_previewMintEquivalence_ASSERTION_PREVIEW_MINT_EQUIVALENCE(uint256 shares) public stateless {
         uint256 previewMintAssets = superVault.previewMint(shares);
 
         vm.prank(_getActor());
@@ -47,7 +47,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: mint/redeem doesn't cause loss to user
-    function doomsday_mintRedeemSymmetrical(
+    function doomsday_mintRedeemSymmetrical_ASSERTION_MINT_REDEEM_SYMMETRICAL(
         uint256 sharesToMint
     ) public stateless {
         // skip if there's been any gain because it complicates the assertion checking
@@ -123,7 +123,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: deposit/withdraw doesn't cause loss to user
-    function doomsday_depositWithdrawSymmetrical(
+    function doomsday_depositWithdrawSymmetrical_ASSERTION_DEPOSIT_WITHDRAW_SYMMETRICAL(
         uint256 assetsToDeposit
     ) public stateless returns (uint256, uint256) {
         // skip if there's been any gain because it complicates the assertion checking
@@ -169,7 +169,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
 
     /// @dev Property: maxRedeem is reset to 0 after full redemption
     /// @dev Property: redeeming maxRedeem shouldn't revert
-    function doomsday_maxRedeemResetsAfterFullRedemption(
+    function doomsday_maxRedeemResetsAfterFullRedemption_ASSERTION_MAX_REDEEM_RESETS_AFTER_FULL_REDEMPTION(
         uint256 sharesToMint
     ) public stateless {
         // 1. Deposit to get shares
@@ -210,7 +210,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: maxWithdraw is reset to 0 after full withdrawal
-    function doomsday_maxWithdrawResetsAfterFullWithdrawal(
+    function doomsday_maxWithdrawResetsAfterFullWithdrawal_ASSERTION_MAX_WITHDRAW_RESETS_AFTER_FULL_WITHDRAWAL(
         uint256 assetsToDeposit
     ) public stateless {
         // 1. Deposit to get shares
@@ -248,7 +248,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: fulfillRedeemRequests doesn't redeem more than requested for multiple actors
-    function doomsday_fulfillDoesntOverRedeemMultipleActors(
+    function doomsday_fulfillDoesntOverRedeemMultipleActors_ASSERTION_FULFILL_DOESNT_OVER_REDEEM_MULTIPLE_ACTORS(
         uint256[3] memory sharesToMint,
         uint256[3] memory actorIndexes
     ) public stateless {
@@ -325,7 +325,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: primary manager can always be replaced by governance via `changePrimaryManager`
-    function doomsday_primaryManagerAlwaysChangeable() public stateless {
+    function doomsday_primaryManagerAlwaysChangeable_ASSERTION_PRIMARY_MANAGER_ALWAYS_CHANGEABLE() public stateless {
         address strategy = address(superVaultStrategy);
         address newManager = _getActor();
 
@@ -346,7 +346,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     /// @dev Property: all users can withdraw (solvency)
     // NOTE: if withdrawing from a given strategy via fulfillRedeemRequests fails, it can be expected that one of the YieldSourceTargets would be called to switch the yield source
     // this should allow fulfillments to eventually succeed so we don't need to sort through all yield sources that have currently been deposited into before fulfilling
-    function doomsday_allUsersCanWithdraw() public stateless {
+    function doomsday_allUsersCanWithdraw_ASSERTION_ALL_USERS_CAN_WITHDRAW_WHEN_UNPAUSED() public stateless {
         address[] memory actors = _getActors();
         bool paused = superVaultAggregator.isStrategyPaused(
             address(superVaultStrategy)
@@ -397,7 +397,7 @@ abstract contract DoomsdayTargets is BaseTargetFunctions, Properties {
     }
 
     /// @dev Property: Claiming redemptions should never revert with INVALID_REDEEM_CLAIM
-    function doomsday_redemptionsNeverReverts(
+    function doomsday_redemptionsNeverReverts_ASSERTION_REDEEM_SHOULD_NOT_REVERT_INVALID_REDEEM_CLAIM(
         uint256 shares
     ) public asActor stateless {
         try superVault.redeem(shares, _getActor(), _getActor()) {} catch (
