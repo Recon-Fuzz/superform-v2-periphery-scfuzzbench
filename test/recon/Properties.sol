@@ -725,7 +725,7 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     // ERC7540 Properties from erc7540-reusable-properties
 
     /// @dev Property 7540-1: convertToAssets(totalSupply) == totalAssets unless price is 0.0
-    function invariant_erc7540_1() public stateless returns (bool) {
+    function invariant_erc7540_1() public returns (bool) {
         actor = _getActor();
         t(
             erc7540_1(address(superVault)),
@@ -735,7 +735,7 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Property 7540-2: convertToShares(totalAssets) == totalSupply unless price is 0.0
-    function invariant_erc7540_2() public stateless returns (bool) {
+    function invariant_erc7540_2() public returns (bool) {
         actor = _getActor();
         t(
             erc7540_2(address(superVault)),
@@ -745,7 +745,7 @@ abstract contract Properties is BeforeAfter, Asserts, ERC7540Properties {
     }
 
     /// @dev Property 7540-3: max* never reverts
-    function invariant_erc7540_3() public stateless returns (bool) {
+    function invariant_erc7540_3() public returns (bool) {
         actor = _getActor();
         t(
             erc7540_3(address(superVault)),
